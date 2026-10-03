@@ -8,7 +8,8 @@ import cairo
 
 from draw import INK, girl, hexc, set_time, text
 
-STYLES = {"bob": "现在的发型", "sweep": "A 侧分短发", "pony": "B 低马尾", "braids": "C 双麻花辫"}
+STYLES = {"bob": "现在的发型", "sweep": "A 侧分短发", "pony": "B 低马尾", "braids": "C 双麻花辫",
+          "bang_short": "D 齐刘海短发", "bang_long": "E 齐刘海长发", "curtain_long": "F 八字刘海长发"}
 
 
 def main(path, styles):
