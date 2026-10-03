@@ -745,12 +745,11 @@ def _sway(key, k=1.0):
 def _hair_behind(c, style, x, y, hair, key, lw):
     """脸后面的头发：只露出两侧和脑后，不在下巴处合成一圈。"""
     if style in ("sweep", "pony"):
-        for sg in (-1, 1):
-            pts = [(x + sg * 23, y - 12), (x + sg * 31, y), (x + sg * 29, y + 12), (x + sg * 34, y + 22), (x + sg * 38, y + 30),
-                   (x + sg * 31, y + 31), (x + sg * 26, y + 25), (x + sg * 23, y + 14), (x + sg * 20, y + 4)]
-            shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.5)
-            line(c, [(x + sg * 26, y), (x + sg * 28, y + 14), (x + sg * 33, y + 25)], f"{key}wv{sg}", 1.1, darker(hair, 0.6),
-                 alpha=0.5)
+        for sg in (-1, 1):                     # 两侧顺直垂下，下摆齐平，不外翘
+            pts = [(x + sg * 23, y - 12), (x + sg * 30, y - 2), (x + sg * 31, y + 10), (x + sg * 31, y + 22),
+                   (x + sg * 20, y + 22), (x + sg * 20, y + 4)]
+            shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.35)
+            line(c, [(x + sg * 25, y), (x + sg * 26, y + 19)], f"{key}wv{sg}", 1.1, darker(hair, 0.6), alpha=0.45)
     if style == "bang_short":
         for sg in (-1, 1):
             pts = [(x + sg * 22, y - 14), (x + sg * 30, y - 2), (x + sg * 31, y + 20), (x + sg * 20, y + 21), (x + sg * 20, y + 4)]
@@ -853,8 +852,7 @@ def _hair_back_view(c, style, y, hair, key, lw):
         return
     pts = ell(0, y - 1, 28, 27, 14, math.pi * 0.98, math.pi * 2.02)
     if style in ("sweep", "pony"):
-        pts += [(31, y + 12), (37, y + 28), (26, y + 26), (16, y + 30), (5, y + 26), (-5, y + 30), (-16, y + 26),
-                (-26, y + 30), (-37, y + 28), (-31, y + 12)]
+        pts += [(31, y + 10), (31, y + 22), (-31, y + 22), (-31, y + 10)]      # 齐平的下摆
     else:
         pts += [(26, y + 12), (0, y + 16), (-26, y + 12)]
     shape(c, pts, hair, key + "bk", lw=lw * 0.9, amp=0.6)

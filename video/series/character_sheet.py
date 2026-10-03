@@ -28,7 +28,7 @@ def main(path, styles):
         kw = dict(hair_style=st, pack=False, key=f"cs{st}")
         girl(c, cw * 0.5, y, 2.4, hat=False, **kw)
         girl(c, cw * 1.5, y, 2.4, hat=True, **kw)
-        girl(c, cw * 2.5, y, 2.4, hat=True, view="back", **{**kw, "pack": True})
+        girl(c, cw * 2.5, y, 2.4, hat=True, view="back", **kw)
         girl(c, cw * 3.5, y, 2.4, hat=False, look=1.0, mouth="laugh", **kw)
     surf.write_to_png(path)
 
@@ -49,7 +49,7 @@ def costume_sheet(path):
         text(c, lab, 30, 120 + rh * i + 70, 52, hexc("b5473c"), anchor="l")
         kw = dict(hair_style="sweep", pack=False, key=f"cos{o}", outfit=None if o == "coat" else o)
         girl(c, cw * 0.5, y, 2.4, hat=True, **kw)
-        girl(c, cw * 1.5, y, 2.4, hat=True, view="back", **{**kw, "pack": True})
+        girl(c, cw * 1.5, y, 2.4, hat=True, view="back", **kw)
         girl(c, cw * 2.5, y, 2.4, hat=True, walk=0.9, look=1.0, **kw)
         girl(c, cw * 3.5, y, 2.4, hat=True, look=1.0, mouth="laugh", **kw)
     surf.write_to_png(path)
