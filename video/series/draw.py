@@ -535,6 +535,8 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
             with kc():
                 shape(c, rrect(-31, -128 + oy, 62, 58, 10), PACK, key + "pk", lw=lw)
         feet = []
+        if outfit == "sea":
+            leg, shoe = skin, hexc("c98a4a")
         if legs:
             for i, sg in enumerate((-1, 1)):
                 if sit and crouch:
@@ -974,7 +976,7 @@ def plane(c, x, y, s, key="pl", col=hexc("f4f2ec"), tail=hexc("c9553f"), face=No
 COSTUMES = {
     "snow": dict(name="雪原斗篷", sleeve=hexc("b5473c")),
     "desert": dict(name="沙漠轻纱", sleeve=hexc("f3d9a8")),
-    "sea": dict(name="海岛条纹", sleeve=hexc("f4f1ea")),
+    "sea": dict(name="海岛比基尼", sleeve=SKIN),
     "jungle": dict(name="雨林探险", sleeve=hexc("a89060")),
     "village": dict(name="古镇交领", sleeve=hexc("3b4f7a")),
 }
@@ -1014,12 +1016,27 @@ def _costume_body(c, outfit, oy, key, lw, view):
         shape(c, rect(-27, -72 + oy, 54, 10), GOLD, key + "sash", lw=lw * 0.7, amp=0.4)
         shape(c, [(18, -66 + oy), (30, -40 + oy), (22, -38 + oy), (14, -62 + oy)], GOLD, key + "sasht", lw=lw * 0.6, amp=0.4)
     elif outfit == "sea":
-        shape(c, [(-19, -126 + oy), (19, -126 + oy), (26, -84 + oy), (-26, -84 + oy)], hexc("f4f1ea"), key + "bd", lw=lw)
-        for j in range(4):
-            yy = -118 + j * 10 + oy
-            half = 19 + (yy - oy + 126) * 0.17
-            line(c, [(-half + 1, yy), (half - 1, yy)], f"{key}stp{j}", 3.2, hexc("3f6fb5"), amp=0.3)
-        shape(c, [(-26, -86 + oy), (26, -86 + oy), (34, -56 + oy), (-34, -56 + oy)], hexc("e6dcc4"), key + "skirt", lw=lw)
+        # 身体
+        shape(c, [(-16, -128 + oy), (16, -128 + oy), (19, -100 + oy), (15, -84 + oy), (21, -60 + oy), (-21, -60 + oy),
+                  (-15, -84 + oy), (-19, -100 + oy)], SKIN, key + "bd", lw=lw)
+        coral, navy = hexc("e8664f"), hexc("2f5f9a")
+        # 比基尼上衣（抹胸式，带细条纹）
+        shape(c, [(-18, -114 + oy), (18, -114 + oy), (19, -102 + oy), (-19, -102 + oy)], coral, key + "top", lw=lw * 0.8, amp=0.4)
+        line(c, [(-17, -108 + oy), (17, -108 + oy)], key + "tops", 2.2, (1, 0.96, 0.9))
+        if view == "front":
+            shape(c, ell(0, -108 + oy, 4, 5, 8), coral, key + "knot", lw=lw * 0.6, amp=0.3)
+        line(c, [(-10, -114 + oy), (-8, -128 + oy)], key + "strL", 1.6, coral)
+        line(c, [(10, -114 + oy), (8, -128 + oy)], key + "strR", 1.6, coral)
+        # 下装
+        shape(c, [(-20, -70 + oy), (20, -70 + oy), (21, -60 + oy), (8, -54 + oy), (-8, -54 + oy), (-21, -60 + oy)],
+              coral, key + "btm", lw=lw * 0.8, amp=0.4)
+        line(c, [(-19, -66 + oy), (19, -66 + oy)], key + "btms", 2.2, (1, 0.96, 0.9))
+        # 系在腰侧的半透明沙滩裙
+        shape(c, [(-22, -72 + oy), (14, -72 + oy), (30, -40 + oy), (4, -36 + oy), (-26, -44 + oy)],
+              navy + (0.45,), key + "sarong", lw=lw * 0.6, amp=0.5)
+        for k in range(5):
+            circle(c, -14 + k * 8, -56 + (k % 2) * 8 + oy, 2.4, (1, 1, 1), 0.7)
+        shape(c, ell(16, -72 + oy, 5, 4, 8), navy, key + "stie", lw=lw * 0.5, amp=0.3)
     elif outfit == "jungle":
         shape(c, [(-20, -126 + oy), (20, -126 + oy), (30, -62 + oy), (-30, -62 + oy)], hexc("a89060"), key + "bd", lw=lw)
         if view == "front":
