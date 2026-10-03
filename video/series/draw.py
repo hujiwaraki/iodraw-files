@@ -746,9 +746,11 @@ def _hair_behind(c, style, x, y, hair, key, lw):
     """脸后面的头发：只露出两侧和脑后，不在下巴处合成一圈。"""
     if style in ("sweep", "pony"):
         for sg in (-1, 1):
-            pts = [(x + sg * 23, y - 12), (x + sg * 29, y + 2), (x + sg * 29, y + 14), (x + sg * 35, y + 24),
-                   (x + sg * 26, y + 21), (x + sg * 21, y + 10)]
+            pts = [(x + sg * 23, y - 12), (x + sg * 31, y), (x + sg * 29, y + 12), (x + sg * 34, y + 22), (x + sg * 38, y + 30),
+                   (x + sg * 31, y + 31), (x + sg * 26, y + 25), (x + sg * 23, y + 14), (x + sg * 20, y + 4)]
             shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.5)
+            line(c, [(x + sg * 26, y), (x + sg * 28, y + 14), (x + sg * 33, y + 25)], f"{key}wv{sg}", 1.1, darker(hair, 0.6),
+                 alpha=0.5)
     if style == "bang_short":
         for sg in (-1, 1):
             pts = [(x + sg * 22, y - 14), (x + sg * 30, y - 2), (x + sg * 31, y + 20), (x + sg * 20, y + 21), (x + sg * 20, y + 4)]
@@ -851,8 +853,8 @@ def _hair_back_view(c, style, y, hair, key, lw):
         return
     pts = ell(0, y - 1, 28, 27, 14, math.pi * 0.98, math.pi * 2.02)
     if style in ("sweep", "pony"):
-        pts += [(30, y + 12), (34, y + 22), (22, y + 18), (12, y + 22), (0, y + 18), (-12, y + 22), (-22, y + 18),
-                (-34, y + 22), (-30, y + 12)]
+        pts += [(31, y + 12), (37, y + 28), (26, y + 26), (16, y + 30), (5, y + 26), (-5, y + 30), (-16, y + 26),
+                (-26, y + 30), (-37, y + 28), (-31, y + 12)]
     else:
         pts += [(26, y + 12), (0, y + 16), (-26, y + 12)]
     shape(c, pts, hair, key + "bk", lw=lw * 0.9, amp=0.6)
@@ -1041,8 +1043,8 @@ def _costume_body(c, outfit, oy, key, lw, view):
         shape(c, [(20, -126 + oy), (6, -126 + oy), (4, -84 + oy), (24, -84 + oy)], teal, key + "vR", lw=lw * 0.8)
         shape(c, [(-24, -86 + oy), (24, -86 + oy), (40, -40 + oy), (-40, -40 + oy)], teal, key + "skirt", lw=lw)
         pts = [(-38 + k * 9.5, -48 + oy + (4 if k % 2 else -3)) for k in range(9)]
-        line(c, pts, key + "zig", 2.6, orange)
-        line(c, [(-36, -43 + oy), (36, -43 + oy)], key + "hem", 2, orange)
+        line(c, pts, key + "zig", 2.6, hexc("f0c040"))
+        line(c, [(-38, -42 + oy), (38, -42 + oy)], key + "hem", 3.4, orange)
         shape(c, rect(-25, -92 + oy, 50, 9), orange, key + "sash", lw=lw * 0.7, amp=0.4)
         shape(c, rect(-5, -93 + oy, 10, 11), GOLD, key + "buckle", lw=lw * 0.5, amp=0.2)
         for k in range(3):
@@ -1087,6 +1089,15 @@ def _costume_body(c, outfit, oy, key, lw, view):
                 circle(c, px, py + oy, 2.2, (1, 0.96, 0.98), 0.9)
         line(c, [(-18, -92 + oy), (18, -92 + oy)], key + "waist", 2.2, darker(pink, 0.75))
         line(c, [(10, -60 + oy), (22, -14 + oy)], key + "slit", 1.4, darker(pink, 0.7))
+        sw = _sway(key, 1.5)
+        shape(c, [(-30, -40 + oy), (-34, -12 + oy), (-62 + sw * 2, -6 + oy), (-76 + sw * 3, -18 + oy), (-50 + sw, -30 + oy)],
+              pink + (0.85,), key + "train", lw=lw * 0.6, amp=0.6)
+        if view == "front":
+            for sg in (-1, 1):
+                shape(c, [(14, -92 + oy), (14 + sg * 10, -98 + oy), (14 + sg * 10, -86 + oy)], darker(pink, 0.85),
+                      f"{key}bow{sg}", lw=lw * 0.5, amp=0.3)
+            line(c, [(14, -91 + oy), (18 + sw, -66 + oy)], key + "tail1", 2.4, darker(pink, 0.85))
+            line(c, [(14, -91 + oy), (22 + sw, -70 + oy)], key + "tail2", 2.4, darker(pink, 0.85))
     elif outfit == "sea_white":
         shape(c, [(-15, -126 + oy), (15, -126 + oy), (17, -92 + oy), (-17, -92 + oy)], SKIN, key + "skin", lw=lw * 0.8)
         shape(c, [(-18, -118 + oy), (18, -118 + oy), (19, -100 + oy), (-19, -100 + oy)], CREAM, key + "crop", lw=lw * 0.9)
@@ -1143,9 +1154,9 @@ def _costume_head(c, outfit, x, y, key, lw, view, hat):
         sw = _sway(key, 0.5)
         knit, blue = (0.98, 0.97, 0.95), hexc("4f6fa8")
         for sg in (-1, 1):
-            shape(c, [(x + sg * 22, y - 8), (x + sg * 30, y - 2), (x + sg * 28, y + 14), (x + sg * 20, y + 12)], blue,
-                  f"{key}flap{sg}", lw=lw * 0.8, amp=0.4)
-            line(c, [(x + sg * 25, y + 13), (x + sg * 27 + sw, y + 30)], f"{key}cord{sg}", 1.8, CREAM)
+            shape(c, [(x + sg * 23, y - 8), (x + sg * 29, y - 4), (x + sg * 28, y + 4), (x + sg * 23, y + 3)], blue,
+                  f"{key}flap{sg}", lw=lw * 0.8, amp=0.3)
+            line(c, [(x + sg * 26, y + 4), (x + sg * 27 + sw, y + 30)], f"{key}cord{sg}", 1.8, CREAM)
             shape(c, ell(x + sg * 27 + sw, y + 34, 7, 7, 12), FUR, f"{key}ep{sg}", lw=lw * 0.5, amp=0.4)
         dome = ell(x, y - 4, 30, 28, 14, math.pi, 2 * math.pi) + [(x + 30, y - 2), (x - 30, y - 2)]
         shape(c, dome, knit, key + "dome", lw=lw)
@@ -1162,10 +1173,17 @@ def _costume_head(c, outfit, x, y, key, lw, view, hat):
             shape(c, [(x - 26, y - 20), (x + 26, y - 20), (x + 46 + sw * 2, y + 90), (x - 40 + sw * 2, y + 96)], veil,
                   key + "veilB", lw=lw * 0.4, amp=0.8)
         else:
-            shape(c, [(x - 26, y - 22), (x - 52 + sw * 3, y + 40), (x - 60 + sw * 4, y + 100), (x - 30 + sw * 2, y + 90),
-                      (x - 28, y + 10)], veil, key + "veilL", lw=lw * 0.4, amp=0.8)
-            shape(c, [(x + 26, y - 22), (x + 56 + sw * 3, y + 36), (x + 66 + sw * 4, y + 96), (x + 36 + sw * 2, y + 90),
-                      (x + 28, y + 10)], veil, key + "veilR", lw=lw * 0.4, amp=0.8)
+            for layer, (spread, a_) in enumerate(((1.0, 0.32), (0.7, 0.3))):
+                for sg in (-1, 1):
+                    w_ = 1 + 0.08 * math.sin(STATE["t"] * 2 + sg + layer)
+                    pts = [(x + sg * 26, y - 22), (x + sg * (60 * spread) * w_ + sw * 3, y + 20),
+                           (x + sg * (95 * spread) * w_ + sw * 5, y + 70), (x + sg * (88 * spread) + sw * 5, y + 96),
+                           (x + sg * (62 * spread) + sw * 3, y + 104), (x + sg * (40 * spread) + sw * 2, y + 92),
+                           (x + sg * 30, y + 20)]
+                    shape(c, pts, CREAM + (a_,), f"{key}veil{sg}{layer}", lw=lw * 0.35, amp=0.8)
+                    for k in range(3):
+                        u = (k + 1) / 4
+                        circle(c, lerp(x + sg * 30, x + sg * 95 * spread * w_ + sw * 5, u), y + 20 + u * 60, 1.4, GOLD, 0.7)
         pts = [(x - 26 + k * 52 / 12, y - 14 - 8 * math.sin(math.pi * k / 12)) for k in range(13)]
         line(c, pts, key + "chain", 1.8, GOLD)
         for k in range(1, 12, 2):

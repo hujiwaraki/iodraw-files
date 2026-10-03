@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, bandnoise, bass, buzz, cello, chug, heartbeat, jingle, kick, knock, music_box, pad,  # noqa: E402
                    piano, pluck, rain, reed, rumble, scratch, shaker, snap, swell, swish, thump, tick, whistle, _t)
 
-DUR = 116.0
+DUR = 121.0
 M = Mix(DUR)
 PA = M.place                       # 绝对时间（新时间轴）
 
@@ -27,7 +27,8 @@ def S(t):
         return t + 1.0
     if t < 38.0:
         return 33.0 + (t - 32.0) * 9.0 / 6.0
-    return t + 4.0
+    t = t + 4.0
+    return t + 5.0 if t >= 42.0 else t       # 第五版：周五的饭局、酒、唱K通宵 +5 秒
 
 
 def P(sig, t, vol=1.0, pan=0.0):
@@ -157,7 +158,7 @@ P(rumble(4.5), 27.8, 1.0)
 P(cello(33, 4.5, att=1.0), 28.0, 0.75)
 P(thump(), 31.1, 0.5)                                     # 被根拉回去
 
-# ================================================================ 填不满的日子 33–47（日程表 5 秒 → 蹦迪 → 断电）
+# ================================================================ 填不满的日子 33–52（日程表 → 舞蹈/蹦迪 → 周五：火锅、喝酒、唱K到天亮 → 散场）
 beat = 60 / 124
 PA(scratch(3.4), 33.1, 0.6)                               # 一行行写满
 for k in range(7):
@@ -166,29 +167,55 @@ PA(scratch(1.4), 35.1, 0.5)                               # 红笔挤进去
 PA(pad([50, 57, 62], 4.6, att=1.0, rel=0.4), 33.2, 0.35)
 PA(tick(), 36.6, 0.3)
 PA(tick(True), 37.1, 0.3)
+
+
+def bubble():
+    n, tt = _t(0.09)
+    f = 300 + 900 * tt / 0.09
+    return np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * tt / 0.09) * 0.1
+
+
 t = 38.0
-STOP = 42.25
+STOP = 47.25
 while t < STOP - 0.01:
     k = int(round((t - 38.0) / beat))
-    PA(kick(1.0), t, 0.85)
-    PA(shaker(), t + beat / 2, 0.45, pan=0.3)
-    if k % 2 == 1:
-        PA(snap(), t, 0.55, pan=-0.1)
+    dawn = t >= 44.8
+    soft = 0.45 if dawn else (0.6 if 40.4 <= t < 42.8 else 1.0)    # 饭局时鼓点退后，天亮时累了
+    PA(kick(1.0), t, 0.85 * soft)
+    PA(shaker(), t + beat / 2, 0.45 * soft, pan=0.3)
+    if k % 2 == 1 and not dawn:
+        PA(snap(), t, 0.55 * soft, pan=-0.1)
     chn = ["Dm", "Dm", "Bb", "C"][(k // 4) % 4]
-    PA(bass(ROOT[chn] + 12, beat * 0.45), t + beat / 2, 0.7)
+    PA(bass(ROOT[chn] + 12, beat * 0.45), t + beat / 2, 0.7 * soft)
     if k % 4 == 0:
-        PA(pad(CH[chn], beat * 3.5, att=0.02, rel=0.1, bright=1.0), t, 0.55)
+        PA(pad(CH[chn], beat * 3.5, att=0.02, rel=0.1, bright=1.0), t, 0.55 * soft)
     t += beat
-for tc in (38.0, 39.35, 40.7):
-    PA(swell(0.4), tc - 0.4, 0.8)
+for tc in (38.0, 39.2, 40.4, 41.6, 42.8):
+    PA(swell(0.4), tc - 0.4, 0.7)
+r = np.random.RandomState(7)
+for k in range(16):                                       # 火锅咕嘟咕嘟
+    PA(bubble(), 40.45 + r.uniform(0, 1.1), 0.5, pan=r.uniform(-0.4, 0.4))
 for k in range(6):                                        # 碰杯
-    PA(music_box(100, 0.5), 40.8 + k * 0.2, 0.25, pan=0.2)
+    PA(music_box(100, 0.5), 41.7 + k * 0.18, 0.25, pan=0.2)
+KTV = [(0, 69, 1), (1, 72, .5), (1.5, 69, .5), (2, 67, 1), (3, 65, 1)]
+for b_, m, d in KTV:                                      # 跑调的K歌：主题被唱成一首口水歌
+    PA(reed(m + 0.3, d * 0.42 * 0.95), 42.85 + b_ * 0.42, 0.55, pan=0.1)
+    PA(reed(m - 12 - 0.25, d * 0.42 * 0.95), 42.87 + b_ * 0.42, 0.3, pan=-0.2)
+for k in range(8):                                        # 朋友摇铃鼓
+    PA(jingle(), 42.8 + k * beat, 0.4, pan=0.4)
+for b_, m, d in KTV[:4]:                                  # 天亮：嗓子哑了，越唱越慢
+    PA(reed(m - 12 - 0.4, d * 0.6 * 0.95), 44.9 + b_ * 0.6, 0.28, pan=0.1)
+P_bird = 46.2
+for k in range(3):                                        # 窗外第一声鸟叫
+    n, tt = _t(0.12)
+    f = 3200 + 1200 * np.sin(np.pi * tt / 0.12)
+    PA(np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * tt / 0.12) * 0.12, P_bird + k * 0.16, 0.6, pan=0.6)
 PA(thump(), STOP, 0.5)
 for i in range(6):                                        # 霓虹灯一个字一个字熄灭
-    PA(bandnoise(0.12, 2000, 9000, 0.03) * 0.6, 42.4 + i * 0.4, 0.5, pan=0.4 - i * 0.16)
-    PA(buzz(0.1), 42.4 + i * 0.4, 0.4)
-PA(tinnitus(4.5), 42.3, 1.0)
-PA(cello(38, 4.5, att=1.5), 42.6, 0.35)
+    PA(bandnoise(0.12, 2000, 9000, 0.03) * 0.6, 47.4 + i * 0.4, 0.5, pan=0.4 - i * 0.16)
+    PA(buzz(0.1), 47.4 + i * 0.4, 0.4)
+PA(tinnitus(4.5), 47.3, 1.0)
+PA(cello(38, 4.5, att=1.5), 47.6, 0.35)
 
 # ================================================================ 想走却没走 43–51
 for i, chn in enumerate(["Dm", "Bb", "F", "A"]):
@@ -306,4 +333,4 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 116, 4)))
+                   for t in range(0, 121, 4)))

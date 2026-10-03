@@ -1919,3 +1919,222 @@ def popup_book(c, t, unfold, quad_t):
             with keep():
                 _icon(c, icon, qx + 26, qy + 26, 1.3)
         c.restore()
+
+
+# ================================================================ 第五版：周五 吃饭 → 喝酒 → 唱 K 通宵
+FRIENDS = [dict(coat=hexc("8a94a3"), hair=hexc("3a3a3a"), hair_style="short"),
+           dict(coat=hexc("b59a8a"), hair=hexc("5a3a2a"), hair_style="bun"),
+           dict(coat=hexc("9aa48a"), hair=hexc("2f2a28"), hair_style="sweep"),
+           dict(coat=hexc("a08aa8"), hair=hexc("4a3a33"), hair_style="short")]
+
+
+def friend(c, i, x, y, s, **kw):
+    d = dict(FRIENDS[i % len(FRIENDS)])
+    d.update(hat=False, pack=False, key=f"fr{i}")
+    d.update(kw)
+    person(c, x, y, s, **d)
+
+
+def party_schedule(c, t):
+    fill_all(c, hexc("e9e3d6"))
+    shape(c, rect(110, 140, 860, 1080), hexc("f6f1e4"), "nb", lw=3)
+    for k in range(18):
+        line(c, [(140, 260 + k * 52), (940, 260 + k * 52)], f"nbl{k}", 1.2, hexc("c9c0ac"), alpha=0.7)
+    line(c, [(250, 160), (250, 1200)], "nbm", 1.6, hexc("d9a49a"))
+    text(c, "这一周", 540, 225, 54, INK)
+    days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    plans = ["舞蹈课", "健身", "蹦迪", "Live", "吃饭 → 喝酒 → 唱K通宵", "补觉", "再约"]
+    for i, (d, pl) in enumerate(zip(days, plans)):
+        y = 330 + i * 120
+        text(c, d, 190, y, 40, INK, a=0.85)
+        a = clamp((t - 0.1 - i * 0.26) / 0.2)
+        if a > 0:
+            text(c, pl, 290, y, 48 if i != 4 else 44, INK, a=a, anchor="l")
+    extras = [("+ 加班后再喝一杯", 560, 455, -0.06), ("通宵！", 820, 760, 0.12), ("+ 续摊", 560, 1055, -0.1),
+              ("满了", 760, 1160, -0.15)]
+    for k, (tx_, x, y, rot) in enumerate(extras):
+        a = clamp((t - 2.1 - k * 0.38) / 0.18)
+        if a > 0:
+            c.save()
+            c.translate(x, y)
+            c.rotate(rot)
+            text(c, tx_, 0, 0, 38 if k < 3 else 64, hexc("b5473c"), a=a, anchor="l")
+            c.restore()
+    if t > 2.0:
+        a = ease_io(prog(t, 2.0, 0.4))
+        c.save()
+        c.translate(560, 800)
+        shape(c, ell(0, 0, 330, 44, 24), None, "fricir", lw=3.2, alpha=a)
+        c.restore()
+    if t > 3.4:
+        a = ease_io(prog(t, 3.4, 0.4))
+        c.save()
+        c.translate(760, 1160)
+        c.rotate(-0.15)
+        shape(c, ell(60, -20, 90, 46, 20), None, "mancir", lw=3.4, alpha=a)
+        c.restore()
+
+
+def party_club(c, t, fade=0.0, still=False, neon_on=6):
+    fill_all(c, hexc("2b2a33"))
+    beams(c, t, 540, 120, n=7, a=0.3)
+    with keep():
+        glow(c, 540, 140, 120, (1, 1, 1), 0.5)
+    shape(c, ell(540, 140, 46, 46, 18), hexc("c8c8d0"), "ball", lw=2.4)
+    line(c, [(540, 0), (540, 94)], "ballr", 3)
+    shape(c, rect(-200, 1100, 1500, 900), hexc("3a3844"), "cfl", lw=3)
+    r = random.Random(9)
+    for i in range(16):
+        x = r.uniform(-40, W + 40)
+        y = r.uniform(1050, 1250)
+        hop = -abs(math.sin(t * 8 + i)) * 25
+        silhouette(c, x, y + hop, r.uniform(1.4, 1.9), f"cr{i}", col=hexc("5a5866"), a=0.9)
+    hop = -abs(math.sin(t * 8)) * 40
+    girl(c, 540, 1180 + hop, 1.7, pack=False, hat=False, arms=[(-30, -150), (30, -150)], mouth="laugh", look_up=0.4)
+
+
+def party_hotpot(c, t):
+    fill_all(c, hexc("d8c9b0"))
+    for k in range(6):
+        with keep():
+            glow(c, 160 + k * 160, 140, 90, hexc("ffcf7a"), 0.5)
+        line(c, [(160 + k * 160, 0), (160 + k * 160, 110)], f"lan{k}", 2)
+        shape(c, ell(160 + k * 160, 140, 26, 32, 14), hexc("c9473b"), f"lanb{k}", lw=2)
+    seats = [(200, 0), (380, None), (700, 1), (880, 2)]
+    for x, fi in seats:
+        if fi is None:
+            girl(c, x, 1000, 1.6, sit=True, legs=False, pack=False, hat=False, mouth="laugh", look=0.6,
+                 arms=[(-20, -60), (46, -96 + 10 * math.sin(t * 8))])
+        else:
+            friend(c, fi, x, 1000, 1.6, sit=True, legs=False, mouth="laugh", look=0.6 if x < 540 else -0.6,
+                   arms=[(-30 if x > 540 else 30, -60), (-46 if x > 540 else 46, -96 + 10 * math.sin(t * 8 + fi))])
+    shape(c, ell(540, 1010, 460, 70, 30), hexc("8c5a3c"), "htab", lw=3)
+    shape(c, ell(540, 980, 150, 40, 24), hexc("7a7a80"), "pot", lw=3)
+    with keep():
+        shape(c, ell(540, 972, 132, 30, 24), hexc("d9452f"), "broth", lw=2, amp=0.6)
+        for k in range(10):
+            ph = (t * 1.6 + k * 0.1) % 1
+            circle(c, 460 + k * 17, 972 + math.sin(k) * 10, 3 + 5 * ph, hexc("f07a4a"), 1 - ph)
+    for k in range(5):
+        ph = (t * 0.8 + k * 0.2) % 1
+        sx_ = 450 + k * 45 + math.sin(ph * 6 + k) * 12
+        line(c, [(sx_, 940), (sx_ - 10, 880 - ph * 120), (sx_ + 6, 800 - ph * 160)], f"hst{k}", 3, (1, 1, 1), alpha=0.6 * (1 - ph))
+    for k in range(4):
+        cx_ = [300, 450, 640, 780][k]
+        line(c, [(cx_, 860), (540 + (k - 1.5) * 40, 960)], f"chop{k}", 3, hexc("c9a46a"))
+
+
+def party_ktv(c, t, dawn=0.0, fade=0.0, neon_on=6, leave=0.0):
+    fill_all(c, hexc("2e2638"))
+    with keep():
+        beams(c, t, 540, 60, n=5, a=0.18 * (1 - dawn * 0.6) * (1 - fade))
+    shape(c, rect(170, 120, 740, 420), hexc("1a1a22"), "screen", lw=4)
+    with keep():
+        g = cairo.LinearGradient(0, 130, 0, 530)
+        g.add_color_stop_rgb(0, *hexc("3a4f9a"))
+        g.add_color_stop_rgb(1, *hexc("8a4f9a"))
+        c.set_source(g)
+        c.rectangle(185, 135, 710, 390)
+        c.fill()
+        if fade < 0.5:
+            for k in range(2):
+                y_ = 400 + k * 60
+                text(c, ["啦 啦 啦 ～ 再唱一首", "我们 一直 唱到 天亮"][(k + int(t * 0.8)) % 2], 540, y_, 40, (1, 1, 1), a=0.9)
+            px = 300 + ((t * 160) % 480)
+            circle(c, px, 360 - abs(math.sin(t * 6)) * 20, 9, hexc("ffd34f"))
+        else:
+            text(c, "下一首……", 540, 350, 52, (1, 1, 1), a=0.8)
+    neon_sign(c, t, on=neon_on, cx=540, cy=640, size=70)
+    shape(c, rect(-200, 1080, 1500, 900), hexc("3a3040"), "kfl", lw=3)
+    shape(c, rrect(60, 930, 960, 120, 20), hexc("6a3a5a"), "sofa", lw=3)
+    if dawn > 0:
+        with keep():
+            shape(c, rect(930, 120, 130, 760), hexc("2a2230"), "kwin", lw=3)
+            g = cairo.LinearGradient(0, 120, 0, 880)
+            g.add_color_stop_rgba(0, *hexc("9fc3e3"), dawn)
+            g.add_color_stop_rgba(1, *hexc("f8d7a8"), dawn)
+            c.set_source(g)
+            c.rectangle(985, 125, 20, 750)
+            c.fill()
+            c.move_to(985, 125)
+            c.line_to(1005, 125)
+            c.line_to(700, 1100)
+            c.line_to(560, 1100)
+            c.close_path()
+            c.set_source_rgba(1, 0.92, 0.75, 0.18 * dawn)
+            c.fill()
+        shape(c, ell(140, 870, 40, 40, 16), hexc("f4efe6"), "kclk", lw=2.4)
+        line(c, [(140, 870), (140, 842)], "kclm", 2.4)
+        line(c, [(140, 870), (122, 878)], "kclh", 3)
+        text(c, "5:47", 140, 940, 32, (1, 1, 1), a=dawn)
+    sing = 1 - fade
+    sway = math.sin(t * (2.2 if dawn > 0 else 6)) * (6 if dawn > 0 else 0)
+    # 朋友们
+    for i, x in enumerate((260, 420, 700, 860)):
+        if leave > 0:
+            u = clamp(leave * 4 - i * 0.8)
+            if u >= 1:
+                continue
+            x = x + u * (1300 if x > 540 else -900)
+        hop = 0 if dawn > 0 or fade > 0 else -abs(math.sin(t * 7 + i)) * 26
+        arms = [(-30, -150), (30, -140)] if dawn == 0 and fade == 0 else [(-40, -120), (40, -120)]
+        if leave > 0:
+            arms = [(-26, -76), (34, -160)]
+        friend(c, i, x + sway, 1000 + hop, 1.6, sit=False, mouth="o" if sing > 0.5 else "smile", look=0.2,
+               eyes_closed=dawn > 0.5 and leave == 0, arms=arms, walk=t * 7 if leave > 0 else None)
+        if i == 1 and dawn == 0 and fade == 0:
+            with keep():
+                shape(c, ell(x + 30 * 1.6, 1000 - 140 * 1.6 + hop, 14, 14, 12), hexc("e8b94a"), "tamb", lw=2)
+    gy = 1000 if dawn > 0 or fade > 0 else 930 - abs(math.sin(t * 7)) * 30
+    girl(c, 560 + sway, gy, 1.7, pack=False, hat=False, mouth="o" if sing > 0.5 else "flat", look=0.0,
+         eyes_closed=dawn > 0.5 and fade == 0, look_up=0.3 if fade == 0 else -0.6,
+         arms=[(-30, -150), (20, -110)] if fade == 0 else [(-26, -76), (20, -96)])
+    mx, my = 560 + sway + 20 * 1.7, gy + (-110 if fade == 0 else -96) * 1.7
+    line(c, [(mx, my), (mx + 6, my - 30)], "mic", 6, hexc("3a3a3a"))
+    circle(c, mx + 7, my - 34, 9, hexc("8a8a94"))
+    if fade > 0:
+        veil(c, (0.04, 0.04, 0.07), 0.55 * fade)
+        if fade > 0.6:
+            with keep():
+                g = cairo.RadialGradient(560, 900, 0, 560, 900, 320)
+                g.add_color_stop_rgba(0, 1, 0.97, 0.9, 0.22)
+                g.add_color_stop_rgba(1, 1, 0.97, 0.9, 0)
+                c.set_source(g)
+                c.paint()
+
+
+PARTY_CUTS = [0.0, 5.0, 6.2, 7.4, 8.6, 9.8, 11.8, 14.0]
+
+
+def s05_party(c, t):
+    i = max(j for j in range(7) if t >= PARTY_CUTS[j])
+    lt = t - PARTY_CUTS[i]
+    k = 1 + 0.06 * (1 - ease_out(prog(lt, 0, 0.3)))
+    if i == 0:
+        k = 1 + 0.05 * ease_io(lt / 5.0)
+    with cam(c, 540, 960, k):
+        if i == 0:
+            party_schedule(c, lt)
+        elif i == 1:
+            party_dance(c, lt + 1)
+        elif i == 2:
+            party_club(c, lt + 2)
+        elif i == 3:
+            party_hotpot(c, lt)
+        elif i == 4:
+            party_bar(c, lt + 3)
+        elif i == 5:
+            party_ktv(c, lt)
+        else:
+            party_ktv(c, lt + 2, dawn=ease_io(prog(lt, 0.0, 0.8)))
+    fl = 1 - ease_out(prog(lt, 0, 0.18))
+    if 0 < i < 6 and fl > 0:
+        with keep():
+            c.set_source_rgba(1, 1, 1, 0.5 * fl)
+            c.paint()
+
+
+def s06_empty(c, t):
+    fade = ease_io(prog(t, 1.0, 2.4))
+    on = 6 - sum(1 for i in range(6) if t >= NEON_OFF[i])
+    party_ktv(c, 4.0 + min(t, 0.5), dawn=1.0, fade=fade, neon_on=on, leave=ease_io(prog(t, 0.0, 1.4)))
