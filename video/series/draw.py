@@ -733,7 +733,7 @@ def _null():
     yield
 
 
-GIRL_HAIR = ("sweep", "pony", "braids", "bang_short", "bang_long", "curtain_long")
+GIRL_HAIR = ("sweep", "flick", "hat_braids", "pony", "braids", "bang_short", "bang_long", "curtain_long")
 LONG_HAIR = ("bang_long", "curtain_long")
 HAIR_TIE = hexc("c9473b")
 
@@ -750,6 +750,16 @@ def _hair_behind(c, style, x, y, hair, key, lw):
                    (x + sg * 20, y + 22), (x + sg * 20, y + 4)]
             shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.35)
             line(c, [(x + sg * 25, y), (x + sg * 26, y + 19)], f"{key}wv{sg}", 1.1, darker(hair, 0.6), alpha=0.45)
+    if style == "flick":
+        for sg in (-1, 1):                     # 不戴帽：齐平的下摆，发尾微微往外翘
+            pts = [(x + sg * 23, y - 12), (x + sg * 30, y - 2), (x + sg * 31, y + 10), (x + sg * 32, y + 18),
+                   (x + sg * 37, y + 22), (x + sg * 30, y + 24), (x + sg * 20, y + 22), (x + sg * 20, y + 4)]
+            shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.35)
+            line(c, [(x + sg * 25, y), (x + sg * 27, y + 19)], f"{key}wv{sg}", 1.1, darker(hair, 0.6), alpha=0.45)
+    if style == "hat_braids":
+        for sg in (-1, 1):                     # 戴帽：头发收到耳后，只露两侧一小片
+            pts = [(x + sg * 23, y - 12), (x + sg * 29, y - 2), (x + sg * 29, y + 8), (x + sg * 21, y + 8), (x + sg * 20, y)]
+            shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.3)
     if style == "bang_short":
         for sg in (-1, 1):
             pts = [(x + sg * 22, y - 14), (x + sg * 30, y - 2), (x + sg * 31, y + 20), (x + sg * 20, y + 21), (x + sg * 20, y + 4)]
@@ -776,6 +786,22 @@ def _braid(c, x0, y0, sg, hair, key, lw):
     with keep():
         shape(c, ell(ex, ey - 2, 4, 3, 8), HAIR_TIE, key + "t", lw=lw * 0.5, amp=0.2)
     shape(c, [(ex - 4, ey), (ex + 4, ey), (ex + 3 + sg * 2, ey + 9), (ex - 3 + sg * 2, ey + 8)], hair, key + "tf", lw=lw * 0.6, amp=0.3)
+
+
+def _small_braid(c, x0, y0, sg, hair, key, lw):
+    """戴帽子时耳下的两个小辫子：三节短麻花 + 红头绳 + 小发梢。"""
+    sw = _sway(key, 0.5)
+    for j in range(3):
+        bx = x0 + sg * j * 1.2 + sw * j / 3
+        by = y0 + 4 + j * 7.5
+        r = 5.2 - j * 0.6
+        shape(c, ell(bx, by, r, r * 0.85, 10), hair, f"{key}{j}", lw=lw * 0.65, amp=0.25)
+        line(c, [(bx - r * 0.6, by - 1), (bx + r * 0.6, by + 1.5)], f"{key}w{j}", 0.9, darker(hair, 0.6), alpha=0.6)
+    ex, ey = x0 + sg * 4 + sw, y0 + 27
+    with keep():
+        shape(c, ell(ex, ey - 2, 3.2, 2.4, 8), HAIR_TIE, key + "t", lw=lw * 0.45, amp=0.2)
+    shape(c, [(ex - 3, ey), (ex + 3, ey), (ex + 2 + sg * 2.5, ey + 7), (ex - 2 + sg * 2.5, ey + 6)], hair, key + "tf",
+          lw=lw * 0.5, amp=0.25)
 
 
 def _long_hair_behind(c, style, x, y, hair, key, lw):
@@ -832,6 +858,9 @@ def _hair_front(c, style, x, y, hair, key, lw):
     if style == "braids":
         for sg in (-1, 1):
             _braid(c, x + sg * 22, y + 4, sg, hair, f"{key}br{sg}", lw)
+    if style == "hat_braids":
+        for sg in (-1, 1):
+            _small_braid(c, x + sg * 25, y + 6, sg, hair, f"{key}sb{sg}", lw)
 
 
 def _hair_back_view(c, style, y, hair, key, lw):
@@ -851,7 +880,12 @@ def _hair_back_view(c, style, y, hair, key, lw):
             line(c, [(i * 8, y - 24), (i * 10, y + 18)], f"{key}bs{i}", 1.3, darker(hair, 0.65), alpha=0.5)
         return
     pts = ell(0, y - 1, 28, 27, 14, math.pi * 0.98, math.pi * 2.02)
-    if style in ("sweep", "pony"):
+    if style == "flick":
+        pts += [(31, y + 10), (32, y + 18), (37, y + 22), (30, y + 24), (-30, y + 24), (-37, y + 22), (-32, y + 18),
+                (-31, y + 10)]
+    elif style == "hat_braids":
+        pts += [(29, y + 8), (18, y + 12), (-18, y + 12), (-29, y + 8)]
+    elif style in ("sweep", "pony"):
         pts += [(31, y + 10), (31, y + 22), (-31, y + 22), (-31, y + 10)]      # 齐平的下摆
     else:
         pts += [(26, y + 12), (0, y + 16), (-26, y + 12)]
@@ -867,6 +901,9 @@ def _hair_back_view(c, style, y, hair, key, lw):
     if style == "braids":
         for sg in (-1, 1):
             _braid(c, sg * 18, y + 8, sg, hair, f"{key}bb{sg}", lw)
+    if style == "hat_braids":
+        for sg in (-1, 1):
+            _small_braid(c, sg * 20, y + 8, sg, hair, f"{key}bsb{sg}", lw)
 
 
 def girl(c, x, y, s=1.0, **kw):
