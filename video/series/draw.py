@@ -615,7 +615,11 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
         if view == "front":
             if hair_style in ("bob", "bun"):
                 shape(c, ell(hdx, hy - 1, 30, 28, 18), hair, key + "hb", lw=lw)
+            if hair_style in GIRL_HAIR:
+                _hair_behind(c, hair_style, hdx, hy, hair, key, lw)
             shape(c, ell(hdx, hy, 25, 25, 18), skin, key + "hd", lw=lw)
+            if hair_style in GIRL_HAIR:
+                _hair_front(c, hair_style, hdx, hy, hair, key, lw)
             if hair_style in ("bob", "bun"):
                 bangs = ell(hdx, hy - 2, 30, 28, 10, math.pi * 1.05, math.pi * 1.95)
                 bangs += [(hdx + 22, hy - 8), (hdx + 8, hy - 12), (hdx - 6, hy - 9), (hdx - 22, hy - 10)]
@@ -679,6 +683,8 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
                         c.stroke()
         else:
             shape(c, ell(0, hy, 25, 25, 18), skin, key + "hd", lw=lw)
+            if hair_style in GIRL_HAIR:
+                _hair_back_view(c, hair_style, hy, hair, key, lw)
             if hair_style in ("bob", "bun"):
                 shape(c, ell(0, hy + 2, 30, 29, 18), hair, key + "hb", lw=lw)
                 for i in (-1, 0, 1):
@@ -704,6 +710,81 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
 @contextmanager
 def _null():
     yield
+
+
+GIRL_HAIR = ("sweep", "pony", "braids")
+HAIR_TIE = hexc("c9473b")
+
+
+def _sway(key, k=1.0):
+    return math.sin(STATE["t"] * 2.2 + (zlib.crc32(key.encode()) % 7)) * 3 * k
+
+
+def _hair_behind(c, style, x, y, hair, key, lw):
+    """脸后面的头发：只露出两侧和脑后，不在下巴处合成一圈。"""
+    if style in ("sweep", "pony"):
+        for sg in (-1, 1):
+            pts = [(x + sg * 23, y - 12), (x + sg * 29, y + 2), (x + sg * 29, y + 14), (x + sg * 35, y + 24),
+                   (x + sg * 26, y + 21), (x + sg * 21, y + 10)]
+            shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.5)
+    if style == "pony":
+        sw = _sway(key)
+        pts = [(x + 18, y + 2), (x + 30, y + 10), (x + 38 + sw, y + 30), (x + 36 + sw * 1.5, y + 50),
+               (x + 28 + sw, y + 42), (x + 24, y + 22), (x + 14, y + 10)]
+        shape(c, pts, hair, key + "pony", lw=lw * 0.9, amp=0.5)
+        line(c, [(x + 27, y + 18), (x + 31 + sw * 0.6, y + 36)], key + "pst", 1.2, darker(hair, 0.65), alpha=0.6)
+        with keep():
+            shape(c, ell(x + 26, y + 9, 5, 4, 10), HAIR_TIE, key + "tie", lw=lw * 0.6, amp=0.3)
+
+
+def _braid(c, x0, y0, sg, hair, key, lw):
+    sw = _sway(key, 0.6)
+    for j in range(4):
+        bx = x0 + sg * (2 + j * 1.5) + sw * j / 3
+        by = y0 + 6 + j * 10
+        r = 7 - j * 0.7
+        shape(c, ell(bx, by, r, r * 0.85, 10), hair, f"{key}{j}", lw=lw * 0.7, amp=0.3)
+        line(c, [(bx - r * 0.6, by - 1), (bx + r * 0.6, by + 2)], f"{key}w{j}", 1.0, darker(hair, 0.6), alpha=0.6)
+    ex, ey = x0 + sg * 8 + sw, y0 + 46
+    with keep():
+        shape(c, ell(ex, ey - 2, 4, 3, 8), HAIR_TIE, key + "t", lw=lw * 0.5, amp=0.2)
+    shape(c, [(ex - 4, ey), (ex + 4, ey), (ex + 3 + sg * 2, ey + 9), (ex - 3 + sg * 2, ey + 8)], hair, key + "tf", lw=lw * 0.6, amp=0.3)
+
+
+def _hair_front(c, style, x, y, hair, key, lw):
+    """头顶与侧分刘海。"""
+    cap = ell(x, y - 1, 28.5, 28, 14, math.pi * 1.04, math.pi * 1.96)
+    cap += [(x + 26, y - 5), (x + 20, y - 4), (x + 13, y - 9), (x + 5, y - 16), (x - 1, y - 9), (x - 9, y - 4),
+            (x - 17, y - 2), (x - 25, y - 4)]
+    shape(c, cap, hair, key + "cap", lw=lw * 0.9, amp=0.6)
+    line(c, [(x + 5, y - 27), (x + 1, y - 18), (x - 6, y - 10)], key + "str1", 1.3, darker(hair, 0.6), alpha=0.55)
+    line(c, [(x + 9, y - 25), (x + 14, y - 15), (x + 19, y - 8)], key + "str2", 1.3, darker(hair, 0.6), alpha=0.55)
+    hl = mix(hair, (1, 1, 1), 0.35)
+    line(c, [(x - 14, y - 22), (x - 6, y - 25)], key + "shine", 2.2, hl, alpha=0.7)
+    if style == "braids":
+        for sg in (-1, 1):
+            _braid(c, x + sg * 22, y + 4, sg, hair, f"{key}br{sg}", lw)
+
+
+def _hair_back_view(c, style, y, hair, key, lw):
+    pts = ell(0, y - 1, 28, 27, 14, math.pi * 0.98, math.pi * 2.02)
+    if style in ("sweep", "pony"):
+        pts += [(30, y + 12), (34, y + 22), (22, y + 18), (12, y + 22), (0, y + 18), (-12, y + 22), (-22, y + 18),
+                (-34, y + 22), (-30, y + 12)]
+    else:
+        pts += [(26, y + 12), (0, y + 16), (-26, y + 12)]
+    shape(c, pts, hair, key + "bk", lw=lw * 0.9, amp=0.6)
+    for i in (-1, 0, 1):
+        line(c, [(i * 8, y - 24), (i * 11, y + 12)], f"{key}bs{i}", 1.3, darker(hair, 0.65), alpha=0.5)
+    if style == "pony":
+        sw = _sway(key)
+        shape(c, [(-8, y + 6), (8, y + 6), (10 + sw, y + 30), (4 + sw * 1.5, y + 52), (-4 + sw, y + 44), (-10, y + 22)],
+              hair, key + "bpony", lw=lw * 0.9, amp=0.5)
+        with keep():
+            shape(c, ell(0, y + 7, 7, 4, 10), HAIR_TIE, key + "btie", lw=lw * 0.6, amp=0.3)
+    if style == "braids":
+        for sg in (-1, 1):
+            _braid(c, sg * 18, y + 8, sg, hair, f"{key}bb{sg}", lw)
 
 
 def girl(c, x, y, s=1.0, **kw):
