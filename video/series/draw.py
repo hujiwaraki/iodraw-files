@@ -1193,9 +1193,9 @@ def _costume_head(c, outfit, x, y, key, lw, view, hat):
     elif outfit in ("sea_pink", "sea_white"):
         col = hexc("f6b8c8") if outfit == "sea_pink" else (1, 1, 1)
         if view != "back":
-            _flower(c, x + 26, y - 14, 1.8, key + "hf", col)
+            _flower(c, x + 22, y - 12, 1.0, key + "hf", col)
         else:
-            _flower(c, x - 22, y - 14, 1.6, key + "hfb", col)
+            _flower(c, x - 20, y - 12, 0.9, key + "hfb", col)
     elif outfit == "jungle":
         helm = hexc("c9a46a")
         shape(c, ell(x, y - 20, 48, 11, 18), helm, key + "brim", lw=lw)
