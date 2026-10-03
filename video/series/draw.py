@@ -745,11 +745,12 @@ def _sway(key, k=1.0):
 def _hair_behind(c, style, x, y, hair, key, lw):
     """脸后面的头发：只露出两侧和脑后，不在下巴处合成一圈。"""
     if style in ("sweep", "pony"):
-        for sg in (-1, 1):                     # 两侧顺直垂下，下摆齐平，不外翘
-            pts = [(x + sg * 23, y - 12), (x + sg * 30, y - 2), (x + sg * 31, y + 10), (x + sg * 31, y + 22),
-                   (x + sg * 20, y + 22), (x + sg * 20, y + 4)]
-            shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.35)
-            line(c, [(x + sg * 25, y), (x + sg * 26, y + 19)], f"{key}wv{sg}", 1.1, darker(hair, 0.6), alpha=0.45)
+        for sg in (-1, 1):                     # A 侧分短发：两侧发尾外翘（戴帽子时用）
+            pts = [(x + sg * 23, y - 12), (x + sg * 31, y), (x + sg * 29, y + 12), (x + sg * 34, y + 22), (x + sg * 38, y + 30),
+                   (x + sg * 31, y + 31), (x + sg * 26, y + 25), (x + sg * 23, y + 14), (x + sg * 20, y + 4)]
+            shape(c, pts, hair, f"{key}lk{sg}", lw=lw * 0.9, amp=0.5)
+            line(c, [(x + sg * 26, y), (x + sg * 28, y + 14), (x + sg * 33, y + 25)], f"{key}wv{sg}", 1.1, darker(hair, 0.6),
+                 alpha=0.5)
     if style == "flick":
         for sg in (-1, 1):                     # 不戴帽：齐平的下摆，发尾微微往外翘
             pts = [(x + sg * 23, y - 12), (x + sg * 30, y - 2), (x + sg * 31, y + 10), (x + sg * 32, y + 18),
@@ -886,7 +887,8 @@ def _hair_back_view(c, style, y, hair, key, lw):
     elif style == "hat_braids":
         pts += [(29, y + 8), (18, y + 12), (-18, y + 12), (-29, y + 8)]
     elif style in ("sweep", "pony"):
-        pts += [(31, y + 10), (31, y + 22), (-31, y + 22), (-31, y + 10)]      # 齐平的下摆
+        pts += [(31, y + 12), (37, y + 28), (26, y + 26), (16, y + 30), (5, y + 26), (-5, y + 30), (-16, y + 26),
+                (-26, y + 30), (-37, y + 28), (-31, y + 12)]
     else:
         pts += [(26, y + 12), (0, y + 16), (-26, y + 12)]
     shape(c, pts, hair, key + "bk", lw=lw * 0.9, amp=0.6)
@@ -908,7 +910,9 @@ def _hair_back_view(c, style, y, hair, key, lw):
 
 def girl(c, x, y, s=1.0, **kw):
     kw.setdefault("key", "girl")
-    kw.setdefault("hair_style", "sweep")       # 系列定稿发型：A 侧分短发
+    if "hair_style" not in kw:                 # 系列定稿：戴帽子 → A 侧分短发；不戴帽子 → 齐平短发、发尾微翘
+        hatted = kw.get("hat", True) and kw.get("outfit") not in ("desert", "sea_pink", "sea_white")
+        kw["hair_style"] = "sweep" if hatted else "flick"
     kw.setdefault("keep_color", True)
     person(c, x, y, s, **kw)
 

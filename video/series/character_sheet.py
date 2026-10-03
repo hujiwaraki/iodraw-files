@@ -47,7 +47,7 @@ def costume_sheet(path):
     for i, (o, lab) in enumerate(outfits):
         y = 120 + rh * i + rh - 40
         text(c, lab, 30, 120 + rh * i + 70, 52, hexc("b5473c"), anchor="l")
-        kw = dict(hair_style="sweep", pack=False, key=f"cos{o}", outfit=None if o == "coat" else o)
+        kw = dict(pack=False, key=f"cos{o}", outfit=None if o == "coat" else o)
         girl(c, cw * 0.5, y, 2.4, hat=True, **kw)
         girl(c, cw * 1.5, y, 2.4, hat=True, view="back", **kw)
         girl(c, cw * 2.5, y, 2.4, hat=True, walk=0.9, look=1.0, **kw)
