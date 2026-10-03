@@ -1065,15 +1065,13 @@ def s25_redraw(c, t, outfit="dress"):
     top, bot = gy - 210 * s, gy + 20
     kw_old = dict(look=0.0, mouth="flat")
     kw_new = dict(outfit=outfit, look=0.0, mouth="laugh" if t > 4.4 else "smile", eyes_closed=t > 4.6)
+    # 不用“只描线”的画法（会透出被身体挡住的线条），改成完整的人物 + 去色 / 上色
     if t < 2.2:
-        if fade_fill > 0:
-            with fill_only(), group_alpha(c, fade_fill):
-                girl(c, gx, gy, s, **kw_old)
         ey = lerp(top, bot, erase)
         c.save()
         c.rectangle(0, ey, W, H)
         c.clip()
-        with outline_only():
+        with nokeep(), grade(sat=fade_fill):
             girl(c, gx, gy, s, **kw_old)
         c.restore()
         if 0 < erase < 1:
@@ -1082,13 +1080,10 @@ def s25_redraw(c, t, outfit="dress"):
                 star(c, gx + r.uniform(-110, 110), ey + r.uniform(-10, 10), 4, 0.9, hexc("fff6d0"))
     else:
         dy = lerp(top, bot, draw_new)
-        if bloom > 0:
-            with fill_only(), group_alpha(c, bloom):
-                girl(c, gx, gy, s, **kw_new)
         c.save()
         c.rectangle(0, 0, W, dy)
         c.clip()
-        with outline_only():
+        with nokeep(), grade(sat=0.45 + 0.55 * bloom):
             girl(c, gx, gy, s, **kw_new)
         c.restore()
         if 0 < draw_new < 1:

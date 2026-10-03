@@ -1089,11 +1089,15 @@ def img_train_in(c, w, h, t):
         tree(c, x, 70 + h * 0.44, 0.5, f"twt{k}", hexc("74a160"))
     c.restore()
     shape(c, rect(60, 70, w - 120, h * 0.48), None, "twin", lw=4)
-    shape(c, rect(-10, h * 0.62, w + 20, h * 0.4), hexc("b37a55"), "tseat", lw=2.6)
-    girl(c, w * 0.3, h * 0.66, 1.25, sit=True, legs=False, outfit="folk", pack=False, hat=True, look=0.8,
+    shape(c, rect(-10, h * 0.86, w + 20, h * 0.2), hexc("9a8f84"), "tfloor", lw=2.6)          # 车厢地板
+    for bx in (w * 0.3, w * 0.72):                                                                # 两张座椅
+        shape(c, rrect(bx - 80, h * 0.5, 160, h * 0.17, 14), hexc("b37a55"), f"tsb{int(bx)}", lw=2.4)
+        shape(c, rrect(bx - 88, h * 0.64, 176, h * 0.06, 10), hexc("c58a62"), f"tsc{int(bx)}", lw=2.4)
+        shape(c, rect(bx - 70, h * 0.7, 140, h * 0.16), hexc("8a5d42"), f"tsl{int(bx)}", lw=2.2)
+    girl(c, w * 0.3, h * 0.66, 1.25, sit=True, outfit="folk", pack=False, hat=True, look=0.8,
          mouth="laugh" if t > 1.8 else "smile", key="itg", arms=[(-30, -70), (lerp(30, 60, ease_io(prog(t, 1.4, 0.5))), -80)])
     give = ease_io(prog(t, 0.6, 1.0))
-    local(c, w * 0.72, h * 0.66, 1.25, "gran1", hexc("8d6a9f"), hexc("e3ddd5"), "granny", sit=True, legs=False,
+    local(c, w * 0.72, h * 0.66, 1.25, "gran1", hexc("8d6a9f"), hexc("e3ddd5"), "granny", sit=True,
           look=-0.8, mouth="laugh", arms=[(lerp(-30, -110, give), -80), (30, -70)])
     ox = w * 0.72 + lerp(-30, -110, give) * 1.25
     if t > 1.8:

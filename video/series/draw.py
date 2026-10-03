@@ -99,6 +99,15 @@ def grade(sat=None, dark=None, warm=None):
 
 
 @contextmanager
+def nokeep():
+    """临时让 keep() 失效：整个人物（包括草帽、外套）都跟着调色走。"""
+    old = GRADE["keep"]
+    GRADE["keep"] = -1000
+    yield
+    GRADE["keep"] = old
+
+
+@contextmanager
 def keep():
     """在灰色世界里保留原色（女孩的草帽、外套）。"""
     GRADE["keep"] += 1
@@ -510,7 +519,7 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
            coat=COAT, hair=HAIR, hat=True, pack=True, outfit=None, alpha=1.0, key="p",
            head_down=0.0, look_up=0.0, arms=None, legs=True, hair_style="bob",
            skin=SKIN, leg=LEG, shoe=SHOE, sx=1.0, keep_color=False, age=0.0, mouth="smile",
-           tilt=0.0, badge=False, blink=True, eyes_closed=False):
+           tilt=0.0, badge=False, blink=True, eyes_closed=False, round_face=False):
     """绘本小人，脚底在 (x, y)；sit/crouch 时 (x, y) 是座面/臀部。"""
     c.save()
     c.translate(x, y)
@@ -636,7 +645,8 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
                 shape(c, ell(hdx, hy - 1, 30, 28, 18), hair, key + "hb", lw=lw)
             if hair_style in GIRL_HAIR:
                 _hair_behind(c, hair_style, hdx, hy, hair, key, lw)
-            shape(c, ell(hdx, hy, 25, 25, 18), skin, key + "hd", lw=lw)
+            fw, fh, fdy = (27.5, 24.5, 1.5) if round_face else (25, 25, 0)      # 主角：更圆一点的脸
+            shape(c, ell(hdx, hy + fdy, fw, fh, 18), skin, key + "hd", lw=lw)
             if hair_style in GIRL_HAIR:
                 _hair_front(c, hair_style, hdx, hy, hair, key, lw)
             if hair_style in ("bob", "bun"):
@@ -666,9 +676,9 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
                         c.fill()
                     if not STATE["no_fill"]:
                         c.save()
-                        c.translate(hdx + sg * 15 + ex * 0.6, hy + 9 - look_up * 2)
+                        c.translate(hdx + sg * (16.5 if round_face else 15) + ex * 0.6, hy + (10 if round_face else 9) - look_up * 2)
                         c.scale(1, 0.6)
-                        c.arc(0, 0, 5.5, 0, 2 * math.pi)
+                        c.arc(0, 0, 6.5 if round_face else 5.5, 0, 2 * math.pi)
                         c.restore()
                         c.set_source_rgba(*G(BLUSH)[:3], 0.55)
                         c.fill()
@@ -701,7 +711,8 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
                         c.set_line_width(1.8)
                         c.stroke()
         else:
-            shape(c, ell(0, hy, 25, 25, 18), skin, key + "hd", lw=lw)
+            fw, fh, fdy = (27.5, 24.5, 1.5) if round_face else (25, 25, 0)
+            shape(c, ell(0, hy + fdy, fw, fh, 18), skin, key + "hd", lw=lw)
             if hair_style in GIRL_HAIR:
                 _hair_back_view(c, hair_style, hy, hair, key, lw)
             if hair_style in ("bob", "bun"):
@@ -916,6 +927,7 @@ def girl(c, x, y, s=1.0, **kw):
         hatted = kw.get("hat", True) and kw.get("outfit") not in ("desert", "sea_pink", "sea_white")
         kw["hair_style"] = "sweep" if hatted else "flick"
     kw.setdefault("keep_color", True)
+    kw.setdefault("round_face", True)
     person(c, x, y, s, **kw)
 
 
