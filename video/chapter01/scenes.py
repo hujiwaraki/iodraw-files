@@ -46,7 +46,8 @@ def street_bg(c, t, base=760, rain_a=0.35, seed=1):
 
 
 def room(c, t, sky="grey", curtain=0.0, hat_hook=True, hat_dust=0.0, map_age=0.0, cal=0.0,
-         web=0.0, pack_corner=True, map_glow=0.0, dim=0.0, door=0.0, chair=True):
+         web=0.0, pack_corner=True, map_glow=0.0, dim=0.0, door=0.0, chair=True, amap=None, suit_corner=False,
+         door_world=None):
     fill_all(c, hexc("e8d4b4"))
     c.save()
     for i in range(22):
@@ -104,19 +105,22 @@ def room(c, t, sky="grey", curtain=0.0, hat_hook=True, hat_dust=0.0, map_age=0.0
         shape(c, rect(0, 0, 220, 180), hexc("f4efe6"), "calp", lw=2.5, alpha=1 - u * 0.6)
         c.restore()
     # 地图
-    mc = mix(hexc("efe2c2"), hexc("c9a46a"), map_age)
-    shape(c, [(90, 510), (400, 500), (408, 728), (96, 736)], mc, "map", lw=3)
-    line(c, [(120, 620), (170, 580), (230, 640), (300, 560), (370, 610)], "mapr", 2.4, hexc("c0503c"))
-    for i, (x, y) in enumerate(((150, 560), (240, 690), (330, 640), (360, 540), (200, 620))):
-        if map_glow > 0:
-            g = clamp(map_glow * 6 - i)
-            if g > 0:
-                with grade(sat=1.0):
-                    glow(c, x, y, 60, hexc("ffd27a"), 0.8 * g)
-                    circle(c, x, y, 8, hexc("ffb347"), g)
-        circle(c, x, y, 4, hexc("8c5a3c"), 0.8)
-    if map_age > 0:
-        shape(c, [(372, 728), (408, 728), (404, 690)], darker(mc, 0.8), "mapc", lw=2, alpha=map_age)
+    if amap is not None:
+        amap(c)
+    else:
+        mc = mix(hexc("efe2c2"), hexc("c9a46a"), map_age)
+        shape(c, [(90, 510), (400, 500), (408, 728), (96, 736)], mc, "map", lw=3)
+        line(c, [(120, 620), (170, 580), (230, 640), (300, 560), (370, 610)], "mapr", 2.4, hexc("c0503c"))
+        for i, (x, y) in enumerate(((150, 560), (240, 690), (330, 640), (360, 540), (200, 620))):
+            if map_glow > 0:
+                g = clamp(map_glow * 6 - i)
+                if g > 0:
+                    with grade(sat=1.0):
+                        glow(c, x, y, 60, hexc("ffd27a"), 0.8 * g)
+                        circle(c, x, y, 8, hexc("ffb347"), g)
+            circle(c, x, y, 4, hexc("8c5a3c"), 0.8)
+        if map_age > 0:
+            shape(c, [(372, 728), (408, 728), (404, 690)], darker(mc, 0.8), "mapc", lw=2, alpha=map_age)
     # 挂钩与帽子
     line(c, [(250, 800), (250, 782)], "hook", 4)
     if hat_hook:
@@ -131,7 +135,13 @@ def room(c, t, sky="grey", curtain=0.0, hat_hook=True, hat_dust=0.0, map_age=0.0
         line(c, [(-10, 1140 + i * i * 12), (1700, 1140 + i * i * 12)], f"fl{i}", 1.8, hexc("9c714d"), alpha=0.7)
     # 门（向右延伸的墙上）
     shape(c, rect(1130, 540, 290, 560), hexc("7a4d33"), "dframe", lw=3)
-    if door > 0:
+    if door > 0 and door_world is not None:
+        c.save()
+        c.rectangle(1150, 560, 250, 540)
+        c.clip()
+        door_world(c)
+        c.restore()
+    elif door > 0:
         c.save()
         c.rectangle(1150, 560, 250, 540)
         c.clip()
@@ -148,6 +158,8 @@ def room(c, t, sky="grey", curtain=0.0, hat_hook=True, hat_dust=0.0, map_age=0.0
     if door < 0.5:
         circle(c, fx + 26, 830, 9, hexc("e1b44f"))
     # 墙角背包与蛛网
+    if suit_corner:
+        suitcase(c, 140, 1100, 0.9, "csuit", handle=0.0, dust=1.0)
     if pack_corner:
         shape(c, rrect(70, 1010, 110, 100, 18), PACK, "cpack", lw=3)
         shape(c, rrect(70, 1010, 110, 36, 12), darker(PACK, 0.88), "cpackf", lw=2.4)
@@ -980,7 +992,7 @@ def s22_panels(c, t):
     panel(c, 550, 650, 490, 480, ease_back(prog(t, 6.2, 0.5)), "q4", q_alley, t - 6.2, rot=-0.008)
 
 
-def s24_badge(c, t):
+def s24_badge(c, t, outfit="dress"):
     fill_all(c, hexc("e7c9a0"))
     for i in range(10):
         line(c, [(i * 120, 0), (i * 120, H)], f"wood{i}", 2, hexc("cfa77c"), alpha=0.7)
@@ -1005,7 +1017,7 @@ def s24_badge(c, t):
         hand = (lerp(42, 28, drop), lerp(-112, -72, drop))
     else:
         hand = ((bp[0] - gx) / s, (bp[1] - gy) / s)
-    girl(c, gx, gy, s, outfit="dress", pack=False, hat=True, look=0.5, look_up=0.3 if t < 2.4 else 0.0,
+    girl(c, gx, gy, s, outfit=outfit, pack=False, hat=True, look=0.5, look_up=0.3 if t < 2.4 else 0.0,
          arms=[(-26, -76), hand], mouth="smile", eyes_closed=t > 3.0)
     if t < 2.5 or lid < 0.3:
         c.save()
@@ -1024,7 +1036,7 @@ def s24_badge(c, t):
     c.restore()
 
 
-def s25_redraw(c, t):
+def s25_redraw(c, t, outfit="dress"):
     vgrad(c, 0, 1000, [(0, hexc("f2b9a0")), (0.6, hexc("f8d7a8")), (1, hexc("fbecc8"))])
     sun_y = lerp(820, 640, ease_io(t / 6))
     glow(c, 540, sun_y, 520, hexc("fff0b8"), 0.75)
@@ -1052,7 +1064,7 @@ def s25_redraw(c, t):
     bloom = ease_io(prog(t, 3.6, 0.8))
     top, bot = gy - 210 * s, gy + 20
     kw_old = dict(look=0.0, mouth="flat")
-    kw_new = dict(outfit="dress", look=0.0, mouth="laugh" if t > 4.4 else "smile", eyes_closed=t > 4.6)
+    kw_new = dict(outfit=outfit, look=0.0, mouth="laugh" if t > 4.4 else "smile", eyes_closed=t > 4.6)
     if t < 2.2:
         if fade_fill > 0:
             with fill_only(), group_alpha(c, fade_fill):

@@ -551,9 +551,17 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
                     line(c, [(hx, hy), (fx, fy)], f"{key}lg{i}", lw * 2.2, leg, amp=0.6)
                 fwd = 4 if view == "front" else 0
                 shape(c, ell(fx + look * fwd, fy, 9, 5, 10), shoe, f"{key}sh{i}", lw=lw * 0.7, amp=0.6)
-        col = coat if outfit != "dress" else hexc("c9553f")
+        col = {"dress": hexc("c9553f"), "folk": hexc("2f7f8a")}.get(outfit, coat)
         with kc():
-            if outfit == "dress":
+            if outfit == "folk":
+                shape(c, [(-18, -126 + oy), (18, -126 + oy), (42, -44 + oy), (-42, -44 + oy)], col, key + "bd", lw=lw)
+                for j, (yy, bc) in enumerate(((-58, "e8b94a"), (-70, "c9473b"), (-112, "e8b94a"))):
+                    half = 18 + (yy + 126) * 0.29
+                    pts = [(-half + k * half / 4, yy + oy + (3 if k % 2 else -3)) for k in range(9)]
+                    line(c, pts, f"{key}band{j}", 2.6, hexc(bc), amp=0.3)
+                for k in range(5):
+                    circle(c, -16 + k * 8, -92 + oy, 2.2, hexc("f3e6c6"), 0.9)
+            elif outfit == "dress":
                 shape(c, [(-18, -126 + oy), (18, -126 + oy), (38, -48 + oy), (-38, -48 + oy)], col, key + "bd", lw=lw)
                 r = random.Random(3)
                 for i in range(9):
@@ -716,7 +724,7 @@ def hat_item(c, x, y, s, key="hhat", dust=0.0):
     c.restore()
 
 
-def mug(c, x, y, s, key, col=hexc("f0b64a"), heart=None, crack=False):
+def mug(c, x, y, s, key, col=hexc("f0b64a"), heart=None, crack=False, crack_u=1.0):
     """heart: 'L' / 'R' 半颗心。"""
     c.save()
     c.translate(x, y)
@@ -732,9 +740,14 @@ def mug(c, x, y, s, key, col=hexc("f0b64a"), heart=None, crack=False):
             a = math.pi * i / 8
             pts.append((cx - sg * (8 + 8 * math.sin(a)), -18 + i * 3.4 - 6 * math.sin(a)))
         pts.append((cx, 14))
-        shape(c, pts, hexc("d9534a"), key + "ht", lw=1.6, amp=0.4)
-    if crack:
-        line(c, [(-8, -30), (-2, -16), (-10, -4), (-3, 8), (-7, 18)], key + "ck", 2.4, INK)
+        with keep():
+            shape(c, pts, hexc("d9534a"), key + "ht", lw=1.6, amp=0.4)
+    if crack and crack_u > 0:
+        pts = [(-8, -30), (-2, -16), (-10, -4), (-3, 8), (-7, 18), (-4, 26)]
+        n = max(2, int(round(1 + crack_u * (len(pts) - 1))))
+        line(c, pts[:n], key + "ck", 2.6, INK)
+        if crack_u >= 1:
+            line(c, [(-10, -4), (-18, 2)], key + "ck2", 1.8, INK)
     c.restore()
 
 
@@ -750,4 +763,48 @@ def phone(c, x, y, s, key, label="家", ring=0.0):
         text(c, label, 0, -10, 22, INK)
         circle(c, -10, 24, 7, hexc("6fbf73"))
         circle(c, 10, 24, 7, hexc("e0604f"))
+    c.restore()
+
+
+def suitcase(c, x, y, s, key="suit", col=hexc("8b6f9a"), handle=1.0, tilt=0.0, dust=0.0):
+    """立着的行李箱，(x, y) 是轮子着地点的中心。"""
+    c.save()
+    c.translate(x, y)
+    c.rotate(tilt)
+    c.scale(s, s)
+    lw = 3.0 / max(s, 0.3) ** 0.6
+    hh = 90 * handle
+    if hh > 4:
+        line(c, [(-22, -150), (-22, -150 - hh), (22, -150 - hh), (22, -150)], key + "h", lw * 1.6)
+    shape(c, rrect(-55, -150, 110, 140, 14), col, key + "b", lw=lw)
+    for k in (-1, 1):
+        line(c, [(k * 25, -146), (k * 25, -14)], f"{key}r{k}", lw * 0.8, darker(col, 0.75))
+    for k in (-1, 1):
+        shape(c, ell(k * 38, -5, 8, 8, 10), INK, f"{key}w{k}", lw=lw * 0.6)
+    if dust > 0:
+        r = random.Random(7)
+        for i in range(int(40 * dust)):
+            circle(c, r.uniform(-50, 50), r.uniform(-145, -20), 1.8, hexc("9c968c"), 0.8)
+    c.restore()
+
+
+def plane(c, x, y, s, key="pl", col=hexc("f4f2ec"), tail=hexc("c9553f"), face=None):
+    """侧面的小飞机，机头朝右。face：在某个舷窗里画她的脸。"""
+    c.save()
+    c.translate(x, y)
+    c.scale(s, s)
+    lw = 3.0 / max(s, 0.3) ** 0.6
+    shape(c, [(-60, 10), (-120, -60), (-96, -60), (-40, -10)], tail, key + "t", lw=lw)
+    shape(c, [(-150, -12), (140, -16), (190, 0), (140, 18), (-150, 14)], col, key + "b", lw=lw)
+    shape(c, [(-20, 6), (40, 6), (-30, 70), (-60, 70)], darker(col, 0.92), key + "w", lw=lw)
+    for k in range(7):
+        circle(c, -100 + k * 34, -2, 6, hexc("9fc3dd"))
+    if face is not None:
+        fx = -100 + face * 34
+        circle(c, fx, -2, 11, hexc("dff0f6"))
+        with keep():
+            circle(c, fx, 0, 7, SKIN)
+            c.arc(fx, -6, 9, math.pi, 2 * math.pi)
+            c.set_source_rgba(*STRAW, 1)
+            c.fill()
     c.restore()
