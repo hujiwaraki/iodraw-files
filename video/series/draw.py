@@ -72,7 +72,7 @@ BLUSH = hexc("ef9a8a")
 WHITE_HAIR = hexc("e9e6e0")
 
 # ---------------------------------------------------------------- 全局状态
-STATE = {"boil": 0, "t": 0.0, "ink": INK, "dash": None, "ink_a": 0.9, "no_fill": 0, "no_ink": 0}
+STATE = {"still": 0, "boil": 0, "t": 0.0, "ink": INK, "dash": None, "ink_a": 0.9, "no_fill": 0, "no_ink": 0}
 GRADE = {"sat": 1.0, "dark": 0.0, "warm": 0.0, "keep": 0}
 
 
@@ -153,7 +153,7 @@ def fill_only():
 
 
 def rng(key, static=False):
-    b = 0 if static else STATE["boil"]
+    b = 0 if static or STATE["still"] else STATE["boil"]
     return random.Random(zlib.crc32(f"{key}|{b}".encode()))
 
 
@@ -626,6 +626,7 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
         # 头部（可倾斜）
         hy = -150 + oy + head_down
         c.save()
+        STATE["still"] += 1                # 头部（脸、五官、头发、帽子）线条不抖动
         c.translate(0, hy + 24)
         c.rotate(tilt)
         c.translate(0, -(hy + 24))
@@ -724,6 +725,7 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
                 shape(c, crown, hat_c, key + "cr", lw=lw)
                 shape(c, rect(hdx * 0.6 - 23, by - 9, 46, 8), RIBBON, key + "rb", lw=lw * 0.7, amp=0.6)
                 shape(c, [(hdx * 0.6 + 20, by - 6), (hdx * 0.6 + 36, by + 10), (hdx * 0.6 + 28, by + 12)], RIBBON, key + "rt", lw=lw * 0.7, amp=0.6)
+        STATE["still"] -= 1
         c.restore()
     c.restore()
 
