@@ -3,6 +3,7 @@ import math
 import random
 
 import cairo
+from contextlib import contextmanager
 
 from scenes import (WATER, GROUND, city_row, floor_roots, platform_bg, rain_cloud, room, s24_badge, s25_redraw,
                     silhouette, street_bg, water, intro, s01_loop, s03_tide, s04_roots)
@@ -1368,3 +1369,553 @@ def s13_imagine(c, t):
              look_up=0.8 if t < 14.6 or t > 16.6 else -0.9, mouth="smile" if t > 2.5 else "o",
              head_down=4 if 14.6 < t < 16.6 else 0, arms=arms, eyes_closed=t > 21.5)
         suitcase(c, gx + 44 * 1.4 + 50, gy + 2, 0.9, "su13", handle=1.0)
+
+
+# ================================================================ 第四版：拥抱 → 分开 → 红心碎裂
+def heart_pts(cx, cy, s, n=40):
+    pts = []
+    for i in range(n):
+        a = i / n * 2 * math.pi
+        x = 16 * math.sin(a) ** 3
+        y = -(13 * math.cos(a) - 5 * math.cos(2 * a) - 2 * math.cos(3 * a) - math.cos(4 * a))
+        pts.append((cx + x * s, cy + y * s))
+    return pts
+
+
+ZIG = [(0, -12), (-3, -6), (3, -1), (-2, 5), (2, 10), (0, 16)]
+
+
+def heart_half(c, cx, cy, s, side, key):
+    """沿锯齿裂缝切开的半颗心。side=-1 左半，1 右半。"""
+    c.save()
+    c.new_path()
+    far = -30 if side < 0 else 30
+    zz = [(cx + zx * s, cy + zy * s) for zx, zy in ZIG]
+    c.move_to(cx + far * s, cy - 30 * s)
+    for p in zz:
+        c.line_to(*p)
+    c.line_to(cx + far * s, cy + 30 * s)
+    c.close_path()
+    c.clip()
+    with keep():
+        shape(c, heart_pts(cx, cy, s), RED, key, lw=2.4, amp=0.5)
+    c.restore()
+    line(c, [(cx + zx * s, cy + zy * s) for zx, zy in ZIG], key + "z", 2.2)
+
+
+def p1_breakup(c, t):
+    with cam(c, 540, 900, 1.05):
+        street_bg(c, t, base=760, rain_a=0.3, seed=6)
+        apart = ease_io(prog(t, 1.1, 1.5))
+        hx, px = lerp(492, 330, apart), lerp(588, 760, apart)
+        leave = ease_in(prog(t, 3.4, 1.6))
+        px += leave * 600
+        y = 1180
+        hug = 1 - apart
+        her_arms = [(lerp(-26, 30, hug), lerp(-76, -112, hug)), (lerp(26, 46, hug), lerp(-76, -92, hug))]
+        his_arms = [(lerp(-26, -46, hug), lerp(-76, -92, hug)), (lerp(26, -30, hug), lerp(-76, -112, hug))]
+        if t < 3.4:
+            person(c, px, y, 1.7, coat=hexc("8a94a3"), hair=hexc("4a4a4a"), hair_style="short", hat=False, pack=False,
+                   look=-0.7, arms=his_arms, key="ex2", mouth="flat", eyes_closed=hug > 0.5)
+        else:
+            person(c, px, y, 1.7, view="back", coat=hexc("8a94a3"), hair=hexc("4a4a4a"), hair_style="short",
+                   hat=False, pack=False, walk=t * 7, key="ex2")
+        girl(c, hx, y, 1.6, pack=False, hat=False, look=0.7 if t < 3.6 else 0.2, arms=her_arms,
+             mouth="smile" if hug > 0.5 else "flat", eyes_closed=hug > 0.5, head_down=0 if t < 3.0 else 5,
+             look_up=0 if t < 3.0 else -0.8)
+        # 红心：拥抱时浮在头顶，分开时被拉长成红线，然后裂开
+        hcx = (hx + min(px, 760)) / 2
+        hcy = 760 + math.sin(t * 2.4) * 8
+        crack = prog(t, 2.55, 0.3)
+        fall = ease_in(prog(t, 2.9, 1.0))
+        beat = 1 + 0.06 * math.sin(t * 7) * (1 - apart)
+        with keep():
+            if t < 2.9:
+                stretch = apart
+                if stretch > 0:
+                    for k, ax in enumerate((hx + 20, min(px, 760) - 20)):
+                        line(c, [(ax, 1000), (lerp(ax, hcx, 0.5), lerp(1000, hcy, 0.5) + 30 * (1 - stretch)), (hcx, hcy)],
+                             f"thr{k}", 3 + 2 * stretch, RED)
+                glow(c, hcx, hcy, 160, hexc("ff8a80"), 0.35)
+                c.save()
+                c.translate(hcx, hcy)
+                c.scale(beat * (1 + 0.25 * stretch), beat * (1 - 0.15 * stretch))
+                c.translate(-hcx, -hcy)
+                shape(c, heart_pts(hcx, hcy, 4.2), RED, "bheart", lw=2.6, amp=0.5)
+                if crack > 0:
+                    zz = [(hcx + zx * 4.2, hcy + zy * 4.2) for zx, zy in ZIG]
+                    n = max(2, int(round(1 + crack * (len(zz) - 1))))
+                    line(c, zz[:n], "bcrack", 3)
+                c.restore()
+            else:
+                for side in (-1, 1):
+                    c.save()
+                    ox = hcx + side * (20 + 80 * fall)
+                    oy = lerp(hcy, 1170, fall)
+                    c.translate(ox, oy)
+                    c.rotate(side * fall * 1.4)
+                    c.translate(-hcx, -hcy)
+                    heart_half(c, hcx, hcy, 4.2, side, f"hh{side}")
+                    c.restore()
+                if fall < 1:
+                    r = random.Random(5)
+                    for k in range(8):
+                        sx_ = hcx + r.uniform(-40, 40) + fall * r.uniform(-120, 120)
+                        sy_ = lerp(hcy, 1160, fall * r.uniform(0.7, 1.0))
+                        shape(c, [(sx_, sy_), (sx_ + 8, sy_ + 3), (sx_ + 2, sy_ + 9)], RED, f"shd{k}", lw=1.2, amp=0.3)
+
+
+# ================================================================ 第四版：日程表停 5 秒
+def party_schedule(c, t):
+    fill_all(c, hexc("e9e3d6"))
+    shape(c, rect(110, 140, 860, 1080), hexc("f6f1e4"), "nb", lw=3)
+    for k in range(18):
+        line(c, [(140, 260 + k * 52), (940, 260 + k * 52)], f"nbl{k}", 1.2, hexc("c9c0ac"), alpha=0.7)
+    line(c, [(250, 160), (250, 1200)], "nbm", 1.6, hexc("d9a49a"))
+    text(c, "这一周", 540, 225, 54, INK)
+    days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    plans = ["舞蹈课", "健身", "喝酒", "聚餐", "蹦迪", "看演出", "再约"]
+    for i, (d, pl) in enumerate(zip(days, plans)):
+        y = 330 + i * 120
+        text(c, d, 190, y, 40, INK, a=0.85)
+        a = clamp((t - 0.1 - i * 0.26) / 0.2)
+        if a > 0:
+            text(c, pl, 290, y, 48, INK, a=a, anchor="l")
+    extras = [("+ 加班后再喝一杯", 560, 455, -0.06), ("+ 通宵！", 640, 695, 0.08), ("+ 续摊", 600, 935, -0.1),
+              ("满了", 760, 1160, -0.15)]
+    for k, (tx_, x, y, rot) in enumerate(extras):
+        a = clamp((t - 2.1 - k * 0.38) / 0.18)
+        if a > 0:
+            c.save()
+            c.translate(x, y)
+            c.rotate(rot)
+            text(c, tx_, 0, 0, 38 if k < 3 else 64, hexc("b5473c"), a=a, anchor="l")
+            c.restore()
+    if t > 3.4:
+        a = ease_io(prog(t, 3.4, 0.4))
+        c.save()
+        c.translate(760, 1160)
+        c.rotate(-0.15)
+        shape(c, ell(60, -20, 90, 46, 20), None, "mancir", lw=3.4, alpha=a)
+        c.restore()
+
+
+PARTY_CUTS = [0.0, 5.0, 6.35, 7.7, 9.0]
+
+
+def s05_party(c, t):
+    i = max(j for j in range(4) if t >= PARTY_CUTS[j])
+    lt = t - PARTY_CUTS[i]
+    k = 1 + 0.06 * (1 - ease_out(prog(lt, 0, 0.3)))
+    if i == 0:
+        k = 1 + 0.05 * ease_io(lt / 5.0)
+    with cam(c, 540, 960, k):
+        [party_schedule, party_dance, party_club, party_bar][i](c, lt + (0 if i == 0 else i))
+    fl = 1 - ease_out(prog(lt, 0, 0.18))
+    if i > 0 and fl > 0:
+        with keep():
+            c.set_source_rgba(1, 1, 1, 0.5 * fl)
+            c.paint()
+
+
+# ================================================================ 第四版：更丰富的立体书四景
+@contextmanager
+def layer(c, x, y, w, h, lt, d):
+    k = ease_back(prog(lt, 0.15 + d, 0.45))
+    c.save()
+    c.translate(x + w / 2, y + h)
+    c.scale(1, max(k, 0.001))
+    c.translate(-(x + w / 2), -(y + h))
+    yield k > 0.01
+    c.restore()
+
+
+def pine(c, x, base, s, key, col=hexc("2f5a4a")):
+    shape(c, rect(x - 3 * s, base - 14 * s, 6 * s, 14 * s), hexc("6b4a35"), key + "t", lw=1.4, amp=0.3)
+    for j in range(3):
+        yy = base - 12 * s - j * 16 * s
+        ww = (26 - j * 6) * s
+        shape(c, [(x - ww, yy), (x, yy - 26 * s), (x + ww, yy)], col, f"{key}{j}", lw=1.4, amp=0.4)
+        shape(c, [(x - ww * 0.35, yy - 17 * s), (x, yy - 26 * s), (x + ww * 0.35, yy - 17 * s)], (0.97, 0.97, 0.98),
+              f"{key}s{j}", ink=False)
+
+
+def q_snow(c, x, y, w, h, t, lt=9):
+    vgrad(c, y, y + h, [(0, hexc("16204a")), (0.6, hexc("2f4680")), (1, hexc("5d78ad"))], x, x + w)
+    r = random.Random(11)
+    for k in range(34):
+        star(c, x + r.uniform(0, w), y + r.uniform(0, h * 0.5), r.uniform(1.4, 2.6), 0.5 + 0.5 * math.sin(t * 3 + k))
+    for k, col in enumerate((hexc("6ff0b0"), hexc("8fd6ff"), hexc("c49bff"))):
+        for i in range(70):
+            xx = x + w * i / 70
+            top = y + h * (0.08 + 0.07 * k) + math.sin(i * 0.18 + t * 1.3 + k * 1.7) * 16
+            ln = 40 + 30 * math.sin(i * 0.4 + t * 2 + k)
+            c.move_to(xx, top)
+            c.line_to(xx, top + ln)
+            c.set_source_rgba(*G(col)[:3], 0.22)
+            c.set_line_width(w / 70 + 1)
+            c.stroke()
+    with layer(c, x, y, w, h, lt, 0.0) as on:
+        if on:
+            for k, (fx, fw, fh) in enumerate(((0.18, 0.5, 0.62), (0.55, 0.6, 0.72), (0.9, 0.45, 0.55))):
+                mountain(c, x + w * fx, y + h * 0.78, w * fw, h * fh, hexc("8fa6cf"), f"sm{k}")
+    with layer(c, x, y, w, h, lt, 0.12) as on:
+        if on:
+            for k, (fx, fw, fh) in enumerate(((0.32, 0.55, 0.5), (0.75, 0.5, 0.42))):
+                mx, base, mw, mh = x + w * fx, y + h * 0.82, w * fw, h * fh
+                mountain(c, mx, base, mw, mh, hexc("c6d3ea"), f"sn{k}")
+                shape(c, [(mx, base - mh), (mx + mw * 0.16, base - mh * 0.78), (mx + mw / 2, base), (mx + mw * 0.05, base)],
+                      (0.4, 0.48, 0.66, 0.35), f"snsh{k}", ink=False)
+    with layer(c, x, y, w, h, lt, 0.24) as on:
+        if on:
+            for k in range(11):
+                px = x + 14 + k * (w - 28) / 10
+                pine(c, px, y + h * 0.86 + (k % 2) * 6, 0.9 + 0.25 * ((k * 7) % 3) / 2, f"pn{k}")
+    with layer(c, x, y, w, h, lt, 0.32) as on:
+        if on:
+            cx_, cy_ = x + w * 0.62, y + h * 0.86
+            shape(c, rect(cx_ - 34, cy_ - 40, 68, 40), hexc("8a5a3a"), "cab", lw=1.8)
+            shape(c, [(cx_ - 42, cy_ - 40), (cx_, cy_ - 68), (cx_ + 42, cy_ - 40)], (0.97, 0.97, 0.98), "cabr", lw=1.8)
+            with keep():
+                glow(c, cx_ - 10, cy_ - 22, 40, hexc("ffd27a"), 0.9)
+                shape(c, rect(cx_ - 20, cy_ - 30, 20, 16), hexc("ffd98a"), "cabw", lw=1.4, amp=0.3)
+            shape(c, rect(cx_ + 14, cy_ - 74, 10, 20), hexc("6b4a35"), "chim", lw=1.4, amp=0.3)
+            for k in range(4):
+                ph = (t * 0.5 + k * 0.25) % 1
+                cloud(c, cx_ + 19 + ph * 30, cy_ - 80 - ph * 60, 0.12 + ph * 0.15, f"smk{k}", a=0.7 * (1 - ph))
+    with layer(c, x, y, w, h, lt, 0.4) as on:
+        if on:
+            shape(c, ell(x + w * 0.3, y + h * 0.95, w * 0.34, h * 0.07, 22), hexc("b5cbe3"), "lake", lw=1.8)
+            for k, col in enumerate((hexc("6ff0b0"), hexc("8fd6ff"))):
+                line(c, [(x + w * (0.12 + k * 0.1), y + h * 0.94), (x + w * (0.4 + k * 0.1), y + h * 0.95)], f"lr{k}", 3, col,
+                     alpha=0.6)
+    for layer_k, (sp, sz) in enumerate(((30, 1.6), (60, 2.6))):
+        rr = random.Random(20 + layer_k)
+        for k in range(16):
+            sx_ = x + rr.uniform(0, w) + math.sin(t + k) * 8
+            sy_ = y + (rr.uniform(0, h) + t * sp) % h
+            circle(c, sx_, sy_, sz, (1, 1, 1), 0.85)
+
+
+def q_sea(c, x, y, w, h, t, lt=9):
+    vgrad(c, y, y + h * 0.45, [(0, hexc("7cc6ee")), (1, hexc("e6f6fb"))], x, x + w)
+    glow(c, x + w * 0.82, y + h * 0.14, 70, hexc("fff6c8"), 0.9)
+    circle(c, x + w * 0.82, y + h * 0.14, 20, hexc("fff3c0"))
+    for k in range(2):
+        cloud(c, x + w * (0.2 + 0.35 * k) + t * 8, y + h * (0.12 + 0.06 * k), 0.45, f"sc{k}")
+    for k in range(3):
+        gx = x + ((k * 130 + t * 50) % (w + 60)) - 30
+        gy = y + h * 0.22 + k * 14 + math.sin(t * 2 + k) * 4
+        f = math.sin(t * 9 + k)
+        line(c, [(gx - 9, gy - 4 * f), (gx, gy), (gx + 9, gy - 4 * f)], f"gull{k}", 2)
+    vgrad(c, y + h * 0.42, y + h, [(0, hexc("5aa6cf")), (1, hexc("1f5f8f"))], x, x + w)
+    with layer(c, x, y, w, h, lt, 0.0) as on:
+        if on:
+            bx = x + w * 0.25 + math.sin(t * 0.4) * 10
+            shape(c, [(bx - 18, y + h * 0.46), (bx + 18, y + h * 0.46), (bx + 12, y + h * 0.5), (bx - 12, y + h * 0.5)],
+                  hexc("f4efe6"), "sbt", lw=1.4, amp=0.3)
+            shape(c, [(bx, y + h * 0.36), (bx, y + h * 0.455), (bx + 16, y + h * 0.455)], (1, 1, 1), "ssl", lw=1.4, amp=0.3)
+    with layer(c, x, y, w, h, lt, 0.12) as on:
+        if on:
+            rx_ = x + w * 0.8
+            shape(c, [(rx_ - 70, y + h * 0.66), (rx_ - 50, y + h * 0.52), (rx_ + 10, y + h * 0.48), (rx_ + 70, y + h * 0.56),
+                      (rx_ + 90, y + h * 0.66)], hexc("6d6a6a"), "rock", lw=2)
+            lx, lb = rx_ + 10, y + h * 0.5
+            for j in range(4):
+                shape(c, [(lx - 14 + j * 1.5, lb - j * 22), (lx + 14 - j * 1.5, lb - j * 22),
+                          (lx + 12.5 - j * 1.5, lb - (j + 1) * 22), (lx - 12.5 + j * 1.5, lb - (j + 1) * 22)],
+                      hexc("d1553f") if j % 2 == 0 else (0.98, 0.97, 0.94), f"lhb{j}", lw=1.6, amp=0.3)
+            shape(c, rect(lx - 10, lb - 108, 20, 20), hexc("fff3c0"), "lhl", lw=1.6, amp=0.3)
+            shape(c, [(lx - 13, lb - 108), (lx, lb - 122), (lx + 13, lb - 108)], hexc("3a3a3a"), "lhr", lw=1.4, amp=0.3)
+            with keep():
+                ang = t * 1.6
+                c.move_to(lx, lb - 98)
+                c.line_to(lx + math.cos(ang - 0.12) * 260, lb - 98 + math.sin(ang - 0.12) * 40)
+                c.line_to(lx + math.cos(ang + 0.12) * 260, lb - 98 + math.sin(ang + 0.12) * 40)
+                c.close_path()
+                c.set_source_rgba(1, 0.97, 0.75, 0.35)
+                c.fill()
+    with layer(c, x, y, w, h, lt, 0.2) as on:
+        if on:
+            for k in range(4):
+                yy = y + h * (0.56 + k * 0.06)
+                pts = [(x + w * i / 14, yy + math.sin(i * 1.3 + t * 2.5 + k) * 4) for i in range(15)]
+                line(c, pts, f"mw{k}", 2, (1, 1, 1), alpha=0.6)
+    with layer(c, x, y, w, h, lt, 0.28) as on:
+        if on:
+            wx, wy = x + w * 0.38, y + h * 0.72
+            ph = (t * 0.45) % 1
+            rise = math.sin(ph * math.pi)
+            ty_ = wy - rise * 70
+            shape(c, [(wx - 8, wy), (wx - 6, ty_ + 20), (wx - 48, ty_ - 6), (wx - 12, ty_ + 2), (wx, ty_ - 16),
+                      (wx + 12, ty_ + 2), (wx + 48, ty_ - 6), (wx + 6, ty_ + 20), (wx + 8, wy)], hexc("2c3f5a"), "wtail", lw=2)
+            if rise > 0.3:
+                rr = random.Random(int(t * 10))
+                for k in range(10):
+                    circle(c, wx + rr.uniform(-40, 40), wy - rr.uniform(0, 30) * rise, rr.uniform(2, 4), (1, 1, 1), 0.9)
+            sp = (t * 0.7) % 1
+            for k in range(7):
+                a = -math.pi / 2 + (k - 3) * 0.25
+                circle(c, x + w * 0.62 + math.cos(a) * 40 * sp, y + h * 0.66 + math.sin(a) * 60 * sp + 40 * sp * sp,
+                       3, (0.92, 0.97, 1), 1 - sp)
+    with layer(c, x, y, w, h, lt, 0.38) as on:
+        if on:
+            for row in range(2):
+                yy = y + h * (0.86 + row * 0.08)
+                for k in range(6):
+                    cx_ = x + (k + 0.5 * row) * w / 5 + math.sin(t * 2 + k) * 6
+                    shape(c, [(cx_ - 46, yy + 14), (cx_ - 30, yy - 10), (cx_, yy - 22), (cx_ + 24, yy - 14), (cx_ + 14, yy - 4),
+                              (cx_ + 46, yy + 14)], hexc("2f78a8"), f"cw{row}{k}", lw=1.8, amp=0.5)
+                    for j in range(4):
+                        circle(c, cx_ - 4 + j * 7, yy - 18 + j * 3, 4, (1, 1, 1), 0.95)
+            rr = random.Random(4)
+            for k in range(20):
+                gx = x + rr.uniform(0, w)
+                gy = y + h * rr.uniform(0.6, 0.8)
+                line(c, [(gx, gy), (gx + 10, gy)], f"gl{k}", 2, hexc("fff3c0"), alpha=0.5 + 0.5 * math.sin(t * 5 + k))
+
+
+def camel(c, x, base, s, t, key, rider=False):
+    col = hexc("5a3a2a")
+    c.save()
+    c.translate(x, base)
+    c.scale(s, s)
+    shape(c, ell(0, -24, 24, 10, 16), col, key + "b", lw=1.4, amp=0.3)
+    shape(c, ell(-4, -34, 9, 8, 10), col, key + "h1", lw=1.2, amp=0.3)
+    shape(c, ell(8, -33, 8, 7, 10), col, key + "h2", lw=1.2, amp=0.3)
+    line(c, [(20, -26), (30, -42), (36, -42)], key + "n", 4, col)
+    for k, lx in enumerate((-16, -8, 10, 18)):
+        sw = math.sin(t * 6 + k * 1.6) * 4
+        line(c, [(lx, -18), (lx + sw, 0)], f"{key}l{k}", 2.4, col)
+    if rider:
+        shape(c, ell(-2, -46, 6, 9, 10), hexc("8c4a3a"), key + "r", lw=1.2, amp=0.3)
+        circle(c, -2, -58, 5, hexc("e8c09a"))
+    c.restore()
+
+
+def palm(c, x, base, s, key):
+    c.save()
+    c.translate(x, base)
+    c.scale(s, s)
+    line(c, [(0, 0), (4, -30), (2, -60)], key + "t", 5, hexc("8a5a3a"))
+    for k in range(6):
+        a = math.pi + k * math.pi / 5
+        line(c, [(2, -60), (2 + math.cos(a) * 20, -60 + math.sin(a) * 12 - 6), (2 + math.cos(a) * 36, -60 + math.sin(a) * 4 + 10)],
+             f"{key}f{k}", 4, hexc("3f7a3a"))
+    c.restore()
+
+
+def q_desert(c, x, y, w, h, t, lt=9):
+    vgrad(c, y, y + h * 0.62, [(0, hexc("e8706a")), (0.45, hexc("f6a96a")), (1, hexc("fde2b0"))], x, x + w)
+    sx_, sy_ = x + w * 0.6, y + h * 0.42
+    with keep():
+        for k in range(14):
+            a = k * math.pi / 7 + t * 0.05
+            c.move_to(sx_, sy_)
+            c.line_to(sx_ + math.cos(a - 0.05) * w, sy_ + math.sin(a - 0.05) * w)
+            c.line_to(sx_ + math.cos(a + 0.05) * w, sy_ + math.sin(a + 0.05) * w)
+            c.close_path()
+            c.set_source_rgba(1, 0.92, 0.7, 0.12)
+            c.fill()
+    glow(c, sx_, sy_, h * 0.42, hexc("fff0c0"), 0.8)
+    circle(c, sx_, sy_, h * 0.17, hexc("fff2c8"))
+
+    def dune(key, base, amp, phase, light, dark):
+        pts = [(x - 10, y + h + 10)]
+        ridge = []
+        for i in range(25):
+            xx = x - 10 + (w + 20) * i / 24
+            yy = base - amp * (0.5 + 0.5 * math.sin(xx * 0.018 + phase))
+            pts.append((xx, yy))
+            ridge.append((xx, yy))
+        pts.append((x + w + 10, y + h + 10))
+        shape(c, pts, light, key, lw=1.8, amp=0.6)
+        lee = [(xx + 6, yy + 6) for xx, yy in ridge]
+        lee_pts = [(x - 10, y + h + 10)] + [(xx, yy + 18) for xx, yy in lee] + [(x + w + 10, y + h + 10)]
+        g = cairo.LinearGradient(0, base - amp, 0, base + 40)
+        dk = G(dark)[:3]
+        g.add_color_stop_rgba(0, *dk, 0.0)
+        g.add_color_stop_rgba(0.5, *dk, 0.28)
+        g.add_color_stop_rgba(1, *dk, 0.0)
+        spath(c, lee_pts, True)
+        c.set_source(g)
+        c.fill()
+        for j in range(3):
+            pts2 = [(xx, yy + 14 + j * 10 + math.sin(xx * 0.05 + j) * 2) for xx, yy in ridge[1:-1]]
+            line(c, pts2, f"{key}rp{j}", 1.1, dark, alpha=0.35)
+        return ridge
+
+    with layer(c, x, y, w, h, lt, 0.0) as on:
+        if on:
+            dune("d0", y + h * 0.6, 26, 0.5, hexc("efb879"), hexc("c98a4a"))
+    with layer(c, x, y, w, h, lt, 0.12) as on:
+        if on:
+            ridge = dune("d1", y + h * 0.72, 40, 2.1, hexc("f2c27e"), hexc("b97a3e"))
+    with layer(c, x, y, w, h, lt, 0.24) as on:
+        if on:
+            for k in range(4):
+                u = ((t * 0.03 + k * 0.12) % 1.0)
+                cxp = x + w * (0.15 + k * 0.13) + t * 6 % 30
+                base = y + h * 0.72 - 40 * (0.5 + 0.5 * math.sin(cxp * 0.018 + 2.1))
+                shape(c, ell(cxp + 30, base + 2, 34, 4, 12), (0.45, 0.25, 0.15, 0.35), f"csh{k}", ink=False)
+                camel(c, cxp, base, 0.9, t + k, f"cm{k}", rider=k == 0)
+    with layer(c, x, y, w, h, lt, 0.32) as on:
+        if on:
+            shape(c, ell(x + w * 0.16, y + h * 0.9, w * 0.13, h * 0.05, 16), hexc("4fa3b8"), "oasis", lw=1.8)
+            for k, (fx, s) in enumerate(((0.08, 1.0), (0.2, 0.85), (0.28, 0.7))):
+                palm(c, x + w * fx, y + h * 0.9, s, f"palm{k}")
+    with layer(c, x, y, w, h, lt, 0.4) as on:
+        if on:
+            dune("d2", y + h * 0.94, 20, 4.0, hexc("f5d095"), hexc("c98a4a"))
+            for k in range(5):
+                yy = y + h * (0.95 + k * 0.012)
+                line(c, [(x + w * (0.4 + 0.03 * k), yy), (x + w * 0.6, yy - 4), (x + w * (0.9 - 0.02 * k), yy)], f"rip{k}", 1.2,
+                     hexc("c98a4a"), alpha=0.6)
+
+
+def monstera(c, x, y, s, rot, key, col=hexc("2f7a4a")):
+    c.save()
+    c.translate(x, y)
+    c.rotate(rot)
+    c.scale(s, s)
+    shape(c, ell(0, 0, 50, 40, 22), col, key, lw=2, amp=0.6)
+    for k in range(-2, 3):
+        a = k * 0.45
+        line(c, [(math.cos(a) * 22, math.sin(a) * 17), (math.cos(a) * 50, math.sin(a) * 40)], f"{key}c{k}", 3.2, hexc("7fbf8a"),
+             alpha=0.9)
+    line(c, [(-50, 0), (50, 0)], key + "m", 1.6, hexc("1f5a35"))
+    c.restore()
+
+
+def hibiscus(c, x, y, s, key):
+    for k in range(5):
+        a = k * 2 * math.pi / 5
+        shape(c, ell(x + math.cos(a) * 9 * s, y + math.sin(a) * 9 * s, 9 * s, 6 * s, 10), hexc("e0403a"), f"{key}{k}", lw=1.2, amp=0.3)
+    circle(c, x, y, 3 * s, hexc("ffd34f"))
+
+
+def q_forest(c, x, y, w, h, t, lt=9):
+    vgrad(c, y, y + h, [(0, hexc("d8eecc")), (1, hexc("8fca94"))], x, x + w)
+    with keep():
+        for k in range(4):
+            x0 = x + w * (0.1 + 0.22 * k)
+            c.move_to(x0, y)
+            c.line_to(x0 + 40, y)
+            c.line_to(x0 + 140, y + h)
+            c.line_to(x0 + 70, y + h)
+            c.close_path()
+            c.set_source_rgba(1, 1, 0.92, 0.16)
+            c.fill()
+    with layer(c, x, y, w, h, lt, 0.0) as on:
+        if on:
+            for k in range(9):
+                shape(c, ell(x + k * w / 8, y + h * 0.42, 50, 60, 16), hexc("2f6a4a"), f"fc0{k}", lw=1.6, amp=1)
+    with layer(c, x, y, w, h, lt, 0.1) as on:
+        if on:
+            for k in range(8):
+                shape(c, ell(x + 30 + k * w / 7, y + h * 0.56, 46, 50, 16), hexc("4f8a5a"), f"fc1{k}", lw=1.6, amp=1)
+    with layer(c, x, y, w, h, lt, 0.18) as on:
+        if on:
+            fx0 = x + w * 0.56
+            shape(c, [(fx0 - 40, y + h * 0.2), (fx0 + 120, y + h * 0.18), (fx0 + 130, y + h * 0.8), (fx0 - 50, y + h * 0.8)],
+                  hexc("6f8a6a"), "cliff", lw=2)
+            shape(c, rect(fx0 + 10, y + h * 0.2, 60, h * 0.62), hexc("e6f6fb"), "wfall", lw=1.6, amp=0.4)
+            for k in range(7):
+                yy = y + h * 0.2 + ((t * 140 + k * h * 0.09) % (h * 0.62))
+                line(c, [(fx0 + 16 + (k % 3) * 18, yy), (fx0 + 16 + (k % 3) * 18, yy + 22)], f"wf{k}", 2.4, hexc("9fd3e6"))
+            with keep():
+                glow(c, fx0 + 40, y + h * 0.8, 90, (1, 1, 1), 0.7)
+                for j, col in enumerate((hexc("ff6b6b"), hexc("ffd34f"), hexc("6fd38a"), hexc("6fb7ff"), hexc("b08bff"))):
+                    c.new_path()
+                    c.arc(fx0 + 40, y + h * 0.84, 70 - j * 5, math.pi * 1.1, math.pi * 1.9)
+                    c.set_source_rgba(*col, 0.45)
+                    c.set_line_width(4)
+                    c.stroke()
+    with layer(c, x, y, w, h, lt, 0.26) as on:
+        if on:
+            pts = [(x - 10, y + h + 10), (x - 10, y + h * 0.88)]
+            pts += [(x + w * i / 10, y + h * 0.86 + math.sin(i * 0.9) * 8) for i in range(11)]
+            pts += [(x + w + 10, y + h + 10)]
+            shape(c, pts, hexc("5fa8c8"), "river", lw=1.8)
+            for k in range(3):
+                line(c, [(x + w * (0.1 + 0.3 * k) + (t * 30) % 40, y + h * 0.93), (x + w * (0.18 + 0.3 * k) + (t * 30) % 40, y + h * 0.93)],
+                     f"rv{k}", 2, (1, 1, 1), alpha=0.7)
+    with layer(c, x, y, w, h, lt, 0.32) as on:
+        if on:
+            for k in range(5):
+                vx = x + w * (0.08 + 0.2 * k)
+                vl = h * (0.3 + 0.12 * (k % 3))
+                pts = [(vx + math.sin(j * 0.8 + t + k) * 6, y + vl * j / 6) for j in range(7)]
+                line(c, pts, f"vn{k}", 2.4, hexc("3f6a2a"))
+                for j in range(1, 6, 2):
+                    shape(c, ell(pts[j][0] + 6, pts[j][1], 6, 3.5, 8), hexc("5f9a4a"), f"vl{k}{j}", lw=1, amp=0.3)
+            monstera(c, x + w * 0.1, y + h * 0.8, 1.1, -0.5 + math.sin(t) * 0.04, "ms1")
+            monstera(c, x + w * 0.92, y + h * 0.78, 1.0, 0.6 + math.sin(t + 1) * 0.04, "ms2", hexc("3f8a4f"))
+            for k, (fx, fy, rot) in enumerate(((0.3, 0.95, -0.3), (0.75, 0.97, 0.4))):
+                c.save()
+                c.translate(x + w * fx, y + h * fy)
+                c.rotate(rot)
+                shape(c, ell(0, 0, 80, 18, 18), hexc("4f9a4a"), f"bn{k}", lw=1.8)
+                line(c, [(-78, 0), (78, 0)], f"bnm{k}", 1.4, hexc("2f6a2a"))
+                c.restore()
+    with layer(c, x, y, w, h, lt, 0.4) as on:
+        if on:
+            for k, (fx, fy) in enumerate(((0.22, 0.86), (0.4, 0.92), (0.84, 0.9))):
+                hibiscus(c, x + w * fx, y + h * fy, 1.2, f"hb{k}")
+    px = x + w * (0.05 + 0.9 * ((t * 0.18) % 1))
+    py = y + h * 0.3 + math.sin(t * 3) * 10
+    flap = math.sin(t * 12)
+    shape(c, ell(px, py, 18, 9, 12), hexc("1f1f24"), "tcb", lw=1.2, amp=0.3)
+    shape(c, [(px + 14, py - 4), (px + 40, py), (px + 14, py + 4)], hexc("f08a2a"), "tbk", lw=1.2, amp=0.3)
+    shape(c, [(px - 6, py), (px + 4, py - 20 * flap), (px + 10, py)], hexc("1f1f24"), "tw", lw=1, amp=0.3)
+    for k in range(3):
+        bx = x + w * (0.2 + 0.25 * k) + math.sin(t * 1.3 + k * 2) * 30
+        by = y + h * (0.6 + 0.08 * k) + math.cos(t * 1.7 + k) * 20
+        f = abs(math.sin(t * 14 + k))
+        col = [hexc("ffd34f"), hexc("6fb7ff"), hexc("ff8ab5")][k]
+        shape(c, [(bx, by), (bx - 10, by - 10 * f - 2), (bx - 12, by + 4)], col, f"bf{k}a", lw=1, amp=0.2)
+        shape(c, [(bx, by), (bx + 10, by - 10 * f - 2), (bx + 12, by + 4)], col, f"bf{k}b", lw=1, amp=0.2)
+
+
+QUADS = [(q_snow, 0, "snow"), (q_sea, 1, "wave"), (q_desert, 2, "sun"), (q_forest, 3, "leaf")]
+
+
+def popup_book(c, t, unfold, quad_t):
+    bx0, by0, bx1, by1 = 50, 130, 1030, 900
+    x0, y0 = lerp(MAP_X, bx0, unfold), lerp(MAP_Y, by0, unfold)
+    x1, y1 = lerp(MAP_X + MAP_W, bx1, unfold), lerp(MAP_Y + MAP_H, by1, unfold)
+    if unfold <= 0.001:
+        return
+    with grade(sat=1.0, warm=0.0):
+        shape(c, rect(x0 - 10, y0 - 10, x1 - x0 + 20, y1 - y0 + 20), hexc("8c5a3c") + (1.0,), "bookb", lw=3)
+        shape(c, rect(x0, y0, x1 - x0, y1 - y0), hexc("f3e6c6") + (1.0,), "bookp", lw=2.4)
+        if unfold > 0.98:
+            line(c, [(540, by0), (540, by1)], "gut", 2, hexc("c9b48f"))
+        qw, qh = (bx1 - bx0 - 60) / 2, (by1 - by0 - 60) / 2
+        cells = [(bx0 + 20, by0 + 20), (540 + 10, by0 + 20), (bx0 + 20, by0 + 40 + qh), (540 + 10, by0 + 40 + qh)]
+        sx = (x1 - x0) / (bx1 - bx0)
+        sy = (y1 - y0) / (by1 - by0)
+        c.save()
+        c.translate(x0, y0)
+        c.scale(sx, sy)
+        c.translate(-bx0, -by0)
+        for k, (fn, idx, icon) in enumerate(QUADS):
+            t0 = 0.9 + k * 0.55
+            kk = ease_back(prog(quad_t, t0, 0.5))
+            if kk <= 0.01:
+                continue
+            qx, qy = cells[k]
+            c.rectangle(qx + 8, qy + 10, qw, qh)
+            c.set_source_rgba(0, 0, 0, 0.18 * min(kk, 1))
+            c.fill()
+            with popup(c, qx + qw / 2, qy + qh, kk):
+                c.save()
+                c.rectangle(qx, qy, qw, qh)
+                c.clip()
+                fn(c, qx, qy, qw, qh, t, quad_t - t0)
+                c.restore()
+                shape(c, rect(qx, qy, qw, qh), None, f"qf{k}", lw=2.6)
+            line(c, [(qx, qy + qh), (qx + qw, qy + qh)], f"fold{k}", 1.6, hexc("8c6f4a"), alpha=0.7)
+            with keep():
+                _icon(c, icon, qx + 26, qy + 26, 1.3)
+        c.restore()

@@ -14,9 +14,38 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, bandnoise, bass, buzz, cello, chug, heartbeat, jingle, kick, knock, music_box, pad,  # noqa: E402
                    piano, pluck, rain, reed, rumble, scratch, shaker, snap, swell, swish, thump, tick, whistle, _t)
 
-DUR = 112.0
+DUR = 116.0
 M = Mix(DUR)
-P = M.place
+PA = M.place                       # 绝对时间（新时间轴）
+
+
+def S(t):
+    """第三版时间 → 第四版时间：失恋镜头 +1 秒，日程表与蹦迪 +3 秒。"""
+    if t < 14.0:
+        return t
+    if t < 32.0:
+        return t + 1.0
+    if t < 38.0:
+        return 33.0 + (t - 32.0) * 9.0 / 6.0
+    return t + 4.0
+
+
+def P(sig, t, vol=1.0, pan=0.0):
+    PA(sig, S(t), vol, pan)
+
+
+def soft_rain(t0, t1, vol=0.35):
+    """柔和、偏低频、只在下雨镜头里出现的雨声，前后淡入淡出。"""
+    from scipy.signal import butter, sosfilt
+    n, tt = _t(t1 - t0)
+    sig = rain(t1 - t0)
+    sig = sosfilt(butter(2, 3200, btype="low", fs=SR, output="sos"), sig)
+    env = np.clip(tt / 0.8, 0, 1) * np.clip((t1 - t0 - tt) / 0.8, 0, 1)
+    PA(sig * env, t0, vol)
+    r = np.random.RandomState(int(t0 * 10))
+    for k in range(int((t1 - t0) * 1.2)):
+        PA(music_box(int(r.choice([96, 98, 101, 103])), 0.4) * 0.5, t0 + r.uniform(0.5, t1 - t0 - 0.5), 0.08,
+           pan=r.uniform(-0.7, 0.7))
 
 THEME_MAJ = [(0, 81, 1), (1, 84, .5), (1.5, 81, .5), (2, 79, 1), (3, 77, 1), (4, 76, 1.5), (5.5, 77, .5), (6, 79, 2)]
 THEME_MIN = [(0, 81, 1), (1, 84, .5), (1.5, 81, .5), (2, 79, 1), (3, 77, 1), (4, 76, 1.5), (5.5, 77, .5), (6, 74, 2)]
@@ -100,16 +129,20 @@ for t0 in (2.1, 2.55, 3.0):
     P(swish(), t0, 0.5)
 
 # ================================================================ 这片土地 6–32
-P(rain(26.5), 5.5, 1.0)
+soft_rain(5.6, 15.4)                                      # 灰色城市 + 雨中分开
+soft_rain(23.6, 29.4, 0.3)                                # 潮水
 P(pad([50, 57, 62], 25.0, att=3.0, rel=2.0, bright=2.2), 6.0, 0.55)
 P(cello(38, 8.0, att=1.5), 6.2, 0.55)
 melody(6.6, THEME_MIN, 0.9, "piano", 0.45, shift=-12, pan=-0.1)
-P(knock(), 10.4, 0.25)                                   # 椅子
-for k in range(4):                                        # 离开的脚步
-    P(knock(), 10.9 + k * 0.38, 0.12, pan=0.4 + k * 0.1)
-P(snap(), 13.1, 0.5)                                      # 杯子裂开
-P(music_box(98, 1.0), 13.1, 0.4)
-P(piano(62, 2.0), 13.3, 0.3)
+for m in (65, 69, 72):                                    # 拥抱：温柔的和弦
+    PA(piano(m, 1.6), 10.1, 0.25)
+PA(cello(41, 1.6, att=0.4), 11.2, 0.4)                    # 分开：红线越绷越紧
+PA(snap(), 12.6, 0.6)                                     # 红心碎裂
+PA(music_box(98, 1.0), 12.6, 0.4)
+PA(music_box(93, 1.0), 12.75, 0.3)
+for k in range(5):                                        # 对方走远
+    PA(knock(), 13.4 + k * 0.4, 0.1 - k * 0.015, pan=0.4 + k * 0.1)
+PA(piano(62, 2.0), 13.6, 0.3)
 for k in range(10):                                       # 越来越密的低语
     P(whisper(1.6), 14.2 + k * 0.45, 0.6 + 0.08 * k, pan=-0.6 + (k % 3) * 0.6)
 P(rumble(4.0), 15.0, 0.4)
@@ -124,34 +157,38 @@ P(rumble(4.5), 27.8, 1.0)
 P(cello(33, 4.5, att=1.0), 28.0, 0.75)
 P(thump(), 31.1, 0.5)                                     # 被根拉回去
 
-# ================================================================ 填不满的日子 32–43（蹦迪 → 断电）
+# ================================================================ 填不满的日子 33–47（日程表 5 秒 → 蹦迪 → 断电）
 beat = 60 / 124
-P(scratch(1.5), 32.05, 0.7)                               # 日程表被写满
+PA(scratch(3.4), 33.1, 0.6)                               # 一行行写满
 for k in range(7):
-    P(knock(), 32.1 + k * 0.14, 0.08, pan=-0.3 + k * 0.1)
-t = 33.6
-STOP = 38.25
+    PA(knock(), 33.2 + k * 0.26, 0.07, pan=-0.3 + k * 0.1)
+PA(scratch(1.4), 35.1, 0.5)                               # 红笔挤进去
+PA(pad([50, 57, 62], 4.6, att=1.0, rel=0.4), 33.2, 0.35)
+PA(tick(), 36.6, 0.3)
+PA(tick(True), 37.1, 0.3)
+t = 38.0
+STOP = 42.25
 while t < STOP - 0.01:
-    k = int(round((t - 33.6) / beat))
-    P(kick(1.0), t, 0.85)
-    P(shaker(), t + beat / 2, 0.45, pan=0.3)
+    k = int(round((t - 38.0) / beat))
+    PA(kick(1.0), t, 0.85)
+    PA(shaker(), t + beat / 2, 0.45, pan=0.3)
     if k % 2 == 1:
-        P(snap(), t, 0.55, pan=-0.1)
+        PA(snap(), t, 0.55, pan=-0.1)
     chn = ["Dm", "Dm", "Bb", "C"][(k // 4) % 4]
-    P(bass(ROOT[chn] + 12, beat * 0.45), t + beat / 2, 0.7)
+    PA(bass(ROOT[chn] + 12, beat * 0.45), t + beat / 2, 0.7)
     if k % 4 == 0:
-        P(pad(CH[chn], beat * 3.5, att=0.02, rel=0.1, bright=1.0), t, 0.55)
+        PA(pad(CH[chn], beat * 3.5, att=0.02, rel=0.1, bright=1.0), t, 0.55)
     t += beat
-for tc in (33.6, 35.2, 36.7):
-    P(swell(0.4), tc - 0.4, 0.8)
+for tc in (38.0, 39.35, 40.7):
+    PA(swell(0.4), tc - 0.4, 0.8)
 for k in range(6):                                        # 碰杯
-    P(music_box(100, 0.5), 36.8 + k * 0.2, 0.25, pan=0.2)
-P(thump(), STOP, 0.5)
+    PA(music_box(100, 0.5), 40.8 + k * 0.2, 0.25, pan=0.2)
+PA(thump(), STOP, 0.5)
 for i in range(6):                                        # 霓虹灯一个字一个字熄灭
-    P(bandnoise(0.12, 2000, 9000, 0.03) * 0.6, 38.0 + 0.4 + i * 0.4, 0.5, pan=0.4 - i * 0.16)
-    P(buzz(0.1), 38.0 + 0.4 + i * 0.4, 0.4)
-P(tinnitus(4.5), 38.3, 1.0)
-P(cello(38, 4.5, att=1.5), 38.6, 0.35)
+    PA(bandnoise(0.12, 2000, 9000, 0.03) * 0.6, 42.4 + i * 0.4, 0.5, pan=0.4 - i * 0.16)
+    PA(buzz(0.1), 42.4 + i * 0.4, 0.4)
+PA(tinnitus(4.5), 42.3, 1.0)
+PA(cello(38, 4.5, att=1.5), 42.6, 0.35)
 
 # ================================================================ 想走却没走 43–51
 for i, chn in enumerate(["Dm", "Bb", "F", "A"]):
@@ -260,13 +297,13 @@ for i, m in enumerate((65, 69, 72, 77)):
     P(music_box(m, 3.5), 110.2 + i * 0.07, 0.5, pan=-0.3 + i * 0.2)
 
 # ---------------------------------------------------------------- 混音
-M.gain([(0, 0.8), (6, 0.8), (6.5, 0.95), (13.5, 0.95), (14.5, 1.25), (22.5, 1.2), (23.5, 0.95), (31.8, 0.95), (32.0, 1.25), (38.2, 1.25), (38.3, 0.9), (51, 1.0),
-        (58.9, 1.1), (59.0, 1.0), (76.5, 1.0), (77.5, 1.3), (98.5, 1.3), (100, 1.0), (102.8, 1.25), (106, 1.0), (DUR + 1, 1.0)])
-M.muffle([(0, 0), (52.0, 0), (55.5, 0.9), (58.9, 0.9), (58.95, 0), (DUR + 1, 0)])
-duck = [(0, 1), (38.2, 1), (38.3, 0.15), (38.8, 1), (58.85, 1), (58.95, 0.15), (59.1, 1), (DUR + 1, 1)]
+M.gain([(S(a_), b_) for a_, b_ in [(0, 0.8), (6, 0.8), (6.5, 0.95), (13.5, 0.95), (14.5, 1.25), (22.5, 1.2), (23.5, 0.95), (31.8, 0.95), (32.0, 1.25), (38.2, 1.25), (38.3, 0.9), (51, 1.0),
+        (58.9, 1.1), (59.0, 1.0), (76.5, 1.0), (77.5, 1.3), (98.5, 1.3), (100, 1.0), (102.8, 1.25), (106, 1.0), (DUR + 1, 1.0)]])
+M.muffle([(S(a_), b_) for a_, b_ in [(0, 0), (52.0, 0), (55.5, 0.9), (58.9, 0.9), (58.95, 0), (DUR + 1, 0)]])
+duck = [(S(a_), b_) for a_, b_ in [(0, 1), (38.2, 1), (38.3, 0.15), (38.8, 1), (58.85, 1), (58.95, 0.15), (59.1, 1), (DUR + 1, 1)]]
 
 if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 112, 4)))
+                   for t in range(0, 116, 4)))
