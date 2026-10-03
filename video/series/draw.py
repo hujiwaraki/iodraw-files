@@ -534,6 +534,7 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
         if pack and view == "front":
             with kc():
                 shape(c, rrect(-31, -128 + oy, 62, 58, 10), PACK, key + "pk", lw=lw)
+        feet = []
         if legs:
             for i, sg in enumerate((-1, 1)):
                 if sit and crouch:
@@ -553,9 +554,17 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
                     line(c, [(hx, hy), (fx, fy)], f"{key}lg{i}", lw * 2.2, leg, amp=0.6)
                 fwd = 4 if view == "front" else 0
                 shape(c, ell(fx + look * fwd, fy, 9, 5, 10), shoe, f"{key}sh{i}", lw=lw * 0.7, amp=0.6)
+                feet.append((hx, hy, fx, fy))
+        if outfit in COSTUMES and feet and not sit:
+            with kc():
+                _costume_legs(c, outfit, feet, oy, key, lw)
         col = {"dress": hexc("c9553f"), "folk": hexc("2f7f8a")}.get(outfit, coat)
+        if outfit in COSTUMES:
+            col = COSTUMES[outfit]["sleeve"]
         with kc():
-            if outfit == "folk":
+            if outfit in COSTUMES:
+                _costume_body(c, outfit, oy, key, lw, view)
+            elif outfit == "folk":
                 shape(c, [(-18, -126 + oy), (18, -126 + oy), (42, -44 + oy), (-42, -44 + oy)], col, key + "bd", lw=lw)
                 for j, (yy, bc) in enumerate(((-58, "e8b94a"), (-70, "c9473b"), (-112, "e8b94a"))):
                     half = 18 + (yy + 126) * 0.29
@@ -593,6 +602,9 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
             with kc():
                 line(c, [sh[i], hands[i]], f"{key}ai{i}", lw * 2.0, arm_col, amp=0.5)
             circle(c, hands[i][0], hands[i][1], 5.5, skin)
+        if outfit in COSTUMES:
+            with kc():
+                _costume_neck(c, outfit, oy, key, lw, view)
         if outfit == "dress":
             with kc():
                 shape(c, [(-20, -128 + oy), (20, -128 + oy), (14, -118 + oy), (-14, -118 + oy)], hexc("3f8f8a"), key + "sc", lw=lw)
@@ -695,6 +707,9 @@ def person(c, x, y, s=1.0, view="front", look=0.0, walk=None, run=False, sit=Fal
                 shape(c, ell(0, hy - 1, 26, 25, 18), hair, key + "hb", lw=lw)
             if hair_style == "bun":
                 shape(c, ell(0, hy - 34, 12, 11, 10), hair, key + "bun", lw=lw * 0.8)
+        if outfit in COSTUMES:
+            with kc():
+                _costume_head(c, outfit, hdx, hy, key, lw, view, hat)
         if hat:
             with kc():
                 hat_c = mix(STRAW, hexc("b9b3a8"), clamp(age * 1.2))
@@ -852,6 +867,7 @@ def _hair_back_view(c, style, y, hair, key, lw):
 
 def girl(c, x, y, s=1.0, **kw):
     kw.setdefault("key", "girl")
+    kw.setdefault("hair_style", "sweep")       # 系列定稿发型：A 侧分短发
     kw.setdefault("keep_color", True)
     person(c, x, y, s, **kw)
 
@@ -952,3 +968,116 @@ def plane(c, x, y, s, key="pl", col=hexc("f4f2ec"), tail=hexc("c9553f"), face=No
             c.set_source_rgba(*STRAW, 1)
             c.fill()
     c.restore()
+
+
+# ---------------------------------------------------------------- 旅途服装（原创设计，只借鉴地域气质）
+COSTUMES = {
+    "snow": dict(name="雪原斗篷", sleeve=hexc("b5473c")),
+    "desert": dict(name="沙漠轻纱", sleeve=hexc("f3d9a8")),
+    "sea": dict(name="海岛条纹", sleeve=hexc("f4f1ea")),
+    "jungle": dict(name="雨林探险", sleeve=hexc("a89060")),
+    "village": dict(name="古镇交领", sleeve=hexc("3b4f7a")),
+}
+FUR = (0.98, 0.97, 0.95)
+GOLD = hexc("d8b04a")
+
+
+def _costume_legs(c, outfit, feet, oy, key, lw):
+    for i, (hx, hy, fx, fy) in enumerate(feet):
+        if outfit == "desert":
+            mx, my = (hx + fx) / 2, (hy + fy) / 2
+            pts = [(hx - 9, hy - 4), (hx + 9, hy - 4), (mx + 12, my), (fx + 7, fy - 8), (fx - 7, fy - 8), (mx - 12, my)]
+            shape(c, pts, hexc("e07a5f"), f"{key}pt{i}", lw=lw * 0.8, amp=0.5)
+            line(c, [(fx - 7, fy - 9), (fx + 7, fy - 9)], f"{key}pc{i}", 2.4, GOLD)
+        elif outfit == "village":
+            pts = [(hx - 11, hy - 6), (hx + 11, hy - 6), (fx + 13, fy - 10), (fx - 13, fy - 10)]
+            shape(c, pts, hexc("2b3a5c"), f"{key}hk{i}", lw=lw * 0.8, amp=0.5)
+            line(c, [(hx, hy + 4), (fx, fy - 14)], f"{key}hkp{i}", 1.2, hexc("1c2740"), alpha=0.7)
+        elif outfit == "jungle":
+            line(c, [(fx, fy - 22), (fx, fy - 4)], f"{key}bt{i}", lw * 3.4, hexc("6b4a35"), amp=0.3)
+            shape(c, rect(fx - 8, fy - 26, 16, 6), hexc("e9e0c8"), f"{key}sk{i}", lw=lw * 0.6, amp=0.3)
+
+
+def _costume_body(c, outfit, oy, key, lw, view):
+    if outfit == "snow":
+        shape(c, [(-20, -128 + oy), (20, -128 + oy), (42, -44 + oy), (-42, -44 + oy)], hexc("b5473c"), key + "bd", lw=lw)
+        for k in range(9):
+            circle(c, -40 + k * 10, -45 + oy, 6, FUR)
+        if view == "front":
+            line(c, [(0, -120 + oy), (0, -48 + oy)], key + "cl", 1.6, hexc("7a2a24"))
+            for j in range(3):
+                shape(c, rect(-6, -108 + j * 18 + oy, 12, 5), hexc("f0d9a8"), f"{key}tg{j}", lw=1.2, amp=0.3)
+    elif outfit == "desert":
+        shape(c, [(-18, -126 + oy), (18, -126 + oy), (26, -64 + oy), (-26, -64 + oy)], hexc("f3d9a8"), key + "bd", lw=lw)
+        shape(c, [(-18, -126 + oy), (-6, -126 + oy), (-12, -70 + oy), (-25, -70 + oy)], hexc("2f8f8a"), key + "vL", lw=lw * 0.8)
+        shape(c, [(18, -126 + oy), (6, -126 + oy), (12, -70 + oy), (25, -70 + oy)], hexc("2f8f8a"), key + "vR", lw=lw * 0.8)
+        shape(c, rect(-27, -72 + oy, 54, 10), GOLD, key + "sash", lw=lw * 0.7, amp=0.4)
+        shape(c, [(18, -66 + oy), (30, -40 + oy), (22, -38 + oy), (14, -62 + oy)], GOLD, key + "sasht", lw=lw * 0.6, amp=0.4)
+    elif outfit == "sea":
+        shape(c, [(-19, -126 + oy), (19, -126 + oy), (26, -84 + oy), (-26, -84 + oy)], hexc("f4f1ea"), key + "bd", lw=lw)
+        for j in range(4):
+            yy = -118 + j * 10 + oy
+            half = 19 + (yy - oy + 126) * 0.17
+            line(c, [(-half + 1, yy), (half - 1, yy)], f"{key}stp{j}", 3.2, hexc("3f6fb5"), amp=0.3)
+        shape(c, [(-26, -86 + oy), (26, -86 + oy), (34, -56 + oy), (-34, -56 + oy)], hexc("e6dcc4"), key + "skirt", lw=lw)
+    elif outfit == "jungle":
+        shape(c, [(-20, -126 + oy), (20, -126 + oy), (30, -62 + oy), (-30, -62 + oy)], hexc("a89060"), key + "bd", lw=lw)
+        if view == "front":
+            for sg in (-1, 1):
+                shape(c, rect(sg * 15 - 7, -108 + oy, 14, 12), hexc("8f7a4f"), f"{key}pk{sg}", lw=1.4, amp=0.3)
+                shape(c, rect(sg * 18 - 8, -82 + oy, 16, 14), hexc("8f7a4f"), f"{key}pl{sg}", lw=1.4, amp=0.3)
+            line(c, [(0, -120 + oy), (0, -64 + oy)], key + "zip", 1.4, hexc("5f4a2a"))
+        shape(c, [(-30, -64 + oy), (30, -64 + oy), (32, -46 + oy), (-32, -46 + oy)], hexc("7a6a45"), key + "shorts", lw=lw)
+        shape(c, rect(-31, -68 + oy, 62, 7), hexc("5f4a2a"), key + "belt", lw=lw * 0.6, amp=0.3)
+    elif outfit == "village":
+        shape(c, [(-19, -126 + oy), (19, -126 + oy), (30, -60 + oy), (-30, -60 + oy)], hexc("3b4f7a"), key + "bd", lw=lw)
+        if view == "front":
+            shape(c, [(-13, -126 + oy), (-4, -126 + oy), (8, -96 + oy), (2, -92 + oy)], (0.97, 0.96, 0.92), key + "colL", lw=1.4, amp=0.3)
+            shape(c, [(13, -126 + oy), (4, -126 + oy), (-2, -104 + oy), (4, -100 + oy)], (0.97, 0.96, 0.92), key + "colR", lw=1.4, amp=0.3)
+            for k in range(4):
+                circle(c, -14 + k * 9, -112 + (k % 2) * 30 + oy, 3, hexc("dfe6f2"), 0.8)
+        shape(c, rect(-29, -80 + oy, 58, 14), hexc("c9473b"), key + "obi", lw=lw * 0.8, amp=0.4)
+        line(c, [(-28, -73 + oy), (28, -73 + oy)], key + "obil", 1.4, GOLD)
+
+
+def _costume_neck(c, outfit, oy, key, lw, view):
+    if outfit == "snow":
+        shape(c, [(-22, -130 + oy), (22, -130 + oy), (20, -118 + oy), (-20, -118 + oy)], hexc("f0e2c4"), key + "scf", lw=lw)
+        if view == "front":
+            shape(c, [(10, -122 + oy), (20, -88 + oy), (12, -86 + oy), (4, -118 + oy)], hexc("f0e2c4"), key + "scft", lw=lw * 0.8)
+            for k in range(3):
+                line(c, [(13 + k * 2, -84 + oy), (14 + k * 2, -78 + oy)], f"{key}fr{k}", 1.4, hexc("d9c49a"))
+    elif outfit == "sea" and view == "front":
+        for k in range(7):
+            a = math.pi * (0.2 + 0.6 * k / 6)
+            circle(c, math.cos(a) * 14, -126 + math.sin(a) * 10 + oy, 2.6, [(1, 0.95, 0.9), hexc("f2b8a0")][k % 2])
+    elif outfit == "jungle":
+        shape(c, [(-18, -130 + oy), (18, -130 + oy), (6, -112 + oy), (-6, -112 + oy)], hexc("4f8a4a"), key + "bnd", lw=lw * 0.8)
+        for k in range(3):
+            circle(c, -8 + k * 8, -124 + oy, 2, (0.95, 0.95, 0.85), 0.9)
+
+
+def _costume_head(c, outfit, x, y, key, lw, view, hat):
+    if outfit == "desert":
+        sw = _sway(key, 0.6)
+        pts = ell(x, y - 2, 31, 30, 14, math.pi * 0.95, math.pi * 2.05)
+        pts += [(x + 32, y + 10), (x + 34 + sw, y + 34), (x + 24 + sw, y + 40), (x + 26, y + 16)]
+        if view == "back":
+            pts += [(x, y + 26), (x - 26, y + 16)]
+        else:
+            pts += [(x + 22, y + 2), (x - 22, y + 2), (x - 26, y + 16)]
+        pts += [(x - 24 + sw, y + 40), (x - 34 + sw, y + 34), (x - 32, y + 10)]
+        shape(c, pts, hexc("f6e3bc") + (0.82,), key + "veil", lw=lw * 0.7, amp=0.5)
+        if view == "front":
+            line(c, [(x - 24, y - 14), (x, y - 20), (x + 24, y - 14)], key + "chain", 2.2, GOLD)
+            circle(c, x, y - 18, 3.2, hexc("2f8f8a"))
+    elif outfit == "snow" and not hat:
+        if view == "front":
+            pts = ell(x, y + 2, 36, 36, 18, math.pi * 0.9, math.pi * 2.1)
+            for k, (px, py) in enumerate(pts[1:-1:2]):
+                circle(c, px, py, 7, FUR)
+        else:
+            shape(c, ell(x, y + 2, 34, 33, 18), hexc("b5473c"), key + "hood", lw=lw)
+            for k in range(10):
+                a = math.pi * (0.95 + 1.1 * k / 9)
+                circle(c, x + math.cos(a) * 34, y + 2 + math.sin(a) * 33, 6, FUR)
