@@ -270,10 +270,10 @@ def p3_phone(c, t):
             sy = math.cos(flip * math.pi)
             jit = math.sin(t * 50) * 3 if t < 2.6 and (t % 1.0) < 0.5 else 0
             c.translate(jit, 0)
-            c.scale(1, 0.42 * max(abs(sy), 0.05))
+            c.scale(0.62, 0.62 * 0.42 * max(abs(sy), 0.05))
             if sy > 0:
                 with keep():
-                    glow(c, 0, 0, 220 * (1 - flip), hexc("dfeaff"), 0.6)
+                    glow(c, 0, 0, 260 * (1 - flip), hexc("dfeaff"), 0.55)
                 shape(c, rrect(-70, -120, 140, 240, 14), hexc("3a3f4a"), "pph", lw=3)
                 with keep():
                     shape(c, rrect(-58, -104, 116, 208, 8), hexc("e8f0ff"), "ppsc", lw=1.6, edge=False)
@@ -403,6 +403,35 @@ def s05_party(c, t):
     k = 1 + 0.06 * (1 - ease_out(prog(lt, 0, 0.3)))
     with cam(c, 540, 960, k):
         [party_dance, party_club, party_bar][i](c, lt + i)
+    word, wx, wy, col, rot = [("跳舞", 770, 400, "ff5f8f", -0.12), ("蹦迪", 300, 470, "4fd1ff", 0.1),
+                              ("喝酒", 780, 560, "ffcf4a", -0.08)][i]
+    q = ease_back(prog(lt, 0.15, 0.35))
+    if q > 0.01:
+        with keep():
+            c.save()
+            c.translate(wx, wy)
+            c.rotate(rot + math.sin(lt * 6) * 0.03)
+            c.scale(q, q)
+            c.select_font_face(FONT_FACE)
+            c.set_font_size(150)
+            ext = c.text_extents(word)
+            c.move_to(-ext.x_advance / 2, 50)
+            c.text_path(word)
+            c.set_source_rgba(1, 1, 1, 0.95)
+            c.set_line_width(16)
+            c.set_line_join(cairo.LINE_JOIN_ROUND)
+            c.stroke_preserve()
+            c.set_source_rgba(*hexc(col), 1)
+            c.fill_preserve()
+            c.set_source_rgba(*INK, 0.9)
+            c.set_line_width(3)
+            c.stroke()
+            c.new_path()
+            for j in range(3):
+                a = -0.9 + j * 0.45
+                line(c, [(ext.x_advance / 2 + 20 + math.cos(a) * 10, -20 + math.sin(a) * 40),
+                         (ext.x_advance / 2 + 20 + math.cos(a) * 50, -20 + math.sin(a) * 80)], f"wl{i}{j}", 5, hexc(col))
+            c.restore()
     fl = 1 - ease_out(prog(lt, 0, 0.18))
     if i > 0 and fl > 0:
         with keep():
@@ -776,7 +805,7 @@ def img_train(c, w, h, t):
         circle(c, r.uniform(0, w), r.uniform(h * 0.7, h), r.uniform(4, 7),
                [hexc("f2a6a0"), hexc("fbe29a"), hexc("ffffff"), hexc("c9a0dc")][i % 4])
     line(c, [(-10, h * 0.66), (w + 10, h * 0.66)], "irl", 4, hexc("8a5a3a"))
-    x = lerp(-700, w + 200, t / 2.6)
+    x = lerp(150, w + 700, t / 2.6)
     for k in range(3):
         cx = x - k * 300
         shape(c, rrect(cx - 280, h * 0.66 - 130, 280, 120, 14), hexc("c9553f") if k == 0 else hexc("e7d3a8"), f"itc{k}", lw=2.6)
@@ -908,67 +937,97 @@ IMG_PAGES = [(0.0, 2.4, img_plane), (2.4, 5.0, img_train), (5.0, 7.2, img_costum
              (9.2, 11.6, img_boat), (11.6, 14.0, img_path), (14.0, 18.0, img_badge), (18.0, 24.0, img_redraw)]
 
 
+BUB_C = (540, 520)
+BUB_R = (470, 370)
+
+
+def bubble_path(c, cx, cy, rx, ry, k=1.0, key="bub"):
+    """思考气泡：一圈圆鼓鼓的云边。"""
+    pts = []
+    n = 13
+    for i in range(n * 8):
+        a = 2 * math.pi * i / (n * 8)
+        bump = abs(math.sin(n * a / 2)) ** 0.6
+        r = 1 + 0.07 * bump
+        pts.append((cx + math.cos(a) * rx * r * k, cy + math.sin(a) * ry * r * k))
+    spath(c, wob(pts, key, 1.2, 30, static=False), True)
+
+
 def s13_imagine(c, t):
-    bx, by, bw, bh = PAGE
+    cx, cy = BUB_C
+    rx, ry = BUB_R
+    bx, by, bw, bh = cx - rx, cy - ry, 2 * rx, 2 * ry
+    gx, gy = 330, 1180
     with cam(c, 540, 900, 1.0):
         room(c, t + 18, sky="warm", hat_hook=False, chair=False, pack_corner=False, suit_corner=False,
              amap=map_state(c, lit=1.0, anchor_glow=1.0, taut=1.0))
-        rise = ease_out(prog(t, 0.0, 0.9))
-        float_y = math.sin(t * 1.2) * 6
-        oy = lerp(300, 0, rise) + float_y
+        grow = ease_back(prog(t, 0.55, 0.7), 1.4)
         spill = ease_io(prog(t, 19.0, 3.0))
+        bob = math.sin(t * 1.1) * 8
+        # 从她头顶冒出的小泡泡
+        trail = [(gx + 40, gy - 330, 14, 0.0), (gx + 80, gy - 390, 22, 0.18), (gx + 130, gy - 460, 32, 0.36)]
+        with grade(sat=1.0, warm=0.0):
+            for k, (tx_, ty_, r_, d) in enumerate(trail):
+                q = ease_back(prog(t, d, 0.3))
+                if q > 0.01:
+                    shape(c, ell(tx_, ty_ + bob * 0.3, r_ * q, r_ * q * 0.9, 12), (1, 0.99, 0.95, 0.95), f"tb{k}", lw=2.6)
         with keep():
-            glow(c, 540, by + bh / 2 + oy, 700, hexc("fff0c8"), 0.35 + 0.3 * spill)
-        with grade(sat=1.0, warm=0.0, dark=0.0):
-            c.save()
-            c.translate(0, oy)
-            with group_alpha(c, rise):
-                shape(c, rect(bx - 16, by - 16, bw + 32, bh + 32), hexc("2f4a3c") + (1.0,), "ibk", lw=3)
-                shape(c, rect(bx, by, bw, bh), hexc("f6eedd") + (1.0,), "ipg0", lw=2)
-                idx = 0
-                for i, (a, b, fn) in enumerate(IMG_PAGES):
-                    if a <= t < b or (i == len(IMG_PAGES) - 1 and t >= b):
-                        idx = i
-                a, b, fn = IMG_PAGES[idx]
+            glow(c, cx, cy + bob, 640 * max(grow, 0.01), hexc("fff0c8"), 0.3 + 0.3 * spill)
+        if grow > 0.01:
+            with grade(sat=1.0, warm=0.0, dark=0.0):
                 c.save()
-                c.rectangle(bx + 14, by + 14, bw - 28, bh - 28)
-                c.clip()
-                c.translate(bx + 14, by + 14)
-                fn(c, bw - 28, bh - 28, t - a)
-                c.restore()
-                # 梦一样的柔光边缘
-                g = cairo.RadialGradient(540, by + bh / 2, bh * 0.35, 540, by + bh / 2, bh * 0.75)
-                g.add_color_stop_rgba(0, 1, 0.98, 0.92, 0)
-                g.add_color_stop_rgba(1, 1, 0.98, 0.92, 0.55)
-                c.set_source(g)
-                c.rectangle(bx + 14, by + 14, bw - 28, bh - 28)
+                c.translate(cx, cy + bob)
+                c.scale(grow, grow)
+                c.translate(-cx, -cy)
+                bubble_path(c, cx, cy, rx, ry, key="bubf")
+                c.set_source_rgba(1, 0.99, 0.95, 1)
                 c.fill()
-                # 翻页
-                lt = t - a
-                if idx > 0 and lt < 0.35:
-                    p = ease_io(lt / 0.35)
-                    ex = bx + bw * (1 - p)
-                    c.rectangle(bx + 14, by + 14, max(0, ex - bx - 14), bh - 28)
-                    c.set_source_rgba(0.97, 0.94, 0.86, 1)
-                    c.fill()
-                    line(c, [(ex, by + 14), (ex, by + bh - 14)], "pgfl", 2)
+                c.save()
+                bubble_path(c, cx, cy, rx * 0.97, ry * 0.97, key="bubc")
+                c.clip()
+                idx = 0
+                for i, (a0, b0, fn) in enumerate(IMG_PAGES):
+                    if a0 <= t < b0 or (i == len(IMG_PAGES) - 1 and t >= b0):
+                        idx = i
+                a0, b0, fn = IMG_PAGES[idx]
+                c.save()
+                c.translate(bx + 14, by + 14)
+                fn(c, bw - 28, bh - 28, t - a0)
+                c.restore()
+                lt = t - a0
+                if idx > 0 and lt < 0.5:                       # 像梦一样溶开
+                    pa, pb, pfn = IMG_PAGES[idx - 1]
+                    c.push_group()
+                    c.translate(bx + 14, by + 14)
+                    pfn(c, bw - 28, bh - 28, pb - pa - 0.01)
+                    c.pop_group_to_source()
+                    c.paint_with_alpha(1 - ease_io(lt / 0.5))
+                g = cairo.RadialGradient(cx, cy, min(rx, ry) * 0.55, cx, cy, max(rx, ry) * 1.05)
+                g.add_color_stop_rgba(0, 1, 0.98, 0.93, 0)
+                g.add_color_stop_rgba(1, 1, 0.98, 0.93, 0.85)
+                c.set_source(g)
+                c.paint()
                 r = random.Random(int(t * 4))
-                for k in range(6):
-                    star(c, bx + r.uniform(20, bw - 20), by + r.uniform(20, bh - 20), 3, 0.6, hexc("fff6d0"))
-            c.restore()
+                for k in range(7):
+                    star(c, bx + r.uniform(60, bw - 60), by + r.uniform(60, bh - 60), 3, 0.6, hexc("fff6d0"))
+                c.restore()
+                bubble_path(c, cx, cy, rx, ry, key="bubo")
+                c.set_source_rgba(*INK, 0.85)
+                c.set_line_width(3.2)
+                c.stroke()
+                c.restore()
         if spill > 0:
             with keep():
-                aim = math.atan2(960 - (by + bh + oy), 330 - 540)
+                aim = math.atan2(gy - 260 - (cy + ry), gx - cx)
                 for k in range(7):
-                    a0 = aim + (k - 3) * 0.1
-                    c.move_to(540, by + bh + oy - 20)
-                    c.line_to(540 + math.cos(a0 - 0.04) * 700, by + bh + oy + math.sin(a0 - 0.04) * 700)
-                    c.line_to(540 + math.cos(a0 + 0.04) * 700, by + bh + oy + math.sin(a0 + 0.04) * 700)
+                    a1 = aim + (k - 3) * 0.1
+                    c.move_to(cx - 60, cy + ry - 30)
+                    c.line_to(cx - 60 + math.cos(a1 - 0.04) * 700, cy + ry - 30 + math.sin(a1 - 0.04) * 700)
+                    c.line_to(cx - 60 + math.cos(a1 + 0.04) * 700, cy + ry - 30 + math.sin(a1 + 0.04) * 700)
                     c.close_path()
                     c.set_source_rgba(1, 0.95, 0.78, 0.13 * spill)
                     c.fill()
         # 现实中的她：行李箱，工牌
-        gx, gy = 330, 1180
         took = ease_io(prog(t, 15.4, 1.0))
         smile = t > 2.5
         has_badge = t < 15.3
@@ -1002,11 +1061,13 @@ def s13_imagine(c, t):
         suitcase(c, gx + 44 * 1.4 + 50, gy + 2, 0.9, "su13", handle=1.0)
 
 
+
+
 def s14_door(c, t):
     tx = -480 * ease_io(prog(t, 0.6, 1.2))
     door = ease_io(prog(t, 1.4, 0.7))
     rad = 2400 * ease_io(prog(t, 1.8, 2.2))
-    orb = prog(t, 0.0, 1.2)
+    orb = prog(t, 0.35, 0.9)
 
     def outside(cc):
         vgrad(cc, 560, 900, [(0, hexc("8fc3e3")), (1, hexc("fbf0d6"))], 1150, 1400)
@@ -1037,12 +1098,22 @@ def s14_door(c, t):
         cc.restore()
 
     flood(c, scene, 1275 + tx, 830, rad, soft=420, from_sat=0.3, to_sat=1.0)
-    if orb < 1:
+    shrink = ease_in(prog(t, 0.0, 0.45))
+    if shrink < 1:
+        with grade(sat=1.0, warm=0.0):
+            bubble_path(c, BUB_C[0], BUB_C[1], BUB_R[0] * (1 - shrink) + 20, BUB_R[1] * (1 - shrink) + 20, key="bubs")
+            c.set_source_rgba(1, 0.98, 0.9, 0.95)
+            c.fill_preserve()
+            c.set_source_rgba(*INK, 0.8 * (1 - shrink))
+            c.set_line_width(3)
+            c.stroke()
+    if 0.35 < t and orb < 1:
         with keep():
-            ox = lerp(540, 1275 + tx, ease_io(orb))
-            oy_ = lerp(530, 830, ease_io(orb))
-            glow(c, ox, oy_, 160 * (1 - orb * 0.5), hexc("fff0c0"), 0.9)
-            circle(c, ox, oy_, 18 * (1 - orb * 0.6), hexc("fffbe8"))
+            u = ease_io(prog(t, 0.35, 0.9))
+            ox = lerp(540, 1275 + tx, u)
+            oy_ = lerp(520, 830, u)
+            glow(c, ox, oy_, 160 * (1 - u * 0.5), hexc("fff0c0"), 0.9)
+            circle(c, ox, oy_, 18 * (1 - u * 0.6), hexc("fffbe8"))
     if t > 1.8:
         GRADE["keep"] += 1
         r = random.Random(12)
