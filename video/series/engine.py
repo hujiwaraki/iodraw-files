@@ -52,7 +52,8 @@ def make_paper():
 
 
 # ---------------------------------------------------------------- 字幕（可多行，逐字浮现）
-SUB_Y = 1290          # 约 67% 高度，避开底部互动区
+SUB_Y = 1430          # 约 74% 高度：画面主体之下、平台底部互动区（约最后 20%）之上
+VIEW_SCALE = 1.12     # 系列标准构图：以顶边为轴放大，画面主体整体下移，减少底部留空
 
 
 class Sub:
@@ -325,6 +326,11 @@ class Renderer:
         c.paint()
         set_time(t)
         set_grade(**self.cfg.grade_at(t))
+        k = getattr(self.cfg, "VIEW_SCALE", VIEW_SCALE)
+        if k != 1:
+            c.translate(W / 2, 0)
+            c.scale(k, k)
+            c.translate(-W / 2, 0)
         fn(c, clamp(t - a, 0, b - a - 1e-3))
         return surf
 
@@ -377,7 +383,8 @@ class Renderer:
     def frame(self, t):
         if self.paper is None:
             self.paper = make_paper()
-            self.subs = [Sub(*s) for s in self.cfg.SUBS]
+            cy = getattr(self.cfg, "SUB_Y", SUB_Y)
+            self.subs = [Sub(*s[:4], cy=cy) for s in self.cfg.SUBS]
         surf = self.surface(t)
         surf.flush()
         arr = np.ndarray((H, W, 4), np.uint8, surf.get_data())

@@ -249,22 +249,22 @@ def p2_office(c, t):
 
 
 def p3_phone(c, t):
-    zoom = 1 + 1.0 * ease_io(prog(t, 0.0, 1.6))
+    zoom = 1 + 0.45 * ease_io(prog(t, 0.0, 1.6))
     flip = ease_io(prog(t, 2.6, 0.6))
     with grade(dark=0.35):
-        with cam(c, 600, 1000, zoom, ty=lerp(0, 160, ease_io(prog(t, 0, 1.6)))):
+        with cam(c, 520, 960, zoom, ty=lerp(0, 60, ease_io(prog(t, 0, 1.6)))):
             fill_all(c, hexc("8d8a98"))
             shape(c, rect(620, 220, 320, 400), hexc("2a3150"), "pwin", lw=3)
             r = random.Random(14)
             for i in range(9):
                 star(c, r.uniform(640, 920), r.uniform(240, 600), 2.6, 0.6 + 0.4 * math.sin(t * 3 + i))
             shape(c, rect(-200, 1100, 1500, 900), hexc("6b6170"), "pfl", lw=3)
-            hand = (lerp(40, 80, flip), lerp(-60, -40, flip)) if t > 2.2 else (20, -55)
+            hand = (lerp(40, 70, flip), lerp(-60, -46, flip)) if t > 2.2 else (20, -55)
             girl(c, 330, 1000, 1.5, sit=True, legs=False, pack=False, hat=False, look=0.9, look_up=-0.8,
                  mouth="flat", head_down=4, arms=[(-20, -60), hand])
             shape(c, rect(180, 990, 700, 30), hexc("8f8494"), "ptab", lw=3)
             # 平放的手机
-            px, py = 600, 975
+            px, py = 560, 982
             c.save()
             c.translate(px, py)
             sy = math.cos(flip * math.pi)
@@ -322,7 +322,57 @@ def party_dance(c, t):
     girl(c, 420, 1100, 1.7, pack=False, hat=False, arms=arms, walk=t * 6, mouth="laugh")
 
 
-def party_club(c, t, fade=0.0, still=False):
+NEON = "今晚不醉不归"
+
+
+def neon_sign(c, t, on=6, cx=540, cy=360, size=88):
+    """霓虹灯字：on = 还亮着的字数（从右往左熄灭）。"""
+    n = len(NEON)
+    x0 = cx - size * n / 2 + size / 2
+    with keep():
+        shape(c, rrect(cx - size * n / 2 - 30, cy - size * 0.75, size * n + 60, size * 1.4, 18), hexc("1c1b22"), "nbox", lw=3)
+        for i, ch in enumerate(NEON):
+            x = x0 + i * size
+            lit = i < on
+            flick = 1.0
+            if lit and i == on - 1 and on < n:
+                flick = 0.55 + 0.45 * math.sin(t * 60)
+            col = hexc("ff4f8b") if i % 2 == 0 else hexc("ffd34f")
+            if lit:
+                glow(c, x, cy, size * 0.95, col, 0.55 * flick)
+                text(c, ch, x, cy + size * 0.36, size, mix(col, (1, 1, 1), 0.45), a=flick)
+            else:
+                text(c, ch, x, cy + size * 0.36, size, hexc("4a4852"), a=0.9)
+
+
+def party_schedule(c, t):
+    fill_all(c, hexc("e9e3d6"))
+    shape(c, rect(110, 140, 860, 1080), hexc("f6f1e4"), "nb", lw=3)
+    for k in range(18):
+        line(c, [(140, 260 + k * 52), (940, 260 + k * 52)], f"nbl{k}", 1.2, hexc("c9c0ac"), alpha=0.7)
+    line(c, [(250, 160), (250, 1200)], "nbm", 1.6, hexc("d9a49a"))
+    text(c, "这一周", 540, 225, 54, INK)
+    days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    plans = ["舞蹈课", "健身", "喝酒", "聚餐", "蹦迪", "看演出", "再约"]
+    for i, (d, pl) in enumerate(zip(days, plans)):
+        y = 330 + i * 120
+        text(c, d, 190, y, 40, INK, a=0.85)
+        a = clamp((t - 0.05 - i * 0.14) / 0.12)
+        if a > 0:
+            text(c, pl, 290, y, 48, INK, a=a, anchor="l")
+    extras = [("+ 加班后再喝一杯", 560, 455, -0.06), ("+ 通宵！", 640, 695, 0.08), ("+ 续摊", 600, 935, -0.1),
+              ("满了", 760, 1160, -0.15)]
+    for k, (tx_, x, y, rot) in enumerate(extras):
+        a = clamp((t - 1.05 - k * 0.1) / 0.1)
+        if a > 0:
+            c.save()
+            c.translate(x, y)
+            c.rotate(rot)
+            text(c, tx_, 0, 0, 38 if k < 3 else 60, hexc("b5473c"), a=a, anchor="l")
+            c.restore()
+
+
+def party_club(c, t, fade=0.0, still=False, neon_on=6):
     fill_all(c, hexc("2b2a33"))
     if fade < 1:
         beams(c, t, 540, 120, n=7, a=0.3 * (1 - fade))
@@ -332,6 +382,7 @@ def party_club(c, t, fade=0.0, still=False):
     for k in range(6):
         line(c, [(500 + k * 16, 100), (500 + k * 16, 180)], f"bl{k}", 1, hexc("8a8a94"))
     line(c, [(540, 0), (540, 94)], "ballr", 3)
+    neon_sign(c, t, on=neon_on)
     shape(c, rect(-200, 1100, 1500, 900), hexc("3a3844"), "cfl", lw=3)
     r = random.Random(9)
     for i in range(16):
@@ -396,42 +447,15 @@ def party_bar(c, t):
                 star(c, 580 + math.cos(a) * 60, 860 + math.sin(a) * 40, 5, 0.9, hexc("fff3b0"))
 
 
+PARTY_CUTS = [0.0, 1.6, 3.2, 4.7, 6.0]
+
+
 def s05_party(c, t):
-    cuts = [0.0, 2.2, 4.2, 6.0]
-    i = 0 if t < cuts[1] else 1 if t < cuts[2] else 2
-    lt = t - cuts[i]
+    i = max(j for j in range(4) if t >= PARTY_CUTS[j])
+    lt = t - PARTY_CUTS[i]
     k = 1 + 0.06 * (1 - ease_out(prog(lt, 0, 0.3)))
     with cam(c, 540, 960, k):
-        [party_dance, party_club, party_bar][i](c, lt + i)
-    word, wx, wy, col, rot = [("跳舞", 770, 400, "ff5f8f", -0.12), ("蹦迪", 300, 470, "4fd1ff", 0.1),
-                              ("喝酒", 780, 560, "ffcf4a", -0.08)][i]
-    q = ease_back(prog(lt, 0.15, 0.35))
-    if q > 0.01:
-        with keep():
-            c.save()
-            c.translate(wx, wy)
-            c.rotate(rot + math.sin(lt * 6) * 0.03)
-            c.scale(q, q)
-            c.select_font_face(FONT_FACE)
-            c.set_font_size(150)
-            ext = c.text_extents(word)
-            c.move_to(-ext.x_advance / 2, 50)
-            c.text_path(word)
-            c.set_source_rgba(1, 1, 1, 0.95)
-            c.set_line_width(16)
-            c.set_line_join(cairo.LINE_JOIN_ROUND)
-            c.stroke_preserve()
-            c.set_source_rgba(*hexc(col), 1)
-            c.fill_preserve()
-            c.set_source_rgba(*INK, 0.9)
-            c.set_line_width(3)
-            c.stroke()
-            c.new_path()
-            for j in range(3):
-                a = -0.9 + j * 0.45
-                line(c, [(ext.x_advance / 2 + 20 + math.cos(a) * 10, -20 + math.sin(a) * 40),
-                         (ext.x_advance / 2 + 20 + math.cos(a) * 50, -20 + math.sin(a) * 80)], f"wl{i}{j}", 5, hexc(col))
-            c.restore()
+        [party_schedule, party_dance, party_club, party_bar][i](c, lt + (0 if i == 0 else i))
     fl = 1 - ease_out(prog(lt, 0, 0.18))
     if i > 0 and fl > 0:
         with keep():
@@ -439,9 +463,13 @@ def s05_party(c, t):
             c.paint()
 
 
+NEON_OFF = [0.4 + i * 0.4 for i in range(6)]       # 从右往左，一个字一个字熄灭
+
+
 def s06_empty(c, t):
     fade = ease_io(prog(t, 0.2, 2.6))
-    party_club(c, 6.0 + (t if t < 0.3 else 0.3), fade=fade, still=t > 0.3)
+    on = 6 - sum(1 for i in range(6) if t >= NEON_OFF[i])
+    party_club(c, 6.0 + (t if t < 0.3 else 0.3), fade=fade, still=t > 0.3, neon_on=on)
     r = random.Random(4)
     for k in range(30):
         x, y = r.uniform(0, W), r.uniform(1110, 1500)
@@ -937,137 +965,13 @@ IMG_PAGES = [(0.0, 2.4, img_plane), (2.4, 5.0, img_train), (5.0, 7.2, img_costum
              (9.2, 11.6, img_boat), (11.6, 14.0, img_path), (14.0, 18.0, img_badge), (18.0, 24.0, img_redraw)]
 
 
-BUB_C = (540, 520)
-BUB_R = (470, 370)
-
-
-def bubble_path(c, cx, cy, rx, ry, k=1.0, key="bub"):
-    """思考气泡：一圈圆鼓鼓的云边。"""
-    pts = []
-    n = 13
-    for i in range(n * 8):
-        a = 2 * math.pi * i / (n * 8)
-        bump = abs(math.sin(n * a / 2)) ** 0.6
-        r = 1 + 0.07 * bump
-        pts.append((cx + math.cos(a) * rx * r * k, cy + math.sin(a) * ry * r * k))
-    spath(c, wob(pts, key, 1.2, 30, static=False), True)
-
-
-def s13_imagine(c, t):
-    cx, cy = BUB_C
-    rx, ry = BUB_R
-    bx, by, bw, bh = cx - rx, cy - ry, 2 * rx, 2 * ry
-    gx, gy = 330, 1180
-    with cam(c, 540, 900, 1.0):
-        room(c, t + 18, sky="warm", hat_hook=False, chair=False, pack_corner=False, suit_corner=False,
-             amap=map_state(c, lit=1.0, anchor_glow=1.0, taut=1.0))
-        grow = ease_back(prog(t, 0.55, 0.7), 1.4)
-        spill = ease_io(prog(t, 19.0, 3.0))
-        bob = math.sin(t * 1.1) * 8
-        # 从她头顶冒出的小泡泡
-        trail = [(gx + 40, gy - 330, 14, 0.0), (gx + 80, gy - 390, 22, 0.18), (gx + 130, gy - 460, 32, 0.36)]
-        with grade(sat=1.0, warm=0.0):
-            for k, (tx_, ty_, r_, d) in enumerate(trail):
-                q = ease_back(prog(t, d, 0.3))
-                if q > 0.01:
-                    shape(c, ell(tx_, ty_ + bob * 0.3, r_ * q, r_ * q * 0.9, 12), (1, 0.99, 0.95, 0.95), f"tb{k}", lw=2.6)
-        with keep():
-            glow(c, cx, cy + bob, 640 * max(grow, 0.01), hexc("fff0c8"), 0.3 + 0.3 * spill)
-        if grow > 0.01:
-            with grade(sat=1.0, warm=0.0, dark=0.0):
-                c.save()
-                c.translate(cx, cy + bob)
-                c.scale(grow, grow)
-                c.translate(-cx, -cy)
-                bubble_path(c, cx, cy, rx, ry, key="bubf")
-                c.set_source_rgba(1, 0.99, 0.95, 1)
-                c.fill()
-                c.save()
-                bubble_path(c, cx, cy, rx * 0.97, ry * 0.97, key="bubc")
-                c.clip()
-                idx = 0
-                for i, (a0, b0, fn) in enumerate(IMG_PAGES):
-                    if a0 <= t < b0 or (i == len(IMG_PAGES) - 1 and t >= b0):
-                        idx = i
-                a0, b0, fn = IMG_PAGES[idx]
-                c.save()
-                c.translate(bx + 14, by + 14)
-                fn(c, bw - 28, bh - 28, t - a0)
-                c.restore()
-                lt = t - a0
-                if idx > 0 and lt < 0.5:                       # 像梦一样溶开
-                    pa, pb, pfn = IMG_PAGES[idx - 1]
-                    c.push_group()
-                    c.translate(bx + 14, by + 14)
-                    pfn(c, bw - 28, bh - 28, pb - pa - 0.01)
-                    c.pop_group_to_source()
-                    c.paint_with_alpha(1 - ease_io(lt / 0.5))
-                g = cairo.RadialGradient(cx, cy, min(rx, ry) * 0.55, cx, cy, max(rx, ry) * 1.05)
-                g.add_color_stop_rgba(0, 1, 0.98, 0.93, 0)
-                g.add_color_stop_rgba(1, 1, 0.98, 0.93, 0.85)
-                c.set_source(g)
-                c.paint()
-                r = random.Random(int(t * 4))
-                for k in range(7):
-                    star(c, bx + r.uniform(60, bw - 60), by + r.uniform(60, bh - 60), 3, 0.6, hexc("fff6d0"))
-                c.restore()
-                bubble_path(c, cx, cy, rx, ry, key="bubo")
-                c.set_source_rgba(*INK, 0.85)
-                c.set_line_width(3.2)
-                c.stroke()
-                c.restore()
-        if spill > 0:
-            with keep():
-                aim = math.atan2(gy - 260 - (cy + ry), gx - cx)
-                for k in range(7):
-                    a1 = aim + (k - 3) * 0.1
-                    c.move_to(cx - 60, cy + ry - 30)
-                    c.line_to(cx - 60 + math.cos(a1 - 0.04) * 700, cy + ry - 30 + math.sin(a1 - 0.04) * 700)
-                    c.line_to(cx - 60 + math.cos(a1 + 0.04) * 700, cy + ry - 30 + math.sin(a1 + 0.04) * 700)
-                    c.close_path()
-                    c.set_source_rgba(1, 0.95, 0.78, 0.13 * spill)
-                    c.fill()
-        # 现实中的她：行李箱，工牌
-        took = ease_io(prog(t, 15.4, 1.0))
-        smile = t > 2.5
-        has_badge = t < 15.3
-        tx, ty = 820, 1080
-        shape(c, rect(740, 1080, 180, 18), hexc("8c5a3c"), "stab", lw=2.6)
-        shape(c, rect(755, 1098, 14, 80), hexc("7a4d33"), "stl1", lw=2)
-        shape(c, rect(892, 1098, 14, 80), hexc("7a4d33"), "stl2", lw=2)
-        toss = prog(t, 16.0, 0.6)
-        if 0 < toss < 1:
-            bxp = lerp(gx + 40 * 1.4, 817, toss)
-            byp = lerp(gy - 95 * 1.4, 1068, toss) - math.sin(toss * math.pi) * 160
-            c.save()
-            c.translate(bxp, byp)
-            c.rotate(toss * 8)
-            shape(c, rect(-11, -10, 22, 20), hexc("f8f6f0"), "fbadge", lw=1.6, amp=0.3)
-            c.restore()
-        if toss >= 1:
-            shape(c, rect(806, 1060, 22, 20), hexc("f8f6f0"), "rbadge", lw=1.6, amp=0.3)
-        with keep():
-            if spill > 0:
-                glow(c, gx, gy - 260, 220, hexc("fff0c0"), 0.5 * spill)
-        if 15.0 < t < 16.0:
-            arms = [(-26, -76), (lerp(10, 40, took), lerp(-110, -95, took))]
-        elif 16.0 <= t < 16.5:
-            arms = [(-26, -76), (46, -130)]
-        else:
-            arms = [(-26, -76), (44, -84)]
-        girl(c, gx, gy, 1.4, pack=False, hat=True, badge=has_badge, look=0.6 if t < 14.6 else 0.2,
-             look_up=0.8 if t < 14.6 or t > 16.6 else -0.9, mouth="smile" if smile else "o",
-             head_down=4 if 14.6 < t < 16.6 else 0, arms=arms, eyes_closed=t > 21.5)
-        suitcase(c, gx + 44 * 1.4 + 50, gy + 2, 0.9, "su13", handle=1.0)
-
-
+BUB = (548, 470, 440, 350)          # 想象气泡：中心与半径
 
 
 def s14_door(c, t):
     tx = -480 * ease_io(prog(t, 0.6, 1.2))
     door = ease_io(prog(t, 1.4, 0.7))
     rad = 2400 * ease_io(prog(t, 1.8, 2.2))
-    orb = prog(t, 0.35, 0.9)
 
     def outside(cc):
         vgrad(cc, 560, 900, [(0, hexc("8fc3e3")), (1, hexc("fbf0d6"))], 1150, 1400)
@@ -1098,22 +1002,23 @@ def s14_door(c, t):
         cc.restore()
 
     flood(c, scene, 1275 + tx, 830, rad, soft=420, from_sat=0.3, to_sat=1.0)
-    shrink = ease_in(prog(t, 0.0, 0.45))
-    if shrink < 1:
-        with grade(sat=1.0, warm=0.0):
-            bubble_path(c, BUB_C[0], BUB_C[1], BUB_R[0] * (1 - shrink) + 20, BUB_R[1] * (1 - shrink) + 20, key="bubs")
-            c.set_source_rgba(1, 0.98, 0.9, 0.95)
-            c.fill_preserve()
-            c.set_source_rgba(*INK, 0.8 * (1 - shrink))
-            c.set_line_width(3)
-            c.stroke()
-    if 0.35 < t and orb < 1:
-        with keep():
-            u = ease_io(prog(t, 0.35, 0.9))
-            ox = lerp(540, 1275 + tx, u)
-            oy_ = lerp(520, 830, u)
-            glow(c, ox, oy_, 160 * (1 - u * 0.5), hexc("fff0c0"), 0.9)
-            circle(c, ox, oy_, 18 * (1 - u * 0.6), hexc("fffbe8"))
+    pop_ = ease_out(prog(t, 0.0, 0.3))
+    with keep():
+        if pop_ < 1:
+            glow(c, BUB[0], BUB[1], 560 * (1 + pop_ * 0.3), hexc("fff3d0"), 0.85 * (1 - pop_))
+        r = random.Random(21)
+        for k in range(40):
+            d = r.uniform(0, 0.4)
+            u = ease_io(prog(t, 0.05 + d * 0.5, 1.1))
+            if u >= 1:
+                continue
+            sx_ = BUB[0] + r.uniform(-0.85, 0.85) * BUB[2]
+            sy_ = BUB[1] + r.uniform(-0.85, 0.85) * BUB[3]
+            ex, ey = 1275 + tx + r.uniform(-60, 60), 830 + r.uniform(-120, 120)
+            x = lerp(sx_, ex, u) + math.sin(u * 6 + k) * 30
+            y = lerp(sy_, ey, u) - math.sin(u * math.pi) * 80
+            glow(c, x, y, 26, hexc("fff0c0"), 0.8 * (1 - u * 0.6))
+            circle(c, x, y, 4, hexc("fffbe8"), 1 - u * 0.5)
     if t > 1.8:
         GRADE["keep"] += 1
         r = random.Random(12)
@@ -1148,3 +1053,318 @@ def door_still():
 
 def outro2(c, t):
     book_outro(c, t, door_still(), "© 2026 藤原樹\n未经授权请勿转载", end_mark="第一章 · 完")
+
+
+# ================================================================ 想象的气泡（第三版）：和当地人一起
+SKIN_L = hexc("e8c09a")
+TRAIL = [(318, 884, 9), (346, 852, 14)]
+
+
+def local(c, x, y, s, key, coat, hair=hexc("2f2a28"), style="short", **kw):
+    kw.setdefault("hat", False)
+    kw.setdefault("pack", False)
+    person(c, x, y, s, coat=coat, hair=hair, hair_style=style, skin=SKIN_L, key=key, **kw)
+
+
+def thought_path(c, k=1.0, ox=0.0, oy=0.0):
+    cx, cy, rx, ry = BUB
+    pts = []
+    for i in range(96):
+        a = i / 96 * 2 * math.pi
+        r = 1 + 0.035 * math.cos(a * 11) + 0.012 * math.sin(a * 5 + STATE["t"])
+        pts.append((cx + ox + math.cos(a) * rx * r * k, cy + oy + math.sin(a) * ry * r * k))
+    spath(c, pts, True)
+
+
+def img_train_in(c, w, h, t):
+    fill_all(c, hexc("f1e2c4"))
+    c.save()
+    c.rectangle(60, 70, w - 120, h * 0.48)
+    c.clip()
+    vgrad(c, 70, 70 + h * 0.48, [(0, hexc("a9d6ef")), (1, hexc("fbf0d6"))], 60, w - 60)
+    shape(c, hill_pts(70 + h * 0.36, 26, 0.012, t * 2.2, 40, w - 40, 70 + h * 0.5, n=20), hexc("a9c48b"), "tw1", lw=2)
+    for k in range(6):
+        x = (k * 200 - t * 380) % (w + 200) - 100
+        tree(c, x, 70 + h * 0.44, 0.5, f"twt{k}", hexc("74a160"))
+    c.restore()
+    shape(c, rect(60, 70, w - 120, h * 0.48), None, "twin", lw=4)
+    shape(c, rect(-10, h * 0.62, w + 20, h * 0.4), hexc("b37a55"), "tseat", lw=2.6)
+    girl(c, w * 0.3, h * 0.66, 1.25, sit=True, legs=False, outfit="folk", pack=False, hat=True, look=0.8,
+         mouth="laugh" if t > 1.8 else "smile", key="itg", arms=[(-30, -70), (lerp(30, 60, ease_io(prog(t, 1.4, 0.5))), -80)])
+    give = ease_io(prog(t, 0.6, 1.0))
+    local(c, w * 0.72, h * 0.66, 1.25, "gran1", hexc("8d6a9f"), hexc("e3ddd5"), "granny", sit=True, legs=False,
+          look=-0.8, mouth="laugh", arms=[(lerp(-30, -110, give), -80), (30, -70)])
+    ox = w * 0.72 + lerp(-30, -110, give) * 1.25
+    if t > 1.8:
+        ox = lerp(ox, w * 0.3 + 60 * 1.25, ease_io(prog(t, 1.8, 0.4)))
+    circle(c, ox, h * 0.66 + (-80 + 52) * 1.25 - 8, 16, hexc("f08a2a"))
+    line(c, [(ox, h * 0.66 + (-80 + 52) * 1.25 - 24), (ox + 6, h * 0.66 + (-80 + 52) * 1.25 - 32)], "leafo", 2.4, hexc("4f9a5c"))
+
+
+def img_dance(c, w, h, t):
+    vgrad(c, 0, h, [(0, hexc("3b3a6e")), (0.7, hexc("c8708a")), (1, hexc("f2b27a"))], 0, w)
+    r = random.Random(3)
+    for k in range(20):
+        lx = r.uniform(0, w)
+        ly = (r.uniform(0, h) - t * r.uniform(30, 60)) % (h + 60) - 30
+        glow(c, lx, ly, 40, hexc("ffc070"), 0.6)
+        shape(c, rrect(lx - 9, ly - 12, 18, 24, 6), hexc("ff9a4a"), f"lan{k}", lw=1.4, amp=0.3)
+    shape(c, ell(w / 2, h * 0.86, w * 0.42, 50, 30), hexc("8a5a6a"), "dfloor", lw=2)
+    cols = [hexc("d1553f"), hexc("e8b94a"), hexc("4f8a8b"), hexc("8d6a9f"), hexc("e07a5f")]
+    styles = ["short", "bun", "granny", "short", "bob"]
+    dancers = []
+    for i in range(6):
+        a = t * 1.1 + i * 2 * math.pi / 6
+        x = w / 2 + math.cos(a) * w * 0.3
+        y = h * 0.86 + math.sin(a) * 42
+        dancers.append((y, i, x))
+    for y, i, x in sorted(dancers):
+        s = 0.95 + (y - h * 0.86) / 42 * 0.12
+        arms = [(-40, -92), (40, -92)]
+        if i == 0:
+            girl(c, x, y, s * 1.1, outfit="folk", pack=False, hat=True, walk=t * 7, arms=arms, mouth="laugh", key="idg")
+        else:
+            local(c, x, y, s, f"dl{i}", cols[i - 1], hexc("e3ddd5") if styles[i - 1] == "granny" else hexc("2f2a28"),
+                  styles[i - 1], walk=t * 7 + i, arms=arms, mouth="laugh")
+
+
+def img_feast(c, w, h, t):
+    vgrad(c, 0, h, [(0, hexc("f4d3a0")), (1, hexc("fbecc8"))], 0, w)
+    tree(c, w * 0.5, h * 0.6, 3.0, "itree", hexc("6f9a58"))
+    seats = [(0.16, hexc("4f8a8b"), "short"), (0.32, hexc("d1553f"), "bun"), (0.68, hexc("8d6a9f"), "granny"),
+             (0.84, hexc("e8b94a"), "short")]
+    for k, (fx, col, st) in enumerate(seats):
+        local(c, w * fx, h * 0.72, 1.05, f"fs{k}", col, hexc("e3ddd5") if st == "granny" else hexc("2f2a28"), st,
+              sit=True, legs=False, mouth="laugh", look=0.6 if fx < 0.5 else -0.6)
+    girl(c, w * 0.5, h * 0.72, 1.1, sit=True, legs=False, outfit="folk", pack=False, hat=True, mouth="laugh", key="ifg",
+         arms=[(-40, -60), (40, -60)])
+    shape(c, rect(40, h * 0.72, w - 80, 24), hexc("a8744f"), "ftab", lw=2.6)
+    for k in range(5):
+        dx = 120 + k * (w - 240) / 4
+        if k == 3:
+            dx = lerp(w * 0.74, w * 0.56, ease_io(prog(t, 0.3, 1.0)))
+        shape(c, ell(dx, h * 0.72 - 6, 34, 10, 12), hexc("f3efe6"), f"fpl{k}", lw=1.6)
+        circle(c, dx, h * 0.72 - 12, 12, [hexc("e8823f"), hexc("7aa557"), hexc("d6463c")][k % 3])
+        ph = (t * 0.6 + k * 0.2) % 1
+        by = h * 0.72 - 30 - ph * 300
+        bx = dx + math.sin(ph * 6 + k) * 30
+        if ph < 0.35:
+            line(c, [(dx, h * 0.72 - 30), (bx, by)], f"fstm{k}", 2, (1, 1, 1), alpha=0.6)
+        else:
+            fl = math.sin(t * 12 + k)
+            line(c, [(bx - 10, by - 5 * fl), (bx, by), (bx + 10, by - 5 * fl)], f"fsb{k}", 2.2, (1, 1, 1), alpha=1 - ph)
+
+
+def img_row(c, w, h, t):
+    vgrad(c, 0, h * 0.5, [(0, hexc("2f3a6e")), (1, hexc("f2b9a0"))], 0, w)
+    vgrad(c, h * 0.5, h, [(0, hexc("5a6a9a")), (1, hexc("2a3460"))], 0, w)
+    r = random.Random(9)
+    for k in range(16):
+        star(c, r.uniform(0, w), r.uniform(0, h * 0.35), 2.4, 0.6 + 0.4 * math.sin(t * 3 + k))
+        star(c, r.uniform(0, w), r.uniform(h * 0.55, h), 2.0, 0.4 + 0.3 * math.sin(t * 2 + k))
+    bx, by = w * 0.5, h * 0.64 + math.sin(t * 1.5) * 6
+    stroke = math.sin(t * 3)
+    girl(c, bx - 40, by - 20, 1.1, sit=True, legs=False, outfit="folk", pack=False, hat=True, mouth="laugh", key="irg",
+         arms=[(-50, -40 + 20 * stroke), (-30, -34 + 20 * stroke)])
+    local(c, bx + 40, by - 20, 1.1, "fisher", hexc("7a8a6a"), hexc("8a7a6a"), "short", sit=True, legs=False,
+          mouth="laugh", look=-0.8, arms=[(-70, -44 + 20 * stroke), (-50, -30 + 20 * stroke)])
+    shape(c, [(bx - 220, by - 20), (bx + 200, by - 20), (bx + 150, by + 30), (bx - 170, by + 30)], hexc("8c5a3c"), "rboat", lw=2.6)
+    ox = bx - 100
+    line(c, [(ox, by - 70), (ox - 110, by + 60 + 10 * stroke)], "roar", 4.5, hexc("6b4430"))
+    for k in range(3):
+        ph = (t * 0.8 + k / 3) % 1
+        c.save()
+        c.translate(ox - 110, by + 66)
+        c.scale(1, 0.3)
+        c.arc(0, 0, 20 + ph * 160, 0, 2 * math.pi)
+        c.restore()
+        c.set_source_rgba(1, 0.95, 0.8, 0.6 * (1 - ph))
+        c.set_line_width(2)
+        c.stroke()
+
+
+def img_walk(c, w, h, t):
+    vgrad(c, 0, h * 0.4, [(0, hexc("bfe0f0")), (1, hexc("fbe6c4"))], 0, w)
+    shape(c, rect(-10, h * 0.4, w + 20, h * 0.6 + 10), hexc("bcd38f"), "iwg", lw=2.4)
+    shape(c, [(w * 0.5 - 18, h * 0.4), (w * 0.5 + 18, h * 0.4), (w * 0.5 + 240, h + 10), (w * 0.5 - 240, h + 10)],
+          hexc("d8c9b0"), "stone", lw=2.4)
+    for k in range(14):
+        z = k / 14
+        y = lerp(h - 10, h * 0.42, z)
+        line(c, [(w * 0.5 - lerp(230, 16, z), y), (w * 0.5 + lerp(230, 16, z), y)], f"st{k}", 1.4, hexc("b9a988"), alpha=0.7)
+    u = ease_io(prog(t, 0.0, 2.4))
+    for k, (dx, col, st) in enumerate(((-90, hexc("4f8a8b"), "short"), (90, hexc("d1553f"), "granny"))):
+        gy = lerp(h - 40, h * 0.62, u) - k * 20
+        s = lerp(1.15, 0.65, u)
+        x = w * 0.5 + dx * s
+        local(c, x, gy, s, f"wl{k}", col, hexc("e3ddd5") if st == "granny" else hexc("2f2a28"), st, view="back", walk=t * 6 + k)
+        shape(c, ell(x + 22 * s, gy - 80 * s, 18 * s, 12 * s, 10), hexc("c49a6c"), f"wbk{k}", lw=1.8)
+    gy = lerp(h - 20, h * 0.64, u)
+    girl(c, w * 0.5, gy, lerp(1.2, 0.68, u), view="back", outfit="folk", pack=True, hat=True, walk=t * 6, key="iwgl")
+
+
+def img_badge2(c, w, h, t):
+    vgrad(c, 0, h * 0.55, [(0, hexc("f6d7a6")), (1, hexc("fbeccc"))], 0, w)
+    for i, (x, w_, h_, wc, rc) in enumerate(((40, 150, 200, "f1c27d", "b4533f"), (220, 120, 260, "8fc0b5", "3f6f73"),
+                                              (w - 330, 140, 220, "e98f6f", "8b4a3a"), (w - 170, 140, 180, "f3e3c3", "3c6ea5"))):
+        house(c, x, h * 0.6, w_, h_, hexc(wc), hexc(rc), f"ibh{i}")
+    shape(c, rect(-10, h * 0.6, w + 20, h * 0.4 + 10), hexc("e6d2a8"), "isq", lw=2.4)
+    bx, by = w * 0.72, h * 0.86
+    shape(c, rect(bx - 60, by - 60, 120, 60), hexc("b37a4c"), "ibox", lw=2.6)
+    toss = prog(t, 0.8, 0.8)
+    gx, gy = w * 0.38, h * 0.88
+    girl(c, gx, gy, 1.5, outfit="folk", pack=False, hat=True, badge=t < 0.8, mouth="laugh",
+         arms=[(-26, -76), (40, -130)] if 0.6 < t < 1.4 else None, key="ibg")
+    if 0.8 <= t < 1.6:
+        x = lerp(gx + 40 * 1.5, bx, toss)
+        y = lerp(gy - 130 * 1.5, by - 50, toss) - math.sin(toss * math.pi) * 150
+        c.save()
+        c.translate(x, y)
+        c.rotate(toss * 9)
+        shape(c, rect(-12, -10, 24, 20), hexc("f8f6f0"), "ibdg", lw=1.6, amp=0.3)
+        c.restore()
+    clap = 0.5 + 0.5 * math.sin(t * 14) if t > 1.6 else 0.0
+    for k, (x, col, st) in enumerate(((w * 0.12, hexc("4f8a8b"), "short"), (w * 0.9, hexc("8d6a9f"), "granny"))):
+        d = 1 if x < w / 2 else -1
+        local(c, x, gy, 1.3, f"cl{k}", col, hexc("e3ddd5") if st == "granny" else hexc("2f2a28"), st,
+              mouth="laugh", look=0.6 * d, arms=[(-6 - 14 * clap, -96), (6 + 14 * clap, -96)])
+    if t > 1.6:
+        r = random.Random(int(t * 6))
+        for k in range(8):
+            star(c, bx + r.uniform(-80, 80), by - 80 + r.uniform(-60, 20), 4, 0.8, hexc("fff3b0"))
+
+
+def img_redraw2(c, w, h, t):
+    c.save()
+    k = w / 1080
+    c.scale(k, k)
+    c.translate(0, -560)
+    s25_redraw(c, t, outfit="folk")
+    if t > 3.8:
+        a = ease_io(prog(t, 3.8, 0.8))
+        clap = 0.5 + 0.5 * math.sin(t * 14)
+        with group_alpha(c, a):
+            for j, (x, col, st) in enumerate(((240, hexc("4f8a8b"), "short"), (840, hexc("8d6a9f"), "granny"))):
+                d = 1 if x < 540 else -1
+                local(c, x, 1150, 1.8, f"rl{j}", col, hexc("e3ddd5") if st == "granny" else hexc("2f2a28"), st,
+                      mouth="laugh", look=0.6 * d, arms=[(-6 - 14 * clap, -96), (6 + 14 * clap, -96)])
+    c.restore()
+
+
+IMG_PAGES = [(0.0, 2.4, img_plane), (2.4, 5.0, img_train_in), (5.0, 7.2, img_dance), (7.2, 9.2, img_feast),
+             (9.2, 11.6, img_row), (11.6, 14.0, img_walk), (14.0, 18.0, img_badge2), (18.0, 24.0, img_redraw2)]
+
+
+def _page_at(t):
+    idx = 0
+    for i, (a, b, fn) in enumerate(IMG_PAGES):
+        if t >= a:
+            idx = i
+    return idx
+
+
+def s13_imagine(c, t):
+    cx, cy, rx, ry = BUB
+    with cam(c, 540, 900, 1.0):
+        room(c, t + 18, sky="warm", hat_hook=False, chair=False, pack_corner=False, suit_corner=False,
+             amap=map_state(c, lit=1.0, anchor_glow=1.0, taut=1.0))
+        pop = ease_back(prog(t, 0.2, 0.8))
+        trail_a = [ease_out(prog(t, 0.0, 0.25)), ease_out(prog(t, 0.1, 0.25))]
+        spill = ease_io(prog(t, 19.0, 3.0))
+        fy = math.sin(t * 1.2) * 6
+        with keep():
+            glow(c, cx, cy + fy, 700, hexc("fff0c8"), (0.3 + 0.3 * spill) * pop)
+        with grade(sat=1.0, warm=0.0, dark=0.0):
+            for (x, y, r_), a in zip(TRAIL, trail_a):
+                if a > 0:
+                    shape(c, ell(x, y + fy * 0.3, r_ * a, r_ * a, 12), (1, 0.99, 0.95), f"tr{x}", lw=2.4, amp=0.6)
+            if pop > 0.01:
+                c.save()
+                ax, ay = 360, 840
+                c.translate(ax, ay)
+                c.scale(pop, pop)
+                c.translate(-ax, -ay + fy)
+                c.save()
+                thought_path(c)
+                c.clip()
+                idx = _page_at(t)
+                a, b, fn = IMG_PAGES[idx]
+                lt = t - a
+                bx0, by0 = cx - rx, cy - ry
+                if idx > 0 and lt < 0.45:
+                    pa, pb, pfn = IMG_PAGES[idx - 1]
+                    c.save()
+                    c.translate(bx0, by0)
+                    pfn(c, rx * 2, ry * 2, pb - pa - 0.01)
+                    c.restore()
+                    with group_alpha(c, ease_io(lt / 0.45)):
+                        c.save()
+                        c.translate(bx0, by0)
+                        fn(c, rx * 2, ry * 2, lt)
+                        c.restore()
+                else:
+                    c.save()
+                    c.translate(bx0, by0)
+                    fn(c, rx * 2, ry * 2, lt)
+                    c.restore()
+                g = cairo.RadialGradient(cx, cy, ry * 0.55, cx, cy, rx * 1.05)
+                g.add_color_stop_rgba(0, 1, 0.98, 0.94, 0)
+                g.add_color_stop_rgba(1, 1, 0.98, 0.94, 0.75)
+                c.set_source(g)
+                c.paint()
+                r = random.Random(int(t * 4))
+                for k in range(8):
+                    star(c, cx + r.uniform(-rx * 0.8, rx * 0.8), cy + r.uniform(-ry * 0.8, ry * 0.8), 3, 0.6, hexc("fff6d0"))
+                c.restore()
+                thought_path(c)
+                c.set_source_rgba(1, 1, 1, 0.5)
+                c.set_line_width(14)
+                c.stroke()
+                spath(c, wob([(cx + math.cos(i / 48 * 2 * math.pi) * rx * (1 + 0.035 * math.cos(i / 48 * 2 * math.pi * 11)),
+                               cy + math.sin(i / 48 * 2 * math.pi) * ry * (1 + 0.035 * math.cos(i / 48 * 2 * math.pi * 11)))
+                              for i in range(48)], "bubink", 1.2, 40), True)
+                c.set_source_rgba(*INK, 0.85)
+                c.set_line_width(3)
+                c.stroke()
+                c.restore()
+        if spill > 0:
+            with keep():
+                aim = math.atan2(960 - (cy + ry), 300 - cx)
+                for k in range(7):
+                    a0 = aim + (k - 3) * 0.1
+                    c.move_to(cx - 120, cy + ry - 30)
+                    c.line_to(cx - 120 + math.cos(a0 - 0.04) * 600, cy + ry - 30 + math.sin(a0 - 0.04) * 600)
+                    c.line_to(cx - 120 + math.cos(a0 + 0.04) * 600, cy + ry - 30 + math.sin(a0 + 0.04) * 600)
+                    c.close_path()
+                    c.set_source_rgba(1, 0.95, 0.78, 0.13 * spill)
+                    c.fill()
+        # 现实中的她：行李箱，工牌
+        gx, gy = 300, 1180
+        took = ease_io(prog(t, 15.4, 1.0))
+        shape(c, rect(740, 1080, 180, 18), hexc("8c5a3c"), "stab", lw=2.6)
+        shape(c, rect(755, 1098, 14, 80), hexc("7a4d33"), "stl1", lw=2)
+        shape(c, rect(892, 1098, 14, 80), hexc("7a4d33"), "stl2", lw=2)
+        toss = prog(t, 16.0, 0.6)
+        if 0 < toss < 1:
+            bxp = lerp(gx + 40 * 1.4, 817, toss)
+            byp = lerp(gy - 95 * 1.4, 1068, toss) - math.sin(toss * math.pi) * 160
+            c.save()
+            c.translate(bxp, byp)
+            c.rotate(toss * 8)
+            shape(c, rect(-11, -10, 22, 20), hexc("f8f6f0"), "fbadge", lw=1.6, amp=0.3)
+            c.restore()
+        if toss >= 1:
+            shape(c, rect(806, 1060, 22, 20), hexc("f8f6f0"), "rbadge", lw=1.6, amp=0.3)
+        with keep():
+            if spill > 0:
+                glow(c, gx, gy - 260, 220, hexc("fff0c0"), 0.5 * spill)
+        if 15.0 < t < 16.0:
+            arms = [(-26, -76), (lerp(10, 40, took), lerp(-110, -95, took))]
+        elif 16.0 <= t < 16.5:
+            arms = [(-26, -76), (46, -130)]
+        else:
+            arms = [(-26, -76), (44, -84)]
+        girl(c, gx, gy, 1.4, pack=False, hat=True, badge=t < 15.3, look=0.6 if t < 14.6 else 0.2,
+             look_up=0.8 if t < 14.6 or t > 16.6 else -0.9, mouth="smile" if t > 2.5 else "o",
+             head_down=4 if 14.6 < t < 16.6 else 0, arms=arms, eyes_closed=t > 21.5)
+        suitcase(c, gx + 44 * 1.4 + 50, gy + 2, 0.9, "su13", handle=1.0)
