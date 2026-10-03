@@ -35,7 +35,7 @@ def main(path, styles):
 
 def costume_sheet(path):
     from draw import COSTUMES
-    outfits = [("coat", "现在 · 黄外套"), ("folk", "想象 · 民族服饰")] + [(k, v["name"]) for k, v in COSTUMES.items()]
+    outfits = [("coat", "现在 · 黄外套")] + [(k, v["name"]) for k, v in COSTUMES.items()]
     cw, rh = 1000, 600
     surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, cw * 4, rh * len(outfits) + 120)
     c = cairo.Context(surf)
