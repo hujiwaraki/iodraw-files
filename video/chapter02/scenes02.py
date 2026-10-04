@@ -979,23 +979,135 @@ def outro(c, t):
 
 
 # ================================================================ 第二版新增：开头的旧铁盒
-def ticket(c, x, y, s, key, age=1.0, rot=0.0):
-    """泛黄、卷边的旧车票。"""
+TICKET_KINDS = ("train", "boarding", "scenic", "bus")
+
+
+def _notched(x0, y0, x1, y1, nx, r=12):
+    """带两个半圆缺口的票面轮廓（缺口在 nx 处，上下各一个）。"""
+    pts = [(x0, y0)]
+    pts += [(nx + r * math.cos(a), y0 + r * math.sin(a)) for a in [math.pi - i * math.pi / 8 for i in range(9)]]
+    pts += [(x1, y0), (x1, y1)]
+    pts += [(nx + r * math.cos(a), y1 - r * math.sin(a)) for a in [i * math.pi / 8 for i in range(9)]]
+    pts += [(x0, y1)]
+    return pts
+
+
+def _qr(c, x, y, size, key, seed, col):
+    r = random.Random(seed)
+    n = 7
+    cell = size / n
+    shape(c, rect(x, y, size, size), (1, 1, 1), key + "qb", lw=1.2, amp=0.15)
+    for i in range(n):
+        for j in range(n):
+            corner = (i < 2 and j < 2) or (i > 4 and j < 2) or (i < 2 and j > 4)
+            if corner or r.random() < 0.45:
+                c.rectangle(x + i * cell, y + j * cell, cell * 0.92, cell * 0.92)
+    c.set_source_rgba(*G(col)[:3], 0.9)
+    c.fill()
+
+
+def _perf(c, x, y0, y1, key, col):
+    """撕票用的虚线。"""
+    n = int((y1 - y0) / 10)
+    for k in range(n):
+        line(c, [(x, y0 + k * 10), (x, y0 + k * 10 + 5)], f"{key}pf{k}", 1.6, col, alpha=0.6, amp=0.1)
+
+
+def _barcode(c, x, y, w, h, seed, col):
+    r = random.Random(seed)
+    xx = x
+    while xx < x + w:
+        bw = r.choice((1.5, 2.5, 4))
+        c.rectangle(xx, y, bw, h)
+        xx += bw + r.choice((1.5, 3))
+    c.set_source_rgba(*G(col)[:3], 0.9)
+    c.fill()
+
+
+def travel_ticket(c, x, y, s, kind, key, age=0.0, rot=0.0, seed=0):
+    """画得具体一点的票：火车票 / 登机牌 / 景区门票 / 汽车票（不写真实地名）。票面约 340×160。"""
     c.save()
     c.translate(x, y)
     c.rotate(rot)
     c.scale(s, s)
-    paper = mix(hexc("f4f0e6"), hexc("e2c98f"), age)
+    yellow = hexc("e2c98f")
+    ink = mix(hexc("3a3a3a"), yellow, 0.35 * age)
+    red = mix(hexc("c9473b"), yellow, 0.35 * age)
     with keep():
-        shape(c, [(-170, -80), (170, -80), (176, 60), (150, 82), (-170, 80)], paper, key, lw=3, amp=1.0)
-        shape(c, rect(-170, -80, 340, 34), mix(hexc("9fc5e8"), hexc("c9b07a"), age), key + "h", lw=2, amp=0.6)
-        for j in range(3):
-            line(c, [(-140, -16 + j * 30), (40 - j * 40, -16 + j * 30)], f"{key}l{j}", 4, mix(INK, paper, 0.45 + 0.2 * age))
-        line(c, [(-140, 62), (60, 62)], key + "arr", 3, mix(RED, paper, 0.4))
-        shape(c, [(60, 52), (78, 62), (60, 72)], mix(RED, paper, 0.4), key + "arh", lw=1.6)
-        shape(c, ell(120, 6, 34, 34, 20), None, key + "st", lw=2.4, alpha=0.5)
-        circle(c, 150, 60, 10, hexc("6b5a4a"), 0.5)
+        if kind == "train":                                       # 浅蓝底的火车票
+            paper = mix(hexc("cfe4f2"), yellow, age)
+            shape(c, rrect(-170, -80, 340, 160, 8), paper, key, lw=2.4, amp=0.3)
+            for k in range(6):                                    # 底纹
+                line(c, [(-160, -60 + k * 26), (160, -64 + k * 26)], f"{key}w{k}", 1, mix(paper, (1, 1, 1), 0.5), alpha=0.6)
+            text(c, "Z" + str(1000000 + seed * 7919)[-7:], -150, -52, 18, red, anchor="l")
+            text(c, "检票：" + str(3 + seed % 18), 150, -52, 16, ink, anchor="r")
+            text(c, "出发", -110, -8, 30, ink)
+            text(c, "到达", 80, -8, 30, ink)
+            line(c, [(-70, -18), (36, -18)], key + "ar", 2.4, ink)
+            shape(c, [(36, -24), (48, -18), (36, -12)], ink, key + "arh", lw=1.2, amp=0.1)
+            text(c, "G" + str(100 + seed * 37 % 900) + " 次", -16, -26, 16, ink)
+            text(c, "    年   月   日     开", -150, 26, 17, ink, anchor="l")
+            text(c, f"{1 + seed % 16:02d} 车 {1 + seed * 3 % 20:02d}{'ABCDF'[seed % 5]} 号", 40, 26, 17, ink, anchor="l")
+            text(c, f"¥ {80 + seed * 53 % 600}.0 元", -150, 52, 18, ink, anchor="l")
+            text(c, "二等座", -20, 52, 16, ink, anchor="l")
+            _qr(c, 100, 18, 48, key, seed, ink)
+            if age > 0.3:                                         # 卷起的一角
+                shape(c, [(170, 50), (170, 80), (140, 80)], darker(paper, 0.85), key + "curl", lw=1.6, amp=0.2)
+        elif kind == "boarding":                                  # 登机牌：左边色带、右边存根
+            paper = mix(hexc("fbfaf6"), yellow, age)
+            band = [hexc("3f6fb5"), hexc("c9473b"), hexc("4f8a7a")][seed % 3]
+            shape(c, _notched(-170, -80, 170, 80, 92), paper, key, lw=2.4, amp=0.3)
+            shape(c, rect(-170, -80, 26, 160), band, key + "band", lw=1.6, amp=0.2)
+            text(c, "登机牌  BOARDING PASS", -134, -52, 15, band, anchor="l")
+            text(c, "出发", -126, -6, 26, ink, anchor="l")
+            text(c, "到达", 30, -6, 26, ink, anchor="l")
+            c.save()                                              # 小飞机（机头朝右）
+            c.translate(2, -16)
+            shape(c, ell(0, 0, 20, 4, 14), ink, key + "pf", lw=0.8, amp=0.05)
+            shape(c, [(-2, -2), (-10, -16), (-4, -16), (8, -2)], ink, key + "pw1", lw=0.8, amp=0.05)
+            shape(c, [(-2, 2), (-10, 16), (-4, 16), (8, 2)], ink, key + "pw2", lw=0.8, amp=0.05)
+            shape(c, [(-16, -1), (-22, -8), (-18, -8), (-12, -1)], ink, key + "pt", lw=0.8, amp=0.05)
+            c.restore()
+            text(c, "航班 FLT", -132, 24, 12, ink, anchor="l")
+            text(c, "座位 SEAT", -62, 24, 12, ink, anchor="l")
+            text(c, "登机口", 4, 24, 12, ink, anchor="l")
+            text(c, f"{'MU CA CZ HU'.split()[seed % 4]}{1000 + seed * 97 % 8000}", -132, 46, 16, ink, anchor="l")
+            text(c, f"{10 + seed % 30}{'ABCDEF'[seed % 6]}", -62, 46, 16, ink, anchor="l")
+            text(c, f"{1 + seed % 60}", 4, 46, 16, ink, anchor="l")
+            _perf(c, 92, -66, 66, key, ink)
+            _barcode(c, 104, -50, 56, 90, seed, ink)
+        elif kind == "scenic":                                    # 景区门票：一张小风景画 + 副券
+            paper = mix(hexc("f7e3b0"), yellow, age)
+            shape(c, _notched(-170, -80, 170, 80, 100), paper, key, lw=2.4, amp=0.3)
+            c.save()
+            c.rectangle(-156, -66, 236, 92)
+            c.clip()
+            vgrad(c, -66, 26, [(0, hexc("7fb2d8")), (1, hexc("dfeef5"))], -156, 80)
+            shape(c, [(-160, 26), (-90, -40), (-40, 0), (10, -50), (80, 26)], hexc("8d8a9a"), key + "mt", lw=1.6, amp=0.3)
+            shape(c, [(-8, -36), (10, -50), (28, -34), (10, -38)], hexc("f4f7fa"), key + "ms", lw=1.2, amp=0.2)
+            c.restore()
+            shape(c, rect(-156, -66, 236, 92), None, key + "pf", lw=1.6, amp=0.2)
+            text(c, "门  票", -38, 56, 24, red)
+            text(c, "No." + str(100000 + seed * 4567)[-6:], -150, 72, 12, ink, anchor="l")
+            _perf(c, 100, -66, 66, key, ink)
+            text(c, "副", 135, -16, 22, ink)
+            text(c, "券", 135, 14, 22, ink)
+            shape(c, ell(135, 50, 14, 14, 12), None, key + "stamp", lw=2, alpha=0.6)
+        else:                                                     # 汽车票：小小的黄纸，打了个孔
+            paper = mix(hexc("f2d98a"), yellow, age)
+            shape(c, rrect(-150, -70, 300, 140, 6), paper, key, lw=2.4, amp=0.3)
+            text(c, "汽 车 客 票", 0, -36, 24, red)
+            line(c, [(-130, -22), (130, -22)], key + "l1", 1.6, ink, alpha=0.6)
+            text(c, "出发 —→ 到达", 0, 8, 22, ink)
+            text(c, f"座号 {1 + seed % 45}    票价 {20 + seed * 7 % 120}.00", 0, 40, 15, ink)
+            circle(c, 118, -46, 9, darker(paper, 0.7))
+            text(c, str(10000000 + seed * 3331)[-8:], -130, 60, 12, red, anchor="l")
     c.restore()
+
+
+def ticket(c, x, y, s, key, age=1.0, rot=0.0):
+    """最早那张泛黄、卷边的旧火车票。"""
+    travel_ticket(c, x, y, s, "train", key, age=age, rot=rot, seed=1)
 
 
 def c00_box(c, t):
@@ -1017,8 +1129,11 @@ def c00_box(c, t):
         r = random.Random(4)
         for k in range(8):                                     # 盒子里的一沓车票和登机牌
             jig = math.sin(t * 9 + k) * 5 * (1.4 < t < 2.8)
-            col = [hexc("f4f2ec"), hexc("dfe9f5"), hexc("f7e3b0"), hexc("f2d0c8")][k % 4]
-            shape(c, rect(bx - 135 + r.uniform(-8, 8), by - 128 + k * 3 + jig, 270, 30), col, f"bt{k}", lw=1.6, amp=0.4)
+            col = [hexc("cfe4f2"), hexc("fbfaf6"), hexc("f7e3b0"), hexc("f2d98a")][k % 4]
+            tx, ty = bx - 135 + r.uniform(-8, 8), by - 128 + k * 3 + jig
+            shape(c, rect(tx, ty, 270, 30), col, f"bt{k}", lw=1.6, amp=0.2)
+            shape(c, rect(tx, ty, 18 if k % 4 == 1 else 270, 8), [hexc("9fb8cc"), hexc("3f6fb5"), hexc("c9a050"),
+                  hexc("c9473b")][k % 4], f"bth{k}", lw=0.8, amp=0.1)
         shape(c, rrect(bx - 165, by - 110, 330, 120, 12), hexc("6f8aa0"), "box", lw=3)
         shape(c, rect(bx - 165, by - 88, 330, 12), hexc("5d7489"), "boxs", lw=2)
     # 抽出最底下那张泛黄的车票，越变越大
@@ -1343,9 +1458,12 @@ def tinbox(c, bx, by, lid, key, n=8, jig=0.0, empty=False):
         if not empty:
             r = random.Random(4)
             for k in range(n):
-                col = [hexc("f4f2ec"), hexc("dfe9f5"), hexc("f7e3b0"), hexc("f2d0c8")][k % 4]
-                shape(c, rect(bx - 135 + r.uniform(-8, 8), by - 128 + k * 3 + math.sin(k) * jig, 270, 30), col, f"{key}t{k}",
-                      lw=1.6, amp=0.4)
+                col = [hexc("cfe4f2"), hexc("fbfaf6"), hexc("f7e3b0"), hexc("f2d98a")][k % 4]
+                tx = bx - 135 + r.uniform(-8, 8)
+                ty = by - 128 + k * 3 + math.sin(k) * jig
+                shape(c, rect(tx, ty, 270, 30), col, f"{key}t{k}", lw=1.6, amp=0.2)
+                shape(c, rect(tx, ty, 18 if k % 4 == 1 else 270, 8), [hexc("9fb8cc"), hexc("3f6fb5"), hexc("c9a050"),
+                      hexc("c9473b")][k % 4], f"{key}th{k}", lw=0.8, amp=0.1)
         shape(c, rrect(bx - 165, by - 110, 330, 120, 12), hexc("6f8aa0"), key + "b", lw=3)
         shape(c, rect(bx - 165, by - 88, 330, 12), hexc("5d7489"), key + "s", lw=2)
 
@@ -1409,11 +1527,7 @@ def desk_tickets(c, t):
         if i == 0:
             ticket(c, 0, 0, 0.36, "dt0", age=1.0)
         else:
-            col = [hexc("f4f2ec"), hexc("dfe9f5"), hexc("f7e3b0"), hexc("f2d0c8")][i % 4]
-            with keep():
-                shape(c, rect(-46, -20, 92, 40), col, f"dt{i}", lw=1.8, amp=0.4)
-                line(c, [(-30, -4), (24, -4)], f"dtl{i}", 2.4, hexc("3f6fb5") if i % 2 else RED)
-                line(c, [(-30, 8), (8, 8)], f"dtm{i}", 2, hexc("8a8f99"))
+            travel_ticket(c, 0, 0, 0.34, TICKET_KINDS[i % 4], f"dt{i}", age=max(0.0, 0.6 - i * 0.03), seed=i + 2)
         c.restore()
         with keep():
             glow(c, x, y, 60 * k, hexc("ffd27a"), 0.35)
@@ -1432,12 +1546,7 @@ def desk_front(c, t):
     with keep():                                                  # 铺满桌面的车票
         for k in range(16):
             x, y = r.uniform(60, 1020), r.uniform(1060, 1300)
-            c.save()
-            c.translate(x, y)
-            c.rotate(r.uniform(-0.5, 0.5))
-            col = [hexc("f4f2ec"), hexc("dfe9f5"), hexc("f7e3b0"), hexc("f2d0c8")][k % 4]
-            shape(c, rect(-50, -18, 100, 36), col, f"ft{k}", lw=1.6, amp=0.4)
-            c.restore()
+            travel_ticket(c, x, y, 0.3, TICKET_KINDS[k % 4], f"ft{k}", age=0.2, rot=r.uniform(-0.5, 0.5), seed=k + 20)
     tinbox(c, 540, 1170, 0.9, "eb", n=3)
     u = ease_io(prog(t, 0.6, 1.2))
     ticket(c, lerp(600, 540, u), lerp(860, 1050, u), lerp(0.55, 0.42, u), "etk", age=1.0, rot=lerp(0.2, 0.05, u))
