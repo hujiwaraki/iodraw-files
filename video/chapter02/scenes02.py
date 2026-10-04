@@ -1048,8 +1048,7 @@ def travel_ticket(c, x, y, s, kind, key, age=0.0, rot=0.0, seed=0):
             text(c, "G" + str(100 + seed * 37 % 900) + " 次", -16, -26, 16, ink)
             text(c, "    年   月   日     开", -150, 26, 17, ink, anchor="l")
             text(c, f"{1 + seed % 16:02d} 车 {1 + seed * 3 % 20:02d}{'ABCDF'[seed % 5]} 号", 40, 26, 17, ink, anchor="l")
-            text(c, f"¥ {80 + seed * 53 % 600}.0 元", -150, 52, 18, ink, anchor="l")
-            text(c, "二等座", -20, 52, 16, ink, anchor="l")
+            text(c, "二等座", -150, 52, 16, ink, anchor="l")
             _qr(c, 100, 18, 48, key, seed, ink)
             if age > 0.3:                                         # 卷起的一角
                 shape(c, [(170, 50), (170, 80), (140, 80)], darker(paper, 0.85), key + "curl", lw=1.6, amp=0.2)
@@ -1076,6 +1075,8 @@ def travel_ticket(c, x, y, s, kind, key, age=0.0, rot=0.0, seed=0):
             text(c, f"{1 + seed % 60}", 4, 46, 16, ink, anchor="l")
             _perf(c, 92, -66, 66, key, ink)
             _barcode(c, 104, -50, 56, 90, seed, ink)
+            if age > 0.3:                                         # 卷起的一角
+                shape(c, [(170, 50), (170, 80), (140, 80)], darker(paper, 0.85), key + "curl", lw=1.6, amp=0.2)
         elif kind == "scenic":                                    # 景区门票：一张小风景画 + 副券
             paper = mix(hexc("f7e3b0"), yellow, age)
             shape(c, _notched(-170, -80, 170, 80, 100), paper, key, lw=2.4, amp=0.3)
@@ -1099,15 +1100,15 @@ def travel_ticket(c, x, y, s, kind, key, age=0.0, rot=0.0, seed=0):
             text(c, "汽 车 客 票", 0, -36, 24, red)
             line(c, [(-130, -22), (130, -22)], key + "l1", 1.6, ink, alpha=0.6)
             text(c, "出发 —→ 到达", 0, 8, 22, ink)
-            text(c, f"座号 {1 + seed % 45}    票价 {20 + seed * 7 % 120}.00", 0, 40, 15, ink)
+            text(c, f"座号 {1 + seed % 45}", 0, 40, 15, ink)
             circle(c, 118, -46, 9, darker(paper, 0.7))
             text(c, str(10000000 + seed * 3331)[-8:], -130, 60, 12, red, anchor="l")
     c.restore()
 
 
 def ticket(c, x, y, s, key, age=1.0, rot=0.0):
-    """最早那张泛黄、卷边的旧火车票。"""
-    travel_ticket(c, x, y, s, "train", key, age=age, rot=rot, seed=1)
+    """最早那张泛黄、卷边的旧登机牌（第一次出发是坐飞机）。"""
+    travel_ticket(c, x, y, s, "boarding", key, age=age, rot=rot, seed=1)
 
 
 def c00_box(c, t):
