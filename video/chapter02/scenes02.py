@@ -612,7 +612,6 @@ def c12_wait(c, t):
                 x = (r.uniform(0, W) + math.sin(t + i) * 30) % W
                 y = (r.uniform(0, 1300) + t * 90) % 1300
                 circle(c, x, y, r.uniform(3, 6), (1, 1, 1), 0.85 * a)
-            shape(c, rrect(250, 1066, 580, 18, 8), (1, 1, 1), "bsnow", lw=1.4, amp=0.4, alpha=a)
     for i, mo in enumerate(("3月", "6月", "9月", "12月")):       # 日历一页页飞走
         u = prog(t, 0.4 + i * 1.3, 1.6)
         if 0 < u < 1:
