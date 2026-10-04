@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, bandnoise, bass, cello, chug, heartbeat, jingle, kick, knock, music_box, pad,  # noqa: E402
                    piano, pluck, rain, reed, rumble, scratch, shaker, snap, swell, swish, thump, tick, whistle, _t)
 
-DUR = 177.0
+DUR = 180.0
 M = Mix(DUR)
 
 # 第九稿调整了段落顺序：配乐仍按旧时间轴书写，放置时整段搬到新位置
@@ -28,8 +28,24 @@ def remap(t):
     return t
 
 
+# 第十稿：真实的辛苦挪到出发之后，结尾回到台灯下（在第九稿时间上再搬一次）
+MOVES2 = [(85.5, 101.5, 88.5), (101.5, 126.5, 131.5), (126.5, 153.5, 104.5), (153.5, 177.0, 156.5)]
+
+
+def remap2(t):
+    for a, b, new in MOVES2:
+        if a <= t + 0.3 < b:
+            return t - a + new
+    return t
+
+
 def P(sig, t, vol=1.0, pan=0.0):
-    M.place(sig, remap(t), vol, pan)
+    M.place(sig, remap2(remap(t)), vol, pan)
+
+
+def PA(sig, t, vol=1.0, pan=0.0):
+    """按第十稿时间直接放置。"""
+    M.place(sig, t, vol, pan)
 
 THEME_MAJ = [(0, 81, 1), (1, 84, .5), (1.5, 81, .5), (2, 79, 1), (3, 77, 1), (4, 76, 1.5), (5.5, 77, .5), (6, 79, 2)]
 THEME_MIN = [(0, 81, 1), (1, 84, .5), (1.5, 81, .5), (2, 79, 1), (3, 77, 1), (4, 76, 1.5), (5.5, 77, .5), (6, 74, 2)]
@@ -310,14 +326,21 @@ P(pad(CH["F"], 4.0, att=1.0, rel=2.0), 171.4, 0.5)
 for i, m in enumerate((65, 69, 72, 77)):
     P(music_box(m, 3.5), 175.2 + i * 0.07, 0.45, pan=-0.3 + i * 0.2)
 
+# ================================================================ 第十稿新增：回到家，把车票放进空铁盒 85.5–88.5
+for k in range(4):
+    PA(knock(), 85.7 + k * 0.4, 0.05, pan=-0.3)
+PA(music_box(84, 1.4), 86.9, 0.3)
+PA(knock(), 87.6, 0.25)                                           # 盖上铁盒
+PA(pluck(65, length=1.8, bright=0.18), 87.6, 0.25)
+
 # ---------------------------------------------------------------- 混音
-M.gain([(0, 0.85), (6, 0.9), (29, 1.0), (48.5, 1.1), (70.5, 1.0), (121.5, 1.15), (126.5, 1.0), (138.5, 0.95),
-        (145.3, 1.15), (148.5, 1.0), (159, 0.75), (171, 0.62), (DUR + 1, 0.62)])
-M.muffle([(0, 0), (138.4, 0), (138.6, 0.8), (145.2, 0.8), (145.35, 0), (DUR + 1, 0)])
+M.gain([(0, 0.85), (6, 0.9), (29, 1.0), (48.5, 1.1), (70.5, 1.0), (104.5, 1.0), (116.5, 0.95), (123.3, 1.15),
+        (126.5, 1.0), (151.5, 1.15), (156.5, 1.0), (162, 0.75), (174, 0.62), (DUR + 1, 0.62)])
+M.muffle([(0, 0), (116.4, 0), (116.6, 0.8), (123.2, 0.8), (123.35, 0), (DUR + 1, 0)])
 duck = [(0, 1), (DUR + 1, 1)]
 
 if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 177, 4)))
+                   for t in range(0, 180, 4)))

@@ -1218,3 +1218,135 @@ def c14_wait(c, t):
         c12_wait(c, t)
     else:
         c12b_notes(c, t - 5.5)
+
+
+# ================================================================ 第十稿：回到家放进铁盒 / 回到台灯下
+def tinbox(c, bx, by, lid, key, n=8, jig=0.0, empty=False):
+    with keep():
+        shape(c, [(bx - 160, by - 110 - 90 * lid), (bx + 160, by - 110 - 90 * lid), (bx + 160, by - 110), (bx - 160, by - 110)],
+              hexc("7f9cb3"), key + "lid", lw=3)
+        if not empty:
+            r = random.Random(4)
+            for k in range(n):
+                col = [hexc("f4f2ec"), hexc("dfe9f5"), hexc("f7e3b0"), hexc("f2d0c8")][k % 4]
+                shape(c, rect(bx - 135 + r.uniform(-8, 8), by - 128 + k * 3 + math.sin(k) * jig, 270, 30), col, f"{key}t{k}",
+                      lw=1.6, amp=0.4)
+        shape(c, rrect(bx - 165, by - 110, 330, 120, 12), hexc("6f8aa0"), key + "b", lw=3)
+        shape(c, rect(bx - 165, by - 88, 330, 12), hexc("5d7489"), key + "s", lw=2)
+
+
+def c08b_home(c, t):
+    """回到家：把第一张车票放进一个空铁盒（就是开头那个铁盒）。"""
+    room(c, t, sky="grey", hat_hook=False, chair=False)
+    shape(c, rect(520, 1000, 440, 22), hexc("8c5a3c"), "htab", lw=3)
+    for x in (540, 930):
+        shape(c, rect(x, 1022, 14, 90), hexc("7a4d33"), f"htl{x}", lw=2.4)
+    girl(c, 400, 1110, 1.6, hat=True, look=0.8, mouth="smile", key="g8b",
+         arms=[(-24, -78), (lerp(60, 40, ease_io(prog(t, 0.6, 1.0))), lerp(-120, -96, ease_io(prog(t, 0.6, 1.0))))])
+    suitcase(c, 250, 1112, 0.9, "h8su", handle=0.0)
+    c.save()
+    c.translate(740, 1000)
+    c.scale(0.55, 0.55)
+    tinbox(c, 0, 0, 0.8 * (1 - ease_io(prog(t, 2.0, 0.6))), "hb", empty=True)
+    c.restore()
+    u = ease_io(prog(t, 0.4, 1.4))
+    if t < 2.0:
+        ticket(c, lerp(470, 740, u), lerp(900, 950, u), 0.32, "htk", age=0.0, rot=lerp(-0.3, 0.0, u))
+
+
+DESK = hexc("8c5a3c")
+
+
+def desk_tickets(c, t):
+    """俯视的书桌：车票一张张铺开，红色虚线把它们连成地图。"""
+    fill_all(c, DESK)
+    for i in range(9):
+        line(c, [(-20, 120 + i * 150), (W + 20, 120 + i * 150 + 20)], f"grain{i}", 2, hexc("7a4d33"), alpha=0.6)
+    glow(c, 360, 300, 900, hexc("ffd8a0"), 0.35)
+    pts, times = ROUTE, ROUTE_T
+    for i in range(len(pts) - 1):                                 # 红色虚线
+        dur = times[i + 1] - times[i]
+        u = prog(t, times[i] + dur * 0.2, dur * 0.8)
+        if u <= 0:
+            continue
+        (ax, ay), (bx, by) = pts[i], pts[i + 1]
+        mx, my = (ax + bx) / 2, (ay + by) / 2 - 60
+        n = 16
+        for j in range(n):
+            v0, v1 = j / n, (j + 0.55) / n
+            if v0 > u:
+                break
+            v1 = min(v1, u)
+            seg = [((1 - v) ** 2 * ax + 2 * (1 - v) * v * mx + v * v * bx,
+                    (1 - v) ** 2 * ay + 2 * (1 - v) * v * my + v * v * by) for v in (v0, v1)]
+            with keep():
+                line(c, seg, f"ddash{i}{j}", 3.4, hexc("e0533f"), alpha=0.85, amp=0.4)
+    r = random.Random(31)
+    for i, (x, y) in enumerate(pts):                              # 一张张车票
+        k = ease_back(prog(t, times[i], 0.35))
+        rot = r.uniform(-0.4, 0.4)
+        if k <= 0:
+            continue
+        c.save()
+        c.translate(x, y)
+        c.rotate(rot)
+        c.scale(k, k)
+        if i == 0:
+            ticket(c, 0, 0, 0.36, "dt0", age=1.0)
+        else:
+            col = [hexc("f4f2ec"), hexc("dfe9f5"), hexc("f7e3b0"), hexc("f2d0c8")][i % 4]
+            with keep():
+                shape(c, rect(-46, -20, 92, 40), col, f"dt{i}", lw=1.8, amp=0.4)
+                line(c, [(-30, -4), (24, -4)], f"dtl{i}", 2.4, hexc("3f6fb5") if i % 2 else RED)
+                line(c, [(-30, 8), (8, 8)], f"dtm{i}", 2, hexc("8a8f99"))
+        c.restore()
+        with keep():
+            glow(c, x, y, 60 * k, hexc("ffd27a"), 0.35)
+
+
+def desk_front(c, t):
+    """回到台灯下：满桌车票，她把最早那张放回最上面，笑了。"""
+    fill_all(c, hexc("4a4038"))
+    glow(c, 320, 520, 760, hexc("ffd8a0"), 0.6)
+    line(c, [(320, 0), (320, 380)], "lcord2", 3, hexc("2e2824"))
+    shape(c, [(250, 380), (390, 380), (430, 470), (210, 470)], hexc("d9a65a"), "lshade2", lw=3)
+    girl(c, 540, 1010, 2.1, sit=True, legs=False, hat=False, look=0.0, head_down=4, look_up=-0.4, mouth="smile",
+         arms=[(-30, -60), (lerp(40, 14, ease_io(prog(t, 0.6, 1.2))), lerp(-110, -70, ease_io(prog(t, 0.6, 1.2))))], key="gend")
+    shape(c, rect(-40, 1010, W + 80, 600), DESK, "desk2", lw=3)
+    r = random.Random(8)
+    with keep():                                                  # 铺满桌面的车票
+        for k in range(16):
+            x, y = r.uniform(60, 1020), r.uniform(1060, 1300)
+            c.save()
+            c.translate(x, y)
+            c.rotate(r.uniform(-0.5, 0.5))
+            col = [hexc("f4f2ec"), hexc("dfe9f5"), hexc("f7e3b0"), hexc("f2d0c8")][k % 4]
+            shape(c, rect(-50, -18, 100, 36), col, f"ft{k}", lw=1.6, amp=0.4)
+            c.restore()
+    tinbox(c, 540, 1170, 0.9, "eb", n=3)
+    u = ease_io(prog(t, 0.6, 1.2))
+    ticket(c, lerp(600, 540, u), lerp(860, 1050, u), lerp(0.55, 0.42, u), "etk", age=1.0, rot=lerp(0.2, 0.05, u))
+
+
+def c17_desk(c, t):
+    swap = ease_io(prog(t, 8.2, 1.2))
+    if swap < 1:
+        desk_tickets(c, t)
+    if swap > 0:
+        with group_alpha(c, swap):
+            desk_front(c, t - 8.2)
+
+
+def desk_still():
+    if "d" not in _STILL:
+        surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H)
+        cc = cairo.Context(surf)
+        set_time(170.0)
+        with grade(sat=1.0, dark=0.0, warm=0.2):
+            desk_tickets(cc, 7.9)
+        _STILL["d"] = surf
+    return _STILL["d"]
+
+
+def outro2(c, t):
+    book_outro(c, t, desk_still(), "© 2026 藤原樹\n未经授权请勿转载", end_mark="第二章 · 完")
