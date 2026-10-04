@@ -856,7 +856,7 @@ def img_costume(c, w, h, t):
     shape(c, rect(-10, h * 0.8, w + 20, h * 0.2 + 10), hexc("6a4a5a"), "ifl", lw=2.4)
     sp = (t * 0.9) % 1.0
     sx = math.cos(sp * 2 * math.pi)
-    girl(c, w / 2, h * 0.86, 1.5, outfit="folk", pack=True, hat=True, sx=max(abs(sx), 0.08), mouth="laugh",
+    girl(c, w / 2, h * 0.86, 1.5, outfit="folk", hat=True, sx=max(abs(sx), 0.08), mouth="laugh",
          arms=[(-44, -110), (44, -110)], eyes_closed=True, key="ig1")
     for k in range(8):
         a = t * 2 + k * math.pi / 4
@@ -900,7 +900,7 @@ def img_boat(c, w, h, t):
     with group_alpha(c, 0.6):
         person(c, bx + 90, by - 20, 1.0, sit=True, legs=False, coat=hexc("c7a98a"), hair=hexc("8a7a6a"), hair_style="short",
                hat=False, pack=False, key="fish", mouth="smile")
-    girl(c, bx - 60, by - 20, 1.0, sit=True, legs=False, pack=True, hat=True, mouth="smile", key="ig3",
+    girl(c, bx - 60, by - 20, 1.0, sit=True, legs=False, hat=True, mouth="smile", key="ig3",
          arms=[(-40, -40 + 20 * math.sin(t * 3)), (-20, -30 + 20 * math.sin(t * 3))])
     shape(c, [(bx - 200, by - 20), (bx + 200, by - 20), (bx + 150, by + 30), (bx - 150, by + 30)], hexc("8c5a3c"), "boat", lw=2.6)
     ox = bx - 130
@@ -941,7 +941,7 @@ def img_path(c, w, h, t):
     u = ease_io(prog(t, 0.8, 2.0))
     gy = lerp(h - 30, h * 0.6, u)
     s = lerp(1.2, 0.6, u)
-    girl(c, w * 0.5, gy, s, view="back", pack=True, hat=True, walk=t * 6, key="ig4")
+    girl(c, w * 0.5, gy, s, view="back", hat=True, walk=t * 6, key="ig4")
 
 
 def img_badge(c, w, h, t):
@@ -1205,7 +1205,7 @@ def img_walk(c, w, h, t):
         local(c, x, gy, s, f"wl{k}", col, hexc("e3ddd5") if st == "granny" else hexc("2f2a28"), st, view="back", walk=t * 6 + k)
         shape(c, ell(x + 22 * s, gy - 80 * s, 18 * s, 12 * s, 10), hexc("c49a6c"), f"wbk{k}", lw=1.8)
     gy = lerp(h - 20, h * 0.64, u)
-    girl(c, w * 0.5, gy, lerp(1.2, 0.68, u), view="back", outfit="folk", pack=True, hat=True, walk=t * 6, key="iwgl")
+    girl(c, w * 0.5, gy, lerp(1.2, 0.68, u), view="back", outfit="folk", hat=True, walk=t * 6, key="iwgl")
 
 
 def img_badge2(c, w, h, t):

@@ -46,7 +46,7 @@ def street_bg(c, t, base=760, rain_a=0.35, seed=1):
 
 
 def room(c, t, sky="grey", curtain=0.0, hat_hook=True, hat_dust=0.0, map_age=0.0, cal=0.0,
-         web=0.0, pack_corner=True, map_glow=0.0, dim=0.0, door=0.0, chair=True, amap=None, suit_corner=False,
+         web=0.0, pack_corner=False, map_glow=0.0, dim=0.0, door=0.0, chair=True, amap=None, suit_corner=False,
          door_world=None):
     fill_all(c, hexc("e8d4b4"))
     c.save()
@@ -541,7 +541,7 @@ def p_tall(c, t, w, h):
         x += bw + 6
         i += 1
     shape(c, rect(-10, h - 40, w + 20, 60), GROUND, "tg", lw=2.4)
-    girl(c, w / 2, h - 44, 0.55, look=0.0, look_up=1.0, pack=True)
+    girl(c, w / 2, h - 44, 0.55, look=0.0, look_up=1.0)
 
 
 def s07_comic(c, t):
@@ -824,7 +824,7 @@ def s20_roots(c, t):
             shape(c, ell(540, 1130, 420 * puddle + 40, 40 * puddle + 6, 26), WATER + (0.6,), "pud", lw=2)
         floor_roots(c, 540, 1112, t, shrink)
         if not stand:
-            girl(c, 540, 1060, 1.6, sit=True, crouch=True, pack=True, hat=True, look=0.0, look_up=-1.0, head_down=10,
+            girl(c, 540, 1060, 1.6, sit=True, crouch=True, hat=True, look=0.0, look_up=-1.0, head_down=10,
                  arms=[(-24 + 6 * math.sin(t * 6), -14), (26, -12 + 5 * math.sin(t * 5))], mouth="flat")
             for i in range(6):
                 if shrink[i] < 1:
@@ -833,7 +833,7 @@ def s20_roots(c, t):
                     line(c, pts, f"tie20{i}", 5, hexc("76736d"), alpha=1 - shrink[i])
         else:
             u = ease_back(prog(t, 3.1, 0.5))
-            girl(c, 540, 1110, 1.6, pack=True, hat=True, look=0.3, mouth="smile",
+            girl(c, 540, 1110, 1.6, hat=True, look=0.3, mouth="smile",
                  arms=[(-12, -112 + 8 * math.sin(t * 6)), (12, -112 + 8 * math.sin(t * 6))] if t < 4.2 else None)
 
 
@@ -981,7 +981,7 @@ def q_alley(c, t, w, h):
         person(c, x, 360 - k * 6, s, view="back", coat=[hexc("4f8a8b"), hexc("8d6a9f")][k], hair=hexc("2f2a28"),
                hair_style="short", hat=False, pack=False, walk=t * 6 + k, key=f"al{k}")
         shape(c, ell(x + 18 * s, 360 - k * 6 - 80 * s, 16 * s, 10 * s, 10), hexc("c49a6c"), f"bask{k}", lw=2)
-    girl(c, w / 2 + 30, 430, 0.8, view="back", outfit="dress", pack=True, hat=True, walk=t * 6)
+    girl(c, w / 2 + 30, 430, 0.8, view="back", outfit="dress", hat=True, walk=t * 6)
 
 
 def s22_panels(c, t):

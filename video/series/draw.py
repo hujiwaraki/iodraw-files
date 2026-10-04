@@ -928,6 +928,7 @@ def girl(c, x, y, s=1.0, **kw):
         kw["hair_style"] = "sweep" if hatted else "flick"
     kw.setdefault("keep_color", True)
     kw.setdefault("round_face", True)
+    kw.setdefault("pack", False)               # 第一章还没有背包，背包从后面章节开始
     person(c, x, y, s, **kw)
 
 
