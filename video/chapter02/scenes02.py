@@ -321,49 +321,128 @@ def c03_bus(c, t):
 
 
 # ================================================================ 团里的人都成双成对
-def c04_couples(c, t):
+def phone_at(c, x, y, s, key, glow_a=0.0):
+    with keep():
+        if glow_a > 0:
+            glow(c, x, y, 40 * s, hexc("dfeaff"), glow_a)
+        shape(c, rrect(x - 11 * s, y - 18 * s, 22 * s, 36 * s, 4 * s), hexc("3a3f4a"), key, lw=2, amp=0.2)
+        shape(c, rect(x - 8 * s, y - 14 * s, 16 * s, 26 * s), hexc("bfe0ff"), key + "s", lw=0, edge=False, alpha=0.9)
+
+
+def viewpoint_bg(c, t):
+    """观景台：雪山、远处的步道和小小的游客、停着的大巴、飞鸟、导游的小旗子、望远镜。"""
     plateau_bg(c, t, base=900, lake=False, flags=False, yaks=False)
-    shape(c, rect(-20, 1100, W + 40, 600), hexc("a8865f"), "deck", lw=3)
-    for i in range(8):
-        line(c, [(-10, 1130 + i * i * 10), (W + 10, 1130 + i * i * 10)], f"dk{i}", 1.6, hexc("8c6a48"), alpha=0.6)
-    line(c, [(-10, 1060), (W + 10, 1060)], "rail", 5, hexc("6b4a32"))
-    for x in range(20, W, 120):
-        line(c, [(x, 1060), (x, 1105)], f"rp{x}", 4, hexc("6b4a32"))
-    give = ease_io(prog(t, 1.4, 0.7)) * (1 - ease_io(prog(t, 4.0, 0.6)))
-    selfie = 4.6 < t < 6.4
-    stare = ease_io(prog(t, 5.8, 1.0))
-    couple(c, 230, 1180, 1.25, 0, "ca", hearts=1.0, t=t, look=(0.5, -0.4) if stare <= 0 else (1.0, 1.0),
-           mouth="laugh")
-    couple(c, 860, 1200, 1.25, 1, "cb", hearts=1.0, t=t + 0.5, look=(0.3, -0.5) if stare <= 0 else (-1.0, -1.0),
-           mouth="smile")
-    gx, gy = 540, 1210
-    if 1.8 < t < 4.2:                                           # 帮别人拍照
-        arms = [(-34, -150), (-14, -150)]
-        girl(c, gx, gy, 1.45, look=-0.8, arms=arms, key="g4", mouth="smile")
-        with keep():
-            shape(c, rrect(gx - 48 * 1.45, gy - 196 * 1.45, 34, 56, 6), hexc("3a3f4a"), "ophone", lw=2)
+    # 远处的步道和游客
+    path = [(-40, 860), (200, 835), (420, 850), (640, 828), (860, 842), (1120, 820)]
+    line(c, path, "trail", 6, hexc("c9bfa8"))
+    r = random.Random(12)
+    for i in range(9):
+        u = (r.uniform(0, 1) + t * 0.02 * (1 if i % 2 else -1)) % 1
+        x = lerp(-20, 1100, u)
+        silhouette(c, x, 842 + math.sin(u * 9) * 8, 0.42, f"ft{i}", walk=t * 5 + i, a=0.6)
+    # 停着的大巴
+    bus(c, 140, 900, 0.75, 1, "pbus")
+    # 飞鸟
+    for i in range(4):
+        bx = (300 + i * 140 + t * 40) % 1200 - 60
+        by = 300 + i * 30 + math.sin(t * 2 + i) * 10
+        w_ = 12 + 4 * math.sin(t * 8 + i)
+        line(c, [(bx - 14, by - w_ * 0.5), (bx, by), (bx + 14, by - w_ * 0.5)], f"bird{i}", 2.2, hexc("3a3f4a"))
+    # 导游举着小旗子，带着另一队人走过
+    gx_, gy_ = 640 + t * 16, 1040
+    for i in range(3):
+        silhouette(c, gx_ - 50 - i * 40, gy_, 0.65, f"tour{i}", walk=t * 6 + i, a=0.5)
+    local(c, gx_, gy_, 0.7, "guide", hexc("c9473b"), hexc("2f2a28"), "short", hat=False, look=0.6, mouth="laugh",
+          walk=t * 6, arms=[(-24, -78), (20, -150)])
+    line(c, [(gx_ + 14, gy_ - 105), (gx_ + 14, gy_ - 175)], "gpole", 3, hexc("6b4a32"))
+    with keep():
+        sw = math.sin(t * 5) * 5
+        shape(c, [(gx_ + 14, gy_ - 175), (gx_ + 48 + sw, gy_ - 166), (gx_ + 14, gy_ - 156)], hexc("e8c040"), "gflag", lw=2)
+    # 观景台
+    shape(c, rect(-20, 1100, W + 40, 700), hexc("a8865f"), "deck", lw=3)
+    for i in range(9):
+        line(c, [(-10, 1125 + i * i * 9), (W + 10, 1125 + i * i * 9)], f"dk{i}", 1.6, hexc("8c6a48"), alpha=0.6)
+    line(c, [(-10, 1050), (W + 10, 1050)], "rail", 6, hexc("6b4a32"))
+    line(c, [(-10, 1080), (W + 10, 1080)], "rail2", 3, hexc("6b4a32"))
+    for x in range(20, W, 110):
+        line(c, [(x, 1045), (x, 1104)], f"rp{x}", 5, hexc("6b4a32"))
+    # 望远镜
+    line(c, [(990, 1104), (990, 1010)], "tsp", 6, hexc("5a5d66"))
+    shape(c, rrect(940, 975, 64, 40, 10), hexc("6f7a8a"), "tsc", lw=2.4)
+    shape(c, ell(940, 995, 8, 16, 10), hexc("3a3f4a"), "tse", lw=1.6)
+def c04_couples(c, t):
+    viewpoint_bg(c, t)
+    s = 1.5
+    gy = 1215
+    gx = 560
+    # 情侣 A：男生过来递手机、回去摆姿势、再过来拿回手机
+    ax, bx0 = 200, 290
+    walk1 = ease_io(prog(t, 0.8, 0.8)) * (1 - ease_io(prog(t, 1.9, 0.7)))
+    walk2 = ease_io(prog(t, 3.9, 0.5)) * (1 - ease_io(prog(t, 4.5, 0.6)))
+    bx = lerp(bx0, 400, max(walk1, walk2))
+    moving = (0.8 < t < 2.6) or (3.9 < t < 5.1)
+    stare = ease_io(prog(t, 6.2, 1.0))
+    together = bx < bx0 + 8
+    look_b = 1.0 if moving else (0.4 if stare <= 0 else 1.0)
+    local(c, ax, gy, s, "ca_a", COUPLE_COLS[0][0], hexc("2f2a28"), "bang_short",
+          look=0.5 if stare <= 0 else 1.0, mouth="laugh", arms=[(-24, -78), (30, -70)] if together else None)
+    b_arms = [(-30, -70), (24, -78)] if together else [(-24, -78), (48, -100)]
+    local(c, bx, gy, s, "ca_b", COUPLE_COLS[0][1], hexc("3a3a3a"), "short", look=look_b, mouth="smile",
+          walk=t * 8 if moving else None, arms=b_arms)
+    if together and stare <= 0:
+        for k in range(3):                                         # 头顶的小爱心
+            ph = (t * 0.6 + k / 3) % 1
+            heart(c, (ax + bx) / 2 + math.sin(ph * 6 + k) * 14, gy - 230 * s - ph * 80, 10, math.sin(math.pi * ph))
+    couple(c, 880, gy + 10, s, 1, "cb", hearts=1.0 if stare <= 0 else 0.0, t=t + 0.5,
+           look=(0.3, -0.5) if stare <= 0 else (-1.0, -1.0), mouth="smile")
+    # 她
+    photo = 2.0 < t < 3.9
+    selfie = 5.1 < t < 6.6
+    down = ease_io(prog(t, 6.8, 0.6))
+    if 1.4 < t < 2.0 or 3.9 < t < 4.6:
+        g_arms = [(-50, -100), (24, -78)]                          # 伸手接 / 递回去
+        look_g = -1.0
+    elif photo:
+        g_arms = [(-24, -150), (-44, -150)]
+        look_g = -1.0
     elif selfie:
-        girl(c, gx, gy, 1.45, look=0.2, arms=[(-24, -80), (44, -168)], key="g4", mouth="smile")
-        with keep():
-            shape(c, rrect(gx + 34 * 1.45, gy - 196 * 1.45, 34, 56, 6), hexc("3a3f4a"), "sphone", lw=2)
+        g_arms = [(-24, -80), (44, -168)]
+        look_g = 0.2
     else:
-        down = ease_io(prog(t, 6.4, 0.6))
-        girl(c, gx, gy, 1.45, look=0.0, head_down=8 * down, look_up=-0.8 * down, mouth="flat" if down > 0 else "smile",
-             arms=[(-24, -78), (lerp(26, 22, down), lerp(-76, -196, down))], key="g4")
-    if give > 0:                                                # 对方递来的手机
-        px = lerp(300, gx - 40, give)
-        with keep():
-            shape(c, rrect(px - 17, 1000 - give * 30, 34, 56, 6), hexc("3a3f4a"), "gphone", lw=2, alpha=1 - (1.8 < t < 4.2))
-    for tf in (3.4, 5.9):                                       # 快门闪光
+        g_arms = [(-24, -78), (lerp(26, 22, down), lerp(-76, -196, down))]
+        look_g = 0.0 if t > 5 else -0.4
+    girl(c, gx, gy, s, look=look_g, arms=g_arms, key="g4", mouth="flat" if down > 0 else "smile",
+         head_down=8 * down, look_up=-0.8 * down)
+    # 手机：始终拿在某个人手里
+    b_hand = (bx + 48 * s, gy - 100 * s)
+    g_take = (gx - 50 * s, gy - 100 * s)
+    if t < 1.6:
+        if t > 0.8:
+            phone_at(c, *b_hand, 1.1, "aphone")
+    elif t < 1.9:
+        u = ease_io(prog(t, 1.6, 0.3))
+        phone_at(c, lerp(b_hand[0], g_take[0], u), lerp(b_hand[1], g_take[1], u), 1.1, "aphone")
+    elif t < 3.9:
+        phone_at(c, gx - 34 * s, gy - 162 * s, 1.1, "aphone", glow_a=0.3)
+    elif t < 4.4:
+        phone_at(c, *g_take, 1.1, "aphone")
+    elif t < 4.7:
+        u = ease_io(prog(t, 4.4, 0.3))
+        phone_at(c, lerp(g_take[0], b_hand[0], u), lerp(g_take[1], b_hand[1], u), 1.1, "aphone")
+    elif t < 5.1:
+        phone_at(c, *b_hand, 1.1, "aphone")
+    if selfie:
+        phone_at(c, gx + 44 * s, gy - 180 * s, 1.1, "sphone", glow_a=0.3)
+    for tf in (3.4, 5.9):                                        # 快门闪光
         f = 1 - ease_out(prog(t, tf, 0.35))
         if 0 < f < 1:
             veil(c, (1, 1, 1), 0.35 * f)
     if stare > 0:
-        hy = gy - 150 * 1.45
-        gaze(c, 230 - 30, 1180 - 152 * 1.25, gx - 30, hy, stare, "z1", show_eye=False)
-        gaze(c, 230 + 50, 1180 - 152 * 1.25, gx - 20, hy + 10, stare * 0.9, "z2", show_eye=False)
-        gaze(c, 860 - 40, 1200 - 152 * 1.25, gx + 30, hy, stare, "z3", show_eye=False)
-        gaze(c, 860 + 40, 1200 - 152 * 1.25, gx + 20, hy + 10, stare * 0.8, "z4", show_eye=False)
+        hy = gy - 150 * s
+        gaze(c, ax, gy - 152 * s, gx - 30, hy, stare, "z1", show_eye=False)
+        gaze(c, bx, gy - 152 * s, gx - 20, hy + 10, stare * 0.9, "z2", show_eye=False)
+        gaze(c, 880 - 46, gy - 152 * s, gx + 30, hy, stare, "z3", show_eye=False)
+        gaze(c, 880 + 46, gy - 152 * s, gx + 20, hy + 10, stare * 0.8, "z4", show_eye=False)
 
 
 # ================================================================ 高原反应
@@ -391,6 +470,14 @@ def c05_altitude(c, t):
             a = math.sin(math.pi * ph)
             text(c, ["哈哈", "♡", "慢点喝水", "哈哈哈"][k], 920 + math.sin(ph * 5 + k) * 30, 900 - ph * 500, 34,
                  hexc("f6d6a8"), a=0.8 * a)
+    # 床头柜、水壶、台灯，打开的行李箱
+    shape(c, rect(600, 900, 150, 140), hexc("6b5a4a"), "ntable", lw=3)
+    with keep():
+        glow(c, 650, 820, 160, hexc("ffd59a"), 0.4)
+    shape(c, [(620, 840), (690, 840), (700, 880), (610, 880)], hexc("d9a65a"), "nlamp", lw=2)
+    line(c, [(655, 880), (655, 900)], "nlampp", 3)
+    shape(c, rrect(700, 860, 40, 40, 8), hexc("c9c4b8"), "kettle", lw=2)
+    suitcase(c, 900, 1235, 1.0, "alsu", handle=0.0)
     # 床
     shape(c, rect(80, 1040, 660, 60), hexc("e6e0d4"), "bed", lw=3)
     shape(c, rect(80, 1100, 660, 140), hexc("7f8aa8"), "bedb", lw=3)
@@ -562,6 +649,7 @@ def c10_eyes(c, t):
         if k <= 0:
             continue
         lk = (-math.cos(a), -math.sin(a))
+        silhouette(c, ex, ey + 150 * 0.95, 0.95, f"es{i}", a=0.3 * k)
         eye(c, ex, ey, 1.4 * k, f"ey{i}", a=k, look=lk)
         gaze(c, ex, ey, gx, gy - 160 * s, ease_io(prog(t, 0.6 + i * 0.16, 1.2)), f"eg{i}", a=0.6)
     girl(c, gx, gy, s, mouth="flat", head_down=4 + 8 * shrink, look_up=-0.9 * shrink,
@@ -1173,7 +1261,16 @@ def m_train(c, t):
         line(c, [(x, 520), (x, 820)], f"mpole{k}", 6, hexc("6b5a4a"))
     c.restore()
     shape(c, rect(160, 300, 760, 520), None, "mtw", lw=8)
+    line(c, [(120, 230), (960, 230)], "rack", 6, hexc("6b5a4a"))
+    for i, (x, w_, col) in enumerate(((200, 150, "8b6f9a"), (420, 110, "c98d72"), (700, 170, "7f9cb3"))):
+        shape(c, rrect(x, 150, w_, 78, 10), hexc(col), f"bag{i}", lw=2.4)
     shape(c, rect(100, 1000, 880, 40), hexc("8a6a4a"), "mtsill", lw=3)
+    with keep():
+        shape(c, [(300, 960), (340, 960), (334, 1000), (306, 1000)], hexc("f2efe8"), "mcup", lw=2)
+        for k in range(2):
+            line(c, [(312 + k * 14, 952), (306 + k * 14 + math.sin(t * 3 + k) * 5, 926), (314 + k * 14, 900)], f"mst{k}", 2,
+                 (1, 1, 1), alpha=0.7)
+    shape(c, rrect(840, 980, 170, 420, 30), hexc("4f7a8c"), "mseat", lw=3)
     girl(c, 760, 1180, 1.6, sit=True, hat=True, look=-0.9, mouth="flat", key="gm1")
 
 
@@ -1181,8 +1278,12 @@ def m_peak(c, t):
     vgrad(c, 0, 1100, [(0, hexc("f2a07a")), (0.6, hexc("f8d29a")), (1, hexc("fbecc8"))])
     glow(c, 540, 860, 520, hexc("fff0b8"), 0.8)
     shape(c, ell(540, 860, 80, 80, 24), hexc("fbd78a"), "msun", lw=2)
+    for i in range(5):
+        cloud(c, (i * 260 + t * 20) % 1300 - 120, 1000 + (i % 2) * 40, 1.6, f"mcl{i}", a=0.85)
     shape(c, [(-40, 1900), (-40, 1300), (300, 1050), (540, 1120), (760, 1000), (1120, 1300), (1120, 1900)], hexc("6f6a80"),
           "mpk", lw=3)
+    for k, (rx, ry, rr) in enumerate(((760, 1040, 26), (765, 1012, 20), (762, 990, 14))):
+        shape(c, ell(rx, ry, rr, rr * 0.7, 12), hexc("9a96a8"), f"cairn{k}", lw=2)
     girl(c, 560, 1130, 1.6, view="back", hat=True, key="gm2")
 
 
@@ -1200,7 +1301,21 @@ def m_market(c, t):
     for i, (x, col) in enumerate(((160, "8a5a3a"), (880, "6a5a7a"))):
         shape(c, rect(x - 110, 900, 220, 220), hexc(col), f"stall{i}", lw=3)
         shape(c, [(x - 130, 900), (x + 130, 900), (x + 100, 840), (x - 100, 840)], hexc("e8c040"), f"aw{i}", lw=2.4)
+    for i, (x, col) in enumerate(((400, "5a6a4a"), (680, "7a4a4a"))):
+        shape(c, rect(x - 80, 940, 160, 180), hexc(col), f"stb{i}", lw=2.4)
+        shape(c, [(x - 96, 940), (x + 96, 940), (x + 76, 896), (x - 76, 896)], hexc("d9653a"), f"awb{i}", lw=2)
+    with keep():
+        for i, x in enumerate((160, 400, 680, 880)):
+            glow(c, x, 1000, 90, hexc("ffc070"), 0.35)
+            for k in range(2):
+                line(c, [(x - 10 + k * 20, 930), (x - 16 + k * 20 + math.sin(t * 3 + i + k) * 6, 880),
+                         (x - 6 + k * 20, 830)], f"mkst{i}{k}", 2.2, (1, 1, 1), alpha=0.5)
     shape(c, rect(-20, 1120, W + 40, 600), hexc("3a3440"), "mgr", lw=3)
+    r = random.Random(14)
+    for i in range(7):
+        x = (r.uniform(0, 1100) - t * 60 * (1 if i % 2 else -1)) % 1200 - 60
+        if abs(x - 540) > 90:
+            silhouette(c, x, 1180 + r.uniform(-20, 20), 1.2, f"mkp{i}", walk=t * 6 + i, a=0.5, col=hexc("6a6070"))
     girl(c, 540, 1200, 1.6, hat=True, walk=t * 7, look=0.3, mouth="laugh", key="gm3")
 
 
