@@ -32,7 +32,7 @@ if __name__ == "__main__":
                         "-shortest", "-movflags", "+faststart", final], check=True)
         share = os.path.join(OUT, f"{ch02.NAME}_分享版.mp4")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", os.path.join(OUT, "video_silent.mp4"),
-                        "-i", os.path.join(OUT, "music.wav"), "-c:v", "libx264", "-preset", "slow", "-b:v", "1500k",
-                        "-maxrate", "2500k", "-bufsize", "4000k", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
+                        "-i", os.path.join(OUT, "music.wav"), "-c:v", "libx264", "-preset", "slow", "-b:v", "1000k",
+                        "-maxrate", "1800k", "-bufsize", "3000k", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k",
                         "-shortest", "-movflags", "+faststart", share], check=True)
         print(final, share)
