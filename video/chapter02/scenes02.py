@@ -105,7 +105,7 @@ def o2can(c, x, y, s, key):
 
 
 def plateau_bg(c, t, base=900, dusk=0.0, lake=True, flags=True, yaks=True):
-    """稻城亚丁：三座雪山 + 牛奶海 + 经幡 + 远处的牦牛。"""
+    """高原：三座雪山（可选：湖、经幡、牦牛；第二章不展示具体地点，默认只用雪山）。"""
     top = mix(SKY_HI, hexc("e9a58a"), dusk)
     low = mix(SKY_LO, hexc("f6d6b0"), dusk)
     vgrad(c, 0, base, [(0, top), (1, low)])
@@ -192,8 +192,8 @@ def c01_rush(c, t):
 
 
 # ================================================================ 二、问了几个朋友
-CHAT = [(0.3, "me", "周末想出去走走，\n有人一起吗？"), (1.1, "a", "最近太忙了……"), (1.8, "b", "下次吧"),
-        (2.5, "c", "去不了诶"), (3.0, "read", "已读")]
+CHAT = [(0.3, "me", "周末想出去走走，\n有人一起吗？"), (1.4, "a", "最近太忙了……"), (2.4, "b", "下次吧"),
+        (3.3, "c", "去不了诶"), (4.0, "read", "已读")]
 
 
 def bubble(c, x, y, w, h, col, key, me):
@@ -206,7 +206,7 @@ def bubble(c, x, y, w, h, col, key, me):
 def c02_ask(c, t):
     fill_all(c, hexc("d9d6ce"))
     px, py, pw, ph = 250, 140, 580, 1060
-    slide = ease_io(prog(t, 3.6, 0.6))
+    slide = ease_io(prog(t, 5.2, 0.6))
     with keep():
         glow(c, 540, 650, 600, hexc("dfeaff"), 0.4)
         shape(c, rrect(px - 18, py - 18, pw + 36, ph + 36, 48), hexc("3a3f4a"), "phb", lw=3)
@@ -257,21 +257,20 @@ def c02_ask(c, t):
             b = py + 520
             shape(c, [(x - 140, b), (x, b - h_), (x + 140, b)], hexc("8d8a9a"), f"apk{i}", lw=2)
             shape(c, [(x - 50, b - h_ * 0.64), (x, b - h_), (x + 50, b - h_ * 0.64), (x, b - h_ * 0.72)], SNOW, f"aps{i}", lw=1.6)
-        shape(c, ell(ax + 290, py + 530, 160, 24, 20), LAKE, "alk", lw=1.6)
         c.restore()
         shape(c, rect(ax + 40, py + 130, pw - 80, 420), None, "apfr", lw=2)
-        text(c, "稻城亚丁 · 七日游", ax + pw / 2, py + 620, 40, INK)
+        text(c, "高原七日游", ax + pw / 2, py + 620, 44, INK)
         text(c, "海拔 4000m+ · 全程跟团", ax + pw / 2, py + 680, 26, hexc("6a6f7d"))
         text(c, "拼团中 · 还差 1 人", ax + pw / 2, py + 740, 28, RED)
-        press = ease_io(prog(t, 5.0, 0.15)) * (1 - ease_io(prog(t, 5.2, 0.2)))
-        done = t > 5.3
+        press = ease_io(prog(t, 7.6, 0.15)) * (1 - ease_io(prog(t, 7.8, 0.2)))
+        done = t > 7.9
         bw2 = 360 * (1 - 0.05 * press)
         shape(c, rrect(ax + pw / 2 - bw2 / 2, py + 820, bw2, 100, 50), hexc("4f9a5c") if done else hexc("e8743a"), "btn",
               lw=2.4)
         text(c, "已报名 ✓" if done else "立即报名", ax + pw / 2, py + 884, 38, (1, 1, 1))
         c.restore()
-        if 4.4 < t < 5.6:                                  # 手指点下去
-            fy = py + 870 + 60 * (1 - ease_io(prog(t, 4.4, 0.6)))
+        if 7.0 < t < 8.2:                                  # 手指点下去
+            fy = py + 870 + 60 * (1 - ease_io(prog(t, 7.0, 0.6)))
             shape(c, ell(px + pw / 2 + 20, fy + 60, 40, 60, 20), SKIN, "finger", lw=2.4)
 
 
@@ -323,7 +322,7 @@ def c03_bus(c, t):
 
 # ================================================================ 团里的人都成双成对
 def c04_couples(c, t):
-    plateau_bg(c, t, base=900)
+    plateau_bg(c, t, base=900, lake=False, flags=False, yaks=False)
     shape(c, rect(-20, 1100, W + 40, 600), hexc("a8865f"), "deck", lw=3)
     for i in range(8):
         line(c, [(-10, 1130 + i * i * 10), (W + 10, 1130 + i * i * 10)], f"dk{i}", 1.6, hexc("8c6a48"), alpha=0.6)
@@ -765,6 +764,29 @@ def place_icon(c, kind, x, y, key):
             shape(c, [(x - 30, y - 20), (x, y - 38), (x + 30, y - 20)], hexc("6b4a32"), key + "r", lw=1.8)
 
 
+def _route():
+    r = random.Random(11)
+    pts = [geo(lon, lat) for _, lon, lat, _, _ in PLACES] + [geo(lon, lat) for lon, lat in EXTRA]
+    x0, y0, x1, y1 = MAP_BOX
+    rest = [(r.uniform(x0 + 60, x1 - 120), r.uniform(y0 + 80, y1 - 60)) for _ in range(14)]
+    rest += pts[7:]
+    pts = pts[:7]
+    while rest:                                                   # 就近连下一站，线不那么乱
+        lx, ly = pts[-1]
+        j = min(range(len(rest)), key=lambda i: (rest[i][0] - lx) ** 2 + (rest[i][1] - ly) ** 2)
+        pts.append(rest.pop(j))
+    times = []
+    tt, step = 0.9, 0.75
+    for _ in pts:
+        times.append(tt)
+        tt += step
+        step = max(0.16, step * 0.84)
+    return pts, times
+
+
+ROUTE, ROUTE_T = _route()
+
+
 def map_scene(c, t):
     fill_all(c, hexc("e9dcc0"))
     unroll = ease_io(prog(t, 0.0, 0.7))
@@ -773,66 +795,50 @@ def map_scene(c, t):
     c.rectangle(0, 0, W, y0 - 40 + (y1 - y0 + 120) * unroll)
     c.clip()
     shape(c, rect(x0 - 50, y0 - 40, x1 - x0 + 100, y1 - y0 + 120), hexc("f4e7c8"), "mapb", lw=3)
-    for k in range(5):                                            # 东边的海
+    for k in range(5):                                            # 海
         yy = 560 + k * 110
         line(c, [(x1 - 90 + (k % 2) * 20, yy), (x1 - 60, yy - 8), (x1 - 30, yy), (x1, yy - 8)], f"wv{k}", 2, hexc("9fc5e8"))
-    for k in range(4):                                            # 西边的山
+    for k in range(4):                                            # 山
         mx, my = x0 + 40 + (k % 2) * 70, 400 + k * 140
         line(c, [(mx - 24, my), (mx, my - 26), (mx + 24, my)], f"mm{k}", 2, hexc("b7a888"))
     cx, cy = x1 - 40, y0 + 40                                     # 指南针
     line(c, [(cx, cy - 34), (cx, cy + 34)], "cmp1", 2, hexc("b48a4f"))
     line(c, [(cx - 34, cy), (cx + 34, cy)], "cmp2", 2, hexc("b48a4f"))
     text(c, "N", cx, cy - 44, 24, hexc("b48a4f"))
-    # 行程虚线
-    pts = [geo(lon, lat) for _, lon, lat, _, _ in PLACES]
-    step = 0.85
-    T0 = 0.9
-    for i in range(len(pts) - 1):
-        u = prog(t, T0 + i * step + 0.25, step - 0.25)
+    pts, times = ROUTE, ROUTE_T
+    for i in range(len(pts) - 1):                                 # 行程虚线
+        dur = times[i + 1] - times[i]
+        u = prog(t, times[i] + dur * 0.2, dur * 0.8)
         if u <= 0:
             continue
         (ax, ay), (bx, by) = pts[i], pts[i + 1]
-        mx, my = (ax + bx) / 2, (ay + by) / 2 - 80
-        n = 18
+        mx, my = (ax + bx) / 2, (ay + by) / 2 - 60
+        n = 16
         for j in range(n):
             v0, v1 = j / n, (j + 0.55) / n
             if v0 > u:
                 break
             v1 = min(v1, u)
-            seg = []
-            for v in (v0, v1):
-                seg.append(((1 - v) ** 2 * ax + 2 * (1 - v) * v * mx + v * v * bx,
-                            (1 - v) ** 2 * ay + 2 * (1 - v) * v * my + v * v * by))
+            seg = [((1 - v) ** 2 * ax + 2 * (1 - v) * v * mx + v * v * bx,
+                    (1 - v) ** 2 * ay + 2 * (1 - v) * v * my + v * v * by) for v in (v0, v1)]
             with keep():
-                line(c, seg, f"dash{i}{j}", 3, hexc("c9473b"), alpha=0.8, amp=0.4)
-    for i, (name, lon, lat, kind, side) in enumerate(PLACES):
-        k = ease_back(prog(t, T0 + i * step, 0.4))
+                line(c, seg, f"dash{i}{j}", 3, hexc("c9473b"), alpha=0.75, amp=0.4)
+    for i, (x, y) in enumerate(pts):                              # 一个个亮起的光点
+        k = ease_back(prog(t, times[i], 0.35))
         if k <= 0:
             continue
-        x, y = pts[i]
         with keep():
-            glow(c, x, y, 90 * k, hexc("ffd27a"), 0.7)
-            circle(c, x, y, 10 * k, hexc("e07a3a"))
-            c.save()
-            c.translate(x + side * 62, y - 4)
-            c.scale(1.5 * min(k, 1.0), 1.5 * min(k, 1.0))
-            place_icon(c, kind, 0, 0, f"pi{i}")
-            c.restore()
-            text(c, name, x + side * 14, y + 48, 36 * k, INK, anchor="r" if side < 0 else "l")
-    for i, (lon, lat) in enumerate(EXTRA):                           # 还有很多地方……
-        k = ease_back(prog(t, T0 + len(PLACES) * step + i * 0.18, 0.3))
-        if k > 0:
-            x, y = geo(lon, lat)
-            with keep():
-                glow(c, x, y, 50 * k, hexc("ffd27a"), 0.6)
-                circle(c, x, y, 7 * k, hexc("e8a050"))
+            glow(c, x, y, (90 if i < 7 else 60) * k, hexc("ffd27a"), 0.7)
+            circle(c, x, y, (11 if i < 7 else 8) * k, hexc("e07a3a") if i < 7 else hexc("e8a050"))
+            if i == 0:                                            # 第一次：插着小红旗
+                line(c, [(x, y), (x, y - 56 * k)], "flagp", 2.4)
+                shape(c, [(x, y - 56 * k), (x + 30 * k, y - 48 * k), (x, y - 40 * k)], RED, "flag", lw=1.6)
     c.restore()
-    # 越叠越高的车票
-    with keep():
-        n = int(clamp((t - T0) / step + 1, 0, len(PLACES))) + int(clamp((t - T0 - len(PLACES) * step) / 0.18, 0, 6))
+    with keep():                                                  # 越叠越高的车票
+        n = sum(1 for tt in times if t >= tt)
         for k in range(n):
             c.save()
-            c.translate(170 + math.sin(k * 1.7) * 8, 1200 - k * 14)
+            c.translate(170 + math.sin(k * 1.7) * 8, 1210 - k * 11)
             c.rotate(math.sin(k * 2.3) * 0.12)
             shape(c, rect(-70, -22, 140, 40), hexc("f4f2ec") if k % 2 else hexc("dfe9f5"), f"tick{k}", lw=1.6, amp=0.3)
             line(c, [(-36, -2), (36, -2)], f"tickl{k}", 2, hexc("3f6fb5") if k % 2 else hexc("c9473b"))
@@ -883,3 +889,333 @@ def map_still():
 
 def outro(c, t):
     book_outro(c, t, map_still(), "© 2026 藤原樹\n未经授权请勿转载", end_mark="第二章 · 完")
+
+
+# ================================================================ 第二版新增：开头的旧铁盒
+def ticket(c, x, y, s, key, age=1.0, rot=0.0):
+    """泛黄、卷边的旧车票。"""
+    c.save()
+    c.translate(x, y)
+    c.rotate(rot)
+    c.scale(s, s)
+    paper = mix(hexc("f4f0e6"), hexc("e2c98f"), age)
+    with keep():
+        shape(c, [(-170, -80), (170, -80), (176, 60), (150, 82), (-170, 80)], paper, key, lw=3, amp=1.0)
+        shape(c, rect(-170, -80, 340, 34), mix(hexc("9fc5e8"), hexc("c9b07a"), age), key + "h", lw=2, amp=0.6)
+        for j in range(3):
+            line(c, [(-140, -16 + j * 30), (40 - j * 40, -16 + j * 30)], f"{key}l{j}", 4, mix(INK, paper, 0.45 + 0.2 * age))
+        line(c, [(-140, 62), (60, 62)], key + "arr", 3, mix(RED, paper, 0.4))
+        shape(c, [(60, 52), (78, 62), (60, 72)], mix(RED, paper, 0.4), key + "arh", lw=1.6)
+        shape(c, ell(120, 6, 34, 34, 20), None, key + "st", lw=2.4, alpha=0.5)
+        circle(c, 150, 60, 10, hexc("6b5a4a"), 0.5)
+    c.restore()
+
+
+def c00_box(c, t):
+    fill_all(c, hexc("4a4038"))
+    glow(c, 320, 520, 760, hexc("ffd8a0"), 0.55)
+    line(c, [(320, 0), (320, 380)], "lcord", 3, hexc("2e2824"))
+    shape(c, [(250, 380), (390, 380), (430, 470), (210, 470)], hexc("d9a65a"), "lshade", lw=3)
+    girl(c, 540, 1010, 2.1, sit=True, legs=False, hat=False, look=0.0, head_down=8, look_up=-0.9,
+         arms=[(-30, -60), (30, -60)] if t < 2.8 else [(-12, -96), (12, -96)], mouth="smile", key="g0")
+    shape(c, rect(-40, 1010, W + 80, 600), hexc("8c5a3c"), "desk", lw=3)
+    for i in range(3):
+        line(c, [(-20, 1060 + i * 60), (W + 20, 1060 + i * 60)], f"dg{i}", 1.6, hexc("74492f"), alpha=0.6)
+    # 旧铁盒
+    bx, by = 540, 1170
+    lid = ease_io(prog(t, 0.3, 0.9))
+    with keep():
+        shape(c, [(bx - 160, by - 110 - 90 * lid), (bx + 160, by - 110 - 90 * lid), (bx + 160, by - 110), (bx - 160, by - 110)],
+              hexc("7f9cb3"), "lid", lw=3)
+        r = random.Random(4)
+        for k in range(8):                                     # 盒子里的一沓车票和登机牌
+            jig = math.sin(t * 9 + k) * 5 * (1.4 < t < 2.8)
+            col = [hexc("f4f2ec"), hexc("dfe9f5"), hexc("f7e3b0"), hexc("f2d0c8")][k % 4]
+            shape(c, rect(bx - 135 + r.uniform(-8, 8), by - 128 + k * 3 + jig, 270, 30), col, f"bt{k}", lw=1.6, amp=0.4)
+        shape(c, rrect(bx - 165, by - 110, 330, 120, 12), hexc("6f8aa0"), "box", lw=3)
+        shape(c, rect(bx - 165, by - 88, 330, 12), hexc("5d7489"), "boxs", lw=2)
+    # 抽出最底下那张泛黄的车票，越变越大
+    up = ease_io(prog(t, 2.6, 1.4))
+    zoom = ease_io(prog(t, 4.2, 1.8))
+    if up > 0:
+        x = lerp(bx, 540, zoom)
+        y = lerp(by - 120, 760, up) if zoom <= 0 else lerp(760, 820, zoom)
+        s = lerp(0.6, 1.0, up) * lerp(1.0, 2.6, zoom)
+        ticket(c, x, y, s, "tk0", age=1.0, rot=lerp(-0.15, 0.0, up))
+    # 车票褪色、晕开，变成回忆里灰色的街
+    melt = ease_io(prog(t, 6.2, 2.4))
+    if melt > 0:
+        with group_alpha(c, melt), grade(sat=0.12, warm=0.0):
+            street_bg(c, 5.0 + t, base=760, rain_a=0.2, seed=3)
+        veil(c, (0.85, 0.75, 0.55), 0.25 * melt * (1 - melt) * 4)
+
+
+# ================================================================ 团餐：各自低头玩手机
+DINERS = [(135, 0, 0), (230, 0, 1), (365, 1, 0), (460, 1, 1), (595, 2, 0), (690, 2, 1)]
+GIRL_SEAT = 885
+SEAT_Y = 900
+DS = 1.7
+
+
+def c06_dinner(c, t):
+    if t < 10.0:
+        k, cx = 1.0, 540
+    elif t < 13.0:
+        u = ease_io(prog(t, 10.0, 1.2))
+        k, cx = lerp(1.0, 1.55, u), lerp(540, 860, u)
+    elif t < 17.5:
+        u = ease_io(prog(t, 13.0, 4.3))
+        k, cx = 1.45, lerp(860, 170, u)
+    else:
+        u = ease_io(prog(t, 17.5, 1.2))
+        k, cx = lerp(1.45, 1.0, u), lerp(170, 540, u)
+    cy = lerp(960, 880, (k - 1.0) / 0.55)
+    phones = ease_io(prog(t, 3.0, 0.8))
+    dim = ease_io(prog(t, 17.6, 1.4))
+    with cam(c, cx, cy, k):
+        fill_all(c, hexc("c9b59a"))
+        for i in range(12):
+            line(c, [(i * 100 - 20, 0), (i * 100 - 20, 900)], f"dw{i}", 1.6, hexc("b9a587"), alpha=0.6)
+        line(c, [(540, 0), (540, 220)], "dlc", 3, hexc("4a4038"))
+        shape(c, [(470, 220), (610, 220), (650, 300), (430, 300)], hexc("d9a65a"), "dlamp", lw=3)
+        glow(c, 540, 420, 700, hexc("ffe2a8"), 0.55 * (1 - dim))
+        # 坐着的人
+        for x, ci, j in DINERS:
+            col = COUPLE_COLS[ci][j]
+            look = (0.6 if j == 0 else -0.6) if phones < 0.5 else 0.0
+            local(c, x, SEAT_Y, DS, f"dn{x}", col, hexc("2f2a28") if j == 0 else hexc("3a3a3a"),
+                  "bang_short" if j == 0 else "short", sit=True, legs=False, look=look,
+                  head_down=8 * phones, look_up=-0.9 * phones, mouth="flat" if phones > 0.5 else "smile",
+                  arms=[(-12, -86), (12, -86)] if phones > 0.3 else [(-28, -58), (28, -58)])
+        bowl_y = SEAT_Y + (-84 + 52) * DS
+        gl = -1.0 if 10.0 <= t < 17.5 else 0.0
+        girl(c, GIRL_SEAT, SEAT_Y, DS, sit=True, legs=False, hat=False, look=gl, mouth="flat",
+             head_down=10 * dim, look_up=-1.0 * dim, arms=[(-16, -84), (16, -84)], key="gd")
+        with keep():
+            shape(c, ell(GIRL_SEAT, bowl_y, 40, 14, 14, 0, math.pi), hexc("f2efe8"), "gbowl", lw=2)
+        # 手机的蓝光
+        if phones > 0:
+            for x, ci, j in DINERS:
+                py_ = SEAT_Y + (-86 + 52) * DS
+                with keep():
+                    shape(c, rrect(x - 15, py_ - 34, 30, 46, 5), hexc("2e3449"), f"ph{x}", lw=1.6, amp=0.2)
+                    shape(c, rect(x - 11, py_ - 29, 22, 35, ), hexc("bfe0ff"), f"phs{x}", lw=0, edge=False, alpha=phones)
+                    glow(c, x, SEAT_Y - 150, 60, hexc("8fb8ff"), 0.28 * phones * (1 + dim))
+        # 小爱心变灰、掉在桌上
+        if t > 6.8:
+            for i in range(3):
+                hx = (DINERS[i * 2][0] + DINERS[i * 2 + 1][0]) / 2
+                fall = ease_in(prog(t, 7.6 + i * 0.35, 1.0))
+                grey = ease_io(prog(t, 6.8 + i * 0.3, 0.8))
+                hy = lerp(SEAT_Y - 300, 840, fall)
+                col = mix(RED, hexc("9a9a9a"), grey)
+                r_ = lerp(24, 18, grey)
+                c.save()
+                c.translate(hx, hy)
+                c.rotate(fall * (1.2 if i % 2 else -1.2))
+                heart(c, 0, 0, r_, 1.0, col)
+                c.restore()
+        # 圆桌与转盘
+        shape(c, ell(540, 960, 520, 140, 40), hexc("eee7d8"), "table", lw=3)
+        shape(c, [(20, 960), (1060, 960), (1040, 1210), (40, 1210)], hexc("e2d9c6"), "tskirt", lw=3)
+        rot = t * 0.22
+        shape(c, ell(540, 950, 280, 66, 30), hexc("dfe7ea"), "susan", lw=2.4)
+        dishes = []
+        for i in range(5):
+            a = rot + i * 2 * math.pi / 5
+            dishes.append((540 + math.cos(a) * 200, 950 + math.sin(a) * 40, i))
+        dishes.sort(key=lambda d: d[1])
+        cols = [hexc("d9653a"), hexc("6fa860"), hexc("e8c040"), hexc("b5533a"), hexc("8a6a4a")]
+        for x, y, i in dishes:
+            shape(c, ell(x, y, 52, 16, 16), hexc("f8f6f0"), f"pl{i}", lw=2, amp=0.4)
+            shape(c, ell(x, y - 4, 34, 9, 14), cols[i], f"fd{i}", lw=1.6, amp=0.3)
+            steam = 1 - ease_io(prog(t, 8.0, 4.0))
+            if steam > 0:
+                for kk in range(2):
+                    sx = x - 8 + kk * 16
+                    line(c, [(sx, y - 16), (sx - 6 + math.sin(t * 2 + kk + i) * 6, y - 46), (sx + 4, y - 74)], f"st{i}{kk}", 2,
+                         (1, 1, 1), alpha=0.6 * steam)
+        if dim > 0:
+            veil(c, (0.1, 0.12, 0.22), 0.5 * dim)
+            with keep():
+                for x, ci, j in DINERS:
+                    glow(c, x, SEAT_Y - 150, 70, hexc("8fb8ff"), 0.4 * dim)
+
+
+# ================================================================ 两个人的寂寞 / 一个人的孤独
+def c07_split(c, t):
+    wipe = ease_io(prog(t, 0.8, 1.0))
+    # 左：灰色雨云下背对背的两个人
+    c.save()
+    c.rectangle(0, 0, 540 + 540 * (1 - wipe), H)
+    c.clip()
+    with grade(sat=0.1):
+        fill_all(c, hexc("8a8f99"))
+        shape(c, rect(-20, 1100, 600, 800), hexc("6f747d"), "lgr", lw=3)
+        rain_cloud(c, 300, 560, 1.7, "lcl2", col=hexc("6a6f79"), t=t)
+        rain(c, t, 40, 0.4, seed=8, x0=0, x1=540, y0=600, y1=1200)
+        shape(c, rect(160, 1090, 280, 20), hexc("5a5d66"), "lbench", lw=2.4)
+    for j, (x, lk) in enumerate(((250, -1.0), (350, 1.0))):
+        local(c, x, 1090, 1.3, f"bb{j}", COUPLE_COLS[0][j], hexc("2f2a28"), "short" if j else "bang_short", sit=True,
+              look=lk, head_down=8, look_up=-0.9, mouth="flat", arms=[(-12, -86), (12, -86)])
+        with keep():
+            glow(c, x, 1090 - 110, 60, hexc("8fb8ff"), 0.5)
+            shape(c, rrect(x - 10, 1090 - 70, 20, 30, 4), hexc("2e3449"), f"bph{j}", lw=1.4, amp=0.2)
+    c.restore()
+    # 右：星空下一个人
+    if wipe > 0:
+        c.save()
+        c.rectangle(540 + 540 * (1 - wipe), 0, 540, H)
+        c.clip()
+        with grade(sat=0.9):
+            vgrad(c, 0, 1100, [(0, hexc("141b3a")), (0.7, hexc("34477a")), (1, hexc("6b7bb0"))], 540, W)
+            r = random.Random(5)
+            for i in range(40):
+                star(c, r.uniform(560, W), r.uniform(60, 820), r.uniform(1.5, 3.5), 0.6 + 0.4 * math.sin(t * 3 + i))
+            shape(c, [(520, 1110), (620, 900), (720, 980), (860, 820), (1100, 1110)], hexc("3d4766"), "rmt", lw=2.6)
+            shape(c, rect(520, 1110, 600, 800), hexc("2e3550"), "rgr", lw=2.6)
+            glow(c, 820, 900, 420, hexc("dfe6ff"), 0.35)
+        girl(c, 820, 1110, 1.5, view="back", hat=True, key="gst")
+        with keep():                                            # 风吹起的红丝带
+            sw = math.sin(t * 5) * 10
+            hy = 1110 - 168 * 1.5
+            line(c, [(820 + 26, hy), (820 + 70 + sw, hy - 10), (820 + 110 + sw * 1.5, hy + 4)], "rib", 5, RED)
+        c.restore()
+        line(c, [(540 + 540 * (1 - wipe), 0), (540 + 540 * (1 - wipe), H)], "split", 4)
+
+
+# ================================================================ 又一次高原反应：有人敲门
+def c08_door(c, t):
+    dawn = ease_io(prog(t, 7.0, 2.4))
+    fill_all(c, mix(hexc("39415a"), hexc("8a8fa6"), dawn * 0.6))
+    # 窗
+    c.save()
+    c.rectangle(110, 220, 380, 420)
+    c.clip()
+    vgrad(c, 220, 640, [(0, mix(hexc("141b33"), hexc("f3c79a"), dawn)), (1, mix(hexc("3b4b7a"), hexc("fbe6c4"), dawn))])
+    shape(c, [(90, 640), (250, 430), (350, 540), (420, 470), (520, 640)], mix(hexc("2a3048"), hexc("9aa0b8"), dawn), "dmt",
+          lw=2.4)
+    shape(c, [(210, 482), (250, 430), (290, 470), (250, 466)], hexc("eef2f8"), "dmts", lw=1.8, alpha=0.3 + 0.7 * dawn)
+    c.restore()
+    shape(c, rect(110, 220, 380, 420), None, "dwin", lw=6)
+    # 门：开着时能看到走廊，尽头一扇半掩的门透出灯光
+    dx0, dx1, dy0, dy1 = 680, 930, 500, 1180
+    open_ = ease_io(prog(t, 2.4, 0.5)) * (1 - ease_io(prog(t, 4.8, 0.5)))
+    shape(c, rect(dx0 - 20, dy0 - 20, dx1 - dx0 + 40, dy1 - dy0 + 20), hexc("2e3449"), "dfr", lw=3)
+    if open_ > 0:
+        c.save()
+        c.rectangle(dx0, dy0, dx1 - dx0, dy1 - dy0)
+        c.clip()
+        fill_all(c, hexc("d9c8a8"))
+        shape(c, [(dx0, dy0), (770, 760), (840, 760), (dx1, dy0)], hexc("e8dcc4"), "corc", lw=1.6)
+        shape(c, [(dx0, dy1), (770, 860), (840, 860), (dx1, dy1)], hexc("b9a587"), "corf", lw=1.6)
+        shape(c, rect(770, 760, 70, 100), hexc("8c7a62"), "cend", lw=1.6)
+        with keep():                                            # 尽头半掩的门
+            shape(c, rect(790, 775, 16, 85), hexc("ffd59a"), "cgap", lw=1.2, amp=0.2)
+            glow(c, 800, 820, 70, hexc("ffd59a"), 0.6)
+        glow(c, 800, 600, 260, hexc("fff0c8"), 0.4)
+        if 2.6 < t < 4.9:
+            local(c, 805, 1170, 1.45, "doorman", COUPLE_COLS[1][1], hexc("3a3a3a"), "short", look=-0.6, mouth="smile",
+                  arms=[(-24, -78), (-60, -96) if t < 4.0 else (-24, -78)])
+        c.restore()
+    door_w = (dx1 - dx0) * (1 - open_ * 0.85)
+    shape(c, rect(dx0, dy0, door_w, dy1 - dy0), hexc("6b5a4a"), "dpanel", lw=3)
+    circle(c, dx0 + door_w - 24, 860, 8, hexc("d9b56a"))
+    # 床
+    shape(c, rect(60, 1040, 500, 60), hexc("e6e0d4"), "dbed", lw=3)
+    shape(c, rect(60, 1100, 500, 140), hexc("7f8aa8"), "dbedb", lw=3)
+    # 药盒：从他手里到她手里
+    def medbox(x, y, key):
+        with keep():
+            shape(c, rect(x - 26, y - 18, 52, 36), hexc("f4f2ec"), key, lw=2, amp=0.3)
+            shape(c, rect(x - 26, y - 18, 52, 10), hexc("4f8fd0"), key + "s", lw=1.4, amp=0.2)
+            shape(c, ell(x, y + 6, 10, 5, 10), hexc("e8a050"), key + "p", lw=1.2, amp=0.2)
+    if t < 1.6:                                                 # 床上晕眩，听见敲门
+        girl(c, 330, 1040, 1.5, sit=True, crouch=True, hat=False, mouth="sad", head_down=6, look=0.6 if t > 0.8 else 0.2,
+             arms=[(-14, -92), (14, -92)], key="g8")
+        hy = 1040 + (52 - 150) * 1.5 - 70
+        with keep():
+            pts = [(330 + math.cos(i / 50 * 4 * math.pi + t * 3) * (8 + i) * 1.4,
+                    hy + math.sin(i / 50 * 4 * math.pi + t * 3) * (8 + i) * 0.45) for i in range(50)]
+            line(c, pts, "dz8", 2.2, hexc("c8cde0"), alpha=0.8)
+        for kk, tk in enumerate((0.8, 1.15)):
+            a = 1 - prog(t, tk, 0.4)
+            if 0 < a < 1:
+                with keep():
+                    for j in range(3):
+                        line(c, [(dx0 - 30 - j * 14, 760 + j * 18), (dx0 - 50 - j * 14, 750 + j * 18)], f"kn{kk}{j}", 3,
+                             hexc("f6d6a8"), alpha=a)
+    elif t < 6.8:
+        x = lerp(330, 600, ease_io(prog(t, 1.6, 0.8)))
+        lean = t > 5.2
+        girl(c, x, 1180, 1.5, hat=False, look=1.0 if not lean else 0.0, mouth="flat" if lean else "smile",
+             walk=t * 8 if t < 2.4 else None, head_down=6 if lean else 0, eyes_closed=lean and t > 5.6,
+             arms=[(-24, -78), (40, -96)] if 3.6 < t < 5.0 else [(-24, -78), (24, -78)], key="g8w")
+        if 2.6 < t < 4.0:
+            medbox(805 - 60 * 1.45, 1170 - 96 * 1.45, "med")
+        elif 3.6 <= t < 6.8:
+            medbox(x + 40 * 1.5, 1180 - 96 * 1.5, "med")
+    else:                                                       # 停顿：坐回床边，天一点点亮
+        girl(c, 330, 1040, 1.5, sit=True, hat=False, look=-0.7, look_up=0.5, mouth="flat",
+             arms=[(-12, -70), (12, -70)], key="g8s")
+        medbox(330, 1040 + (-70 + 52) * 1.5 - 6, "med")
+
+
+# ================================================================ 越来越习惯一个人
+def m_train(c, t):
+    fill_all(c, hexc("c9bfae"))
+    c.save()
+    c.rectangle(160, 300, 760, 520)
+    c.clip()
+    vgrad(c, 300, 820, [(0, hexc("9fc5e8")), (1, hexc("e9f2f6"))])
+    shape(c, hill_pts(700, 40, 0.01, t * 4, 100, 1000, 900), hexc("8fb07a"), "mth", lw=2.4)
+    for k in range(4):
+        x = (k * 300 - t * 700) % 1200 - 100
+        line(c, [(x, 520), (x, 820)], f"mpole{k}", 6, hexc("6b5a4a"))
+    c.restore()
+    shape(c, rect(160, 300, 760, 520), None, "mtw", lw=8)
+    shape(c, rect(100, 1000, 880, 40), hexc("8a6a4a"), "mtsill", lw=3)
+    girl(c, 760, 1180, 1.6, sit=True, hat=True, look=-0.9, mouth="flat", key="gm1")
+
+
+def m_peak(c, t):
+    vgrad(c, 0, 1100, [(0, hexc("f2a07a")), (0.6, hexc("f8d29a")), (1, hexc("fbecc8"))])
+    glow(c, 540, 860, 520, hexc("fff0b8"), 0.8)
+    shape(c, ell(540, 860, 80, 80, 24), hexc("fbd78a"), "msun", lw=2)
+    shape(c, [(-40, 1900), (-40, 1300), (300, 1050), (540, 1120), (760, 1000), (1120, 1300), (1120, 1900)], hexc("6f6a80"),
+          "mpk", lw=3)
+    girl(c, 560, 1130, 1.6, view="back", hat=True, key="gm2")
+
+
+def m_market(c, t):
+    vgrad(c, 0, 1300, [(0, hexc("1d2647")), (1, hexc("4a3a5a"))])
+    pts = [(-40, 420), (540, 520), (1120, 420)]
+    line(c, pts, "mrope", 2, hexc("2e2824"))
+    with keep():
+        for k in range(9):
+            u = (k + 0.5) / 9
+            x = lerp(-40, 1120, u)
+            y = 420 + math.sin(math.pi * u) * 100 + 30
+            glow(c, x, y, 90, hexc("ffb070"), 0.5)
+            shape(c, ell(x, y, 26, 32, 16), hexc("d9433a"), f"lan{k}", lw=2)
+    for i, (x, col) in enumerate(((160, "8a5a3a"), (880, "6a5a7a"))):
+        shape(c, rect(x - 110, 900, 220, 220), hexc(col), f"stall{i}", lw=3)
+        shape(c, [(x - 130, 900), (x + 130, 900), (x + 100, 840), (x - 100, 840)], hexc("e8c040"), f"aw{i}", lw=2.4)
+    shape(c, rect(-20, 1120, W + 40, 600), hexc("3a3440"), "mgr", lw=3)
+    girl(c, 540, 1200, 1.6, hat=True, walk=t * 7, look=0.3, mouth="laugh", key="gm3")
+
+
+def c09_montage(c, t):
+    if t < 1.8:
+        m_train(c, t)
+    elif t < 3.6:
+        m_peak(c, t)
+    else:
+        m_market(c, t)
+
+
+def c14_wait(c, t):
+    if t < 5.5:
+        c12_wait(c, t)
+    else:
+        c12b_notes(c, t - 5.5)
