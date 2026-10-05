@@ -57,10 +57,13 @@ def bubble(c, x, y, s, a=1.0, key="bb", w=None, size=40):
         text(c, s, x, y + 6, size, INK, a=a)
 
 
-def hat_on_back(c, x, y, s, key):
-    """帽子背在身后：只露出一圈帽檐。"""
-    hat_item(c, x, y - 112 * s, s * 0.95, key)
-    line(c, [(x - 14 * s, y - 120 * s), (x, y - 140 * s), (x + 14 * s, y - 120 * s)], key + "str", 2, RED)
+def hat_on_pack(c, x, y, s, key):
+    """背影：草帽挂在背包侧边。"""
+    c.save()
+    c.translate(x + 30 * s, y - 72 * s)
+    c.rotate(0.35)
+    hat_item(c, 0, 0, s * 0.5, key)
+    c.restore()
 
 
 def sneakers_illus(c, cx, cy):
@@ -1119,7 +1122,6 @@ def w20(c, t):
     hen(c, hx, 1150, t, "hen1", flap=1.0 if t > 2.4 else 0.2)
     hen(c, hx + 140, 1190, t + 0.3, "hen2", flap=busy)
     laugh = t > 3.6
-    hat_on_back(c, 540, 1230, 1.6, "g20h")
     girl(c, 540, 1230, 1.6, hat=False, pack=True, look=0.0, mouth="laugh" if laugh else "smile", look_up=0.4,
          arms=[(-24, -78), (24, -78)] if not laugh else [(-40, -150), (40, -150)], key="g20")
     if busy > 0:                                                   # 吆喝声
@@ -1210,7 +1212,6 @@ def w21(c, t):
                   hexc("2f2a28"), "short", walk=t * 6 + i, look=0.8 if i % 2 else -0.8, mouth="smile")
         if t < 4.6:
             look_card = held
-            hat_on_back(c, 620, 1220, 1.6, "g21h")
             girl(c, 620, 1220, 1.6, hat=False, pack=True, look=0.6, head_down=-4 if look_card else 0,
                  mouth="o" if 1.4 < t < 3.6 else "smile",
                  arms=[(-24, -78), (34, -150)] if held else ([(-24, -78), (70, -190)] if t < 1.0 or t > 4.0 else None),
@@ -1223,12 +1224,10 @@ def w21(c, t):
             x = lerp(620, 520, ease_io(walk))
             y = lerp(1220, 1020, ease_io(prog(t, 6.6, 3.0)))
             s = lerp(1.6, 0.9, ease_io(prog(t, 6.6, 3.0)))
-            if back:
-                hat_on_back(c, x, y, s, "g21wh")
             girl(c, x, y, s, hat=False, pack=True, view="front" if back else "back", look=0.9 if back else 0.0,
                  mouth="smile", walk=None if back else t * 6, key="g21w")
             if not back:
-                hat_item(c, x, y - 112 * s, s * 0.95, "g21wh")
+                hat_on_pack(c, x, y, s, "g21wh")
     if 1.4 < t < 3.6:                                              # 看了很久：明信片放大
         a = math.sin(prog(t, 1.4, 2.2) * math.pi)
         with group_alpha(c, a):
