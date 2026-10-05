@@ -354,6 +354,14 @@ class Renderer:
                     c.set_source_surface(B, 0, 0)
                     c.paint_with_alpha(p)
                     return out
+                if kind == "pan":                          # 镜头横移：跟着她走进下一幕
+                    c.set_source_rgb(1, 1, 1)
+                    c.paint()
+                    c.set_source_surface(A, -W * p, 0)
+                    c.paint()
+                    c.set_source_surface(B, W * (1 - p), 0)
+                    c.paint()
+                    return out
                 edge = W * (1 - p)
                 c.save()
                 c.rectangle(edge, 0, W - edge, H)
