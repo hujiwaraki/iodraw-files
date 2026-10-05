@@ -17,7 +17,7 @@ from synth import (SR, Mix, bass, cello, chug, jingle, kick, knock, music_box, p
 
 DUR = 166.0
 M = Mix(DUR)
-B = 0.6                                   # 一拍（全章同一个速度）
+B = 0.5                                   # 一拍（全章同一个速度：每拍 0.5 秒，一小节 4 拍 = 2 秒）
 
 
 def P(sig, t, vol=1.0, pan=0.0):
@@ -44,7 +44,7 @@ def melody(t0, notes, beat, inst="pluck", vol=1.0, shift=0, pan=0.0, every=1):
             P(pluck(m + shift, length=max(0.6, d * beat * 1.6), bright=0.22), t, vol, pan)
 
 
-def arp(t0, ch, bar, vol, pan=0.1, pattern=(0, 1, 2, 3, 2, 1)):
+def arp(t0, ch, bar, vol, pan=0.1, pattern=(0, 1, 2, 3, 2, 1, 2, 3)):
     step = bar / len(pattern)
     for j, k in enumerate(pattern):
         P(pluck(ARP[ch][k] + 12, length=1.2, bright=0.24), t0 + j * step, vol, pan)
@@ -99,7 +99,7 @@ P(swish(0.6), 6.3, 0.35)                                           # 自动门
 P(murmur(7.0, 0.05), 6.5, 1.0, -0.3)
 for k in range(5):
     P(knock(), 6.8 + k * 0.45, 0.04, pan=0.3)                      # 拖箱子的轮子
-melody(7.2, THEME_MIN[:5], 1.2, "pluck", 0.32, shift=-12, every=2)  # 单音，一个一个
+melody(7.0, THEME_MIN[:5], 1.0, "pluck", 0.32, shift=-12, every=2)  # 单音，一个一个
 P(pluck(69, length=2.4, bright=0.18), 10.4, 0.22)                  # 深吸一口气
 P(breath(1.4), 9.4, 0.8)
 # 台阶 14–19.4
@@ -128,7 +128,7 @@ P(tick(), 23.05, 0.3)                                              # 锁上
 P(breath(1.4), 23.2, 1.0)
 # 一个人吃饭 / 看风景 / 陌生的城市 24–34
 P(swish(0.7), 23.9, 0.3)
-melody(24.3, THEME_MIN, 1.2, "pluck", 0.3, shift=-12, every=2, pan=0.1)
+melody(24.0, THEME_MIN, 1.0, "pluck", 0.3, shift=-12, every=2, pan=0.1)
 P(pad([45, 52, 57], 9.5, att=2.0, rel=2.0, bright=0.6), 24.0, 0.16)
 P(murmur(3.2, 0.04), 24.1, 1.0)
 for k in range(4):
@@ -172,8 +172,8 @@ P(pluck(62, length=2.4, bright=0.16), 58.6, 0.2)
 P(swell(2.4, 300, 6000), 59.6, 0.45)
 P(pad(CH["F"] + [72], 7.5, att=2.0, rel=2.0, bright=1.6), 60.0, 0.32)
 for i, ch in enumerate(PROG):
-    arp(60.0 + i * 2.4, ch, 2.4, 0.13 + 0.03 * i)
-melody(60.6, THEME_MAJ, B, "pluck", 0.36, shift=-12, pan=0.1)      # 第一次完整地弹出来
+    arp(60.0 + i * 2.0, ch, 2.0, 0.13 + 0.03 * i)
+melody(61.0, THEME_MAJ, B, "pluck", 0.36, shift=-12, pan=0.1)      # 第一次完整地弹出来
 P(swish(0.6), 63.5, 0.3)
 P(noise(3.0, 250, 1400, 0.12, 1.0), 63.8, 1.0)                     # 山坡上的风
 for i, m in enumerate((77, 81, 84, 89)):                            # 推起帽檐
@@ -182,8 +182,8 @@ for i, m in enumerate((77, 81, 84, 89)):                            # 推起帽�
 P(murmur(7.0, 0.05), 67.0, 1.0)
 P(music_box(91, 0.6), 67.4, 0.2)
 for i, ch in enumerate(["F", "C", "Dm", "C"]):
-    P(pluck(ROOT[ch] + 12, length=2.0, bright=0.2), 67.0 + i * 1.8, 0.22, -0.2)
-    arp(67.0 + i * 1.8, ch, 1.8, 0.16)
+    P(pluck(ROOT[ch] + 12, length=2.0, bright=0.2), 67.0 + i * 2.0, 0.22, -0.2)
+    arp(67.0 + i * 2.0, ch, 2.0, 0.16)
 P(music_box(100, 0.5), 72.2, 0.3)                                  # 碰杯
 P(music_box(103, 0.5), 72.35, 0.25)
 
@@ -204,14 +204,14 @@ for i in range(16):
             P(jingle(), t0 + j * 0.5 + 0.25, 0.06 * lvl, pan=0.4)
     if not after and i % 4 == 0:
         P(pad(CH[ch], 4.0, att=0.8, rel=0.8, bright=0.6), t0, 0.12)
-melody(98.2, THEME_MAJ, B, "pluck", 0.42, shift=-12, pan=0.15)     # 第四组“后来”：旋律回来了
+melody(102.0, THEME_MAJ, B, "pluck", 0.42, shift=-12, pan=0.15)     # 第四组“后来”：旋律回来了
 for k4 in range(4):
     P(swish(0.4), 74.0 + k4 * 8 + 3.9, 0.25)                        # 叠化到“后来”
 for k in range(4):
-    P(tick(k % 2 == 1), 74.6 + k * 0.6, 0.06)                       # 看着返程时间
+    P(tick(k % 2 == 1), 74.5 + k * 0.5, 0.06)                       # 看着返程时间
 ding_dong(86.1, 0.25)                                               # 最后登机
 for k in range(8):
-    P(knock(), 86.2 + k * 0.28, 0.07, pan=-0.3 + k * 0.08)          # 一路跑来
+    P(knock(), 86.25 + k * 0.25, 0.07, pan=-0.3 + k * 0.08)          # 一路跑来
 P(snap(), 92.2, 0.35)                                               # 拉链崩开
 P(swish(0.5), 96.6, 0.35)                                           # 背包甩上肩
 P(scratch(0.4), 102.0, 0.2)                                         # 展开纸地图
@@ -229,7 +229,7 @@ for i in range(18):
     t0 = 106.0 + i * 2.0
     P(bass(ROOT[ch] + 12, 1.9), t0, 0.24)
     arp(t0, ch, 2.0, 0.15, pattern=(0, 1, 2, 3, 2, 1, 2, 3))
-melody(106.4, THEME_MAJ, B, "pluck", 0.3, shift=-12, every=2)
+melody(106.0, THEME_MAJ, B, "pluck", 0.3, shift=-12, every=2)
 for k in range(3):
     P(breath(1.0), 107.0 + k * 0.9, 0.5)                           # 深吸一口气
 P(swish(0.6), 112.1, 0.4)                                          # 换衣服的帘子
@@ -237,7 +237,7 @@ for i, m in enumerate((84, 88, 91)):
     P(music_box(m, 1.2), 114.6 + i * 0.1, 0.28)                    # 转一圈
 P(murmur(6.0, 0.08), 117.0, 1.0)                                   # 菜市场
 for k in range(5):
-    P(knock(), 119.4 + k * 0.5, 0.08)
+    P(knock(), 119.5 + k * 0.5, 0.08)
 # 切菜：大小不一 → 奶奶示范，又快又匀 → 她自己，慢但整齐
 for tk in (0.1, 0.55, 0.95, 1.4):
     P(knock(), 123.0 + tk, 0.18, pan=-0.2)
@@ -282,7 +282,7 @@ for k in range(3):
     P(scratch(0.15), 146.4 + k * 0.9, 0.12, pan=0.6)                # 鸡扑腾
 # 热闹退去，只剩一把吉他
 P(pad(CH["F"] + [72], 10.0, att=2.0, rel=3.0, bright=1.2), 150.0, 0.26)
-melody(150.6, THEME_MAJ, 0.75, "pluck", 0.42, shift=-12, pan=0.1)
+melody(150.5, THEME_MAJ, 0.75, "pluck", 0.42, shift=-12, pan=0.1)
 P(swell(1.4, 300, 5000), 151.3, 0.25)                              # 那张明信片
 P(music_box(91, 2.4), 151.6, 0.22)
 for k in range(4):
