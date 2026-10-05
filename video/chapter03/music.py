@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, bandnoise, bass, cello, chug, heartbeat, jingle, kick, knock, music_box, pad,  # noqa: E402
                    piano, pluck, rain, reed, rumble, scratch, shaker, snap, swell, swish, thump, tick, whistle, _t)
 
-DUR = 168.0
+DUR = 165.0
 M = Mix(DUR)
 
 def remap(t):
@@ -28,8 +28,22 @@ def remap(t):
     return t
 
 
+def remap_j(T):
+    """第五稿（手账）：清晨、气泡两段各提前 1 秒；结尾另写，直接放置。"""
+    if T >= 148.0:
+        return None
+    if T >= 136.5:
+        return T - 1.0
+    return T
+
+
+DIRECT = [False]                                                   # True：按新时间直接放置
+
+
 def P(sig, t, vol=1.0, pan=0.0):
-    M.place(sig, remap(t), vol, pan)
+    T = t if DIRECT[0] else remap_j(remap(t))
+    if T is not None:
+        M.place(sig, T, vol, pan)
 
 
 def PA(sig, t, vol=1.0, pan=0.0):
@@ -246,21 +260,31 @@ P(pad(CH["F"] + [72], 7.5, att=1.5, rel=2.0, bright=1.6), 133.2, 0.4)
 P(music_box(100, 0.5), 137.3, 0.3)                                # 碰杯
 P(music_box(103, 0.5), 137.45, 0.25)
 
-# ================================================================ 回到现在 141–154 / 片尾
-P(pad(CH["F"] + [72], 12.0, att=2.0, rel=3.0, bright=1.2), 141.0, 0.32)
-for i in range(18):
-    P(music_box([77, 79, 81, 84, 86, 89][i % 6], 0.9), 141.2 + i * 0.12, 0.12, pan=-0.6 + (i % 7) * 0.2)
-melody(146.4, THEME_MAJ[:5], 0.8, "box", 0.32)
-P(swell(1.6, 300, 4000), 148.2, 0.3)                              # 明信片
-P(music_box(91, 2.4), 149.6, 0.3)
-P(swish(), 155.6, 0.7)
-melody(154.4, THEME_MAJ, 0.6, "box", 0.6, pan=0.1)
-P(pad(CH["F"], 4.0, att=1.0, rel=2.0), 154.4, 0.5)
+DIRECT[0] = True
+
+# ================================================================ 手账翻页动画 59–63.6
+tf = 59.2
+while tf < 63.6:
+    PA(tick(), tf, 0.07, pan=0.3)
+    tf += 1.0 / (3 + (tf - 59.0) * 1.2)
+
+# ================================================================ 合上手账 148–159 / 片尾 159–165
+PA(pad(CH["F"] + [72], 11.0, att=2.0, rel=3.0, bright=1.2), 148.0, 0.32)
+PA(snap(), 149.4, 0.25)                                            # 橡皮筋
+melody(149.6, THEME_MAJ[:5], 0.8, "box", 0.3)
+PA(swell(1.6, 300, 4000), 149.8, 0.3)                              # 明信片滑出来
+PA(music_box(91, 2.4), 151.0, 0.28)
+PA(swish(0.6), 151.8, 0.35)                                        # 放进铁盒
+PA(knock(), 154.4, 0.25)                                           # 盖上盖子
+PA(music_box(84, 2.0), 155.2, 0.2)
+PA(swish(), 160.6, 0.45)
+melody(159.4, THEME_MAJ, 0.6, "box", 0.45, pan=0.1)
+PA(pad(CH["F"], 4.0, att=1.0, rel=2.0), 159.4, 0.5)
 for i, m in enumerate((65, 69, 72, 77)):
-    P(music_box(m, 3.5), 158.2 + i * 0.07, 0.45, pan=-0.3 + i * 0.2)
+    PA(music_box(m, 3.5), 162.8 + i * 0.07, 0.45, pan=-0.3 + i * 0.2)
 
 # ---------------------------------------------------------------- 混音
-M.gain([(0, 0.85), (6, 0.9), (14, 1.0), (39, 0.9), (59, 1.0), (66, 0.9), (74, 1.0), (106, 0.8), (149, 0.95), (162, 0.62),
+M.gain([(0, 0.85), (6, 0.9), (14, 1.0), (39, 0.9), (59, 1.0), (66, 0.9), (74, 1.0), (106, 0.8), (148, 0.95), (159, 0.62),
         (DUR + 1, 0.62)])
 M.muffle([(0, 0), (DUR + 1, 0)])
 duck = [(0, 1), (DUR + 1, 1)]
@@ -269,4 +293,4 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 168, 4)))
+                   for t in range(0, 165, 4)))
