@@ -14,10 +14,25 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, bandnoise, bass, cello, chug, heartbeat, jingle, kick, knock, music_box, pad,  # noqa: E402
                    piano, pluck, rain, reed, rumble, scratch, shaker, snap, swell, swish, thump, tick, whistle, _t)
 
-DUR = 160.0
+DUR = 168.0
 M = Mix(DUR)
 
+def remap(t):
+    """第二稿：配乐按第一稿时间书写，放置时搬到新位置（四人桌提前、分屏多一组）。"""
+    if 133.0 <= t + 0.3 < 141.0:
+        return t - 67.0
+    if 90.0 <= t + 0.3 < 133.0:
+        return t + 16.0
+    if t + 0.3 >= 141.0:
+        return t + 8.0
+    return t
+
+
 def P(sig, t, vol=1.0, pan=0.0):
+    M.place(sig, remap(t), vol, pan)
+
+
+def PA(sig, t, vol=1.0, pan=0.0):
     M.place(sig, t, vol, pan)
 
 
@@ -164,20 +179,23 @@ melody(60.4, THEME_MAJ, 0.62, "pluck", 0.45, shift=-12, pan=0.1)
 for i, m in enumerate((77, 81, 84, 89)):                          # 推起帽檐
     P(music_box(m, 1.6), 62.0 + i * 0.08, 0.3)
 
-# ================================================================ 以前 / 后来 66–90
-for k3 in range(3):
-    t0 = 66.0 + k3 * 8.0
-    P(pad([50, 57, 62], 3.8, att=0.6, rel=0.6, bright=0.8), t0, 0.25)   # 以前：灰灰的
+# ================================================================ 以前 / 后来 74–106（四组，按新时间直接放置）
+for k4 in range(4):
+    t0 = 74.0 + k4 * 8.0
+    PA(pad([50, 57, 62], 3.8, att=0.6, rel=0.6, bright=0.8), t0, 0.25)   # 以前：灰灰的
     for k in range(7):
-        P(tick(k % 2 == 1), t0 + 0.2 + k * 0.5, 0.12)
+        PA(tick(k % 2 == 1), t0 + 0.2 + k * 0.5, 0.12)
     tb = t0 + 4.0                                                 # 后来：明亮的吉他
-    P(swish(0.4), tb - 0.2, 0.4)
-    guitar(tb, ["F", "C", "Dm"], 1.3, vol=0.28, pattern=(0, 1, 2, 3, 2, 1))
-    P(bass(41, 3.6), tb, 0.3)
-    P(kick(0.7), tb, 0.3)
-P(swish(0.5), 75.6, 0.3)                                          # 背包甩上肩
+    PA(swish(0.4), tb - 0.2, 0.4)
+    for i, chn in enumerate(["F", "C", "Dm"]):
+        PA(pluck(ROOT[chn] + 12, length=1.6, bright=0.2), tb + i * 1.3, 0.3, -0.2)
+        for j, kk in enumerate((0, 1, 2, 3, 2, 1)):
+            PA(pluck(ARP[chn][kk] + 12, length=1.2, bright=0.24), tb + i * 1.3 + j * 1.3 / 6, 0.28, 0.1)
+    PA(bass(41, 3.6), tb, 0.3)
+    PA(kick(0.7), tb, 0.3)
+PA(swish(0.5), 93.8, 0.3)                                         # 背包甩上肩
 for k in range(6):
-    P(knock(), 86.3 + k * 0.4, 0.06, pan=0.4)
+    PA(knock(), 102.3 + k * 0.4, 0.06, pan=0.4)
 
 # ================================================================ 走进当地人的生活 90–133：热闹的拨弦 + 手鼓
 b2 = 0.5
@@ -242,7 +260,7 @@ for i, m in enumerate((65, 69, 72, 77)):
     P(music_box(m, 3.5), 158.2 + i * 0.07, 0.45, pan=-0.3 + i * 0.2)
 
 # ---------------------------------------------------------------- 混音
-M.gain([(0, 0.85), (6, 0.9), (14, 1.0), (39, 0.9), (59, 1.0), (90, 0.8), (133, 0.9), (141, 0.95), (154, 0.62),
+M.gain([(0, 0.85), (6, 0.9), (14, 1.0), (39, 0.9), (59, 1.0), (66, 0.9), (74, 1.0), (106, 0.8), (149, 0.95), (162, 0.62),
         (DUR + 1, 0.62)])
 M.muffle([(0, 0), (DUR + 1, 0)])
 duck = [(0, 1), (DUR + 1, 1)]
@@ -251,4 +269,4 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 160, 4)))
+                   for t in range(0, 168, 4)))

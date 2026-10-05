@@ -436,18 +436,69 @@ def s_pack(c, t, w, h):
 
 
 def s_flag(c, t, w, h):
+    """以前：一个人拉着行李箱，照着必去清单赶景点。"""
     vgrad(c, 0, h, [(0, hexc("c9d1d8")), (1, hexc("e4e5e1"))], 0, w)
-    landmark(c, 700, 380, 0.9, "tower", "sfl")
+    landmark(c, 640, 380, 0.9, "tower", "sfl")
     shape(c, rect(-20, 380, w + 40, 200), hexc("d6cbb2"), "sfg", lw=2.4)
-    local(c, 140, 500, 1.0, "sguide", hexc("c9473b"), hexc("2f2a28"), "short", look=0.6, arms=[(-24, -78), (20, -150)],
-          walk=t * 5)
-    line(c, [(160, 350), (160, 260)], "sfp", 3, hexc("6b4a32"))
-    with keep():
-        shape(c, [(160, 260), (200, 270), (160, 280)], hexc("e8c040"), "sff", lw=1.6)
     for i in range(5):
-        silhouette(c, 260 + i * 70, 500, 0.95, f"sq{i}", walk=t * 5 + i, a=0.6)
-    girl(c, 640, 500, 0.95, hat=True, look=-0.6, mouth="flat", walk=t * 5, key="gfl")
-    checklist(c, 760, 30, int(clamp(t / 0.8, 0, 6)), "cl11", 0.7)
+        silhouette(c, 120 + i * 80, 470, 0.9, f"sq{i}", walk=t * 5 + i, a=0.5)
+    x = lerp(160, 520, ease_io(prog(t, 0.0, 3.6)))
+    pull(c, x, 500, 0.95, "gfl", walk=t * 9, mouth="flat")
+    with keep():
+        for k in range(3):
+            line(c, [(x - 140 - k * 20, 420 + k * 20), (x - 100 - k * 20, 420 + k * 20)], f"fsp{k}", 2, hexc("8a8f99"),
+                 alpha=0.6)
+    checklist(c, 760, 30, int(clamp(t / 0.6, 0, 6)), "cl11", 0.7)
+
+
+def s_days(c, t, w, h):
+    """以前：只敢出去玩几天，日历上圈着短短的三天。"""
+    fill_all(c, hexc("e9e2d4"))
+    shape(c, rect(60, 60, 520, 260), hexc("f4efe6"), "wcal", lw=2.4)
+    shape(c, rect(60, 60, 520, 50), hexc("c0503c"), "wcalh", lw=2)
+    for j in range(7):
+        text(c, "一二三四五六日"[j], 96 + j * 72, 98, 22, (1, 1, 1))
+        text(c, str(10 + j), 96 + j * 72, 190, 30, INK, a=0.8)
+    with keep():
+        shape(c, rrect(96 + 4 * 72 - 30, 150, 3 * 72, 60, 24), None, "wcir", lw=3)
+        text(c, "只请到三天假", 96 + 5 * 72, 270, 22, RED)
+    with keep():                                                   # 一直在看时间
+        shape(c, ell(780, 160, 80, 80, 24), (1, 1, 1), "wclk", lw=2.4)
+        a = t * 5
+        line(c, [(780, 160), (780 + math.sin(a) * 60, 160 - math.cos(a) * 60)], "wclkh", 3)
+    x = lerp(160, 760, ease_in(prog(t, 0.6, 3.0)))
+    pull(c, x, 500, 0.95, "gdy", walk=t * 11, mouth="flat")
+
+
+def s_month(c, t, w, h):
+    """后来：一走就是半个月，在一个地方住下来，像在那里生活。"""
+    vgrad(c, 0, h, [(0, hexc("fbe6c4")), (1, hexc("f6efe0"))], 0, w)
+    shape(c, rect(60, 50, 430, 300), hexc("f4efe6"), "mcal", lw=2.4)
+    shape(c, rect(60, 50, 430, 46), hexc("4f8a7a"), "mcalh", lw=2)
+    n = int(clamp(t * 4.5, 0, 15))
+    with keep():
+        for i in range(21):
+            cx, cy = 96 + (i % 7) * 58, 130 + (i // 7) * 70
+            text(c, str(1 + i), cx, cy + 10, 22, INK, a=0.7)
+            if i < n:                                              # 一天天划掉
+                line(c, [(cx - 16, cy - 12), (cx + 16, cy + 16)], f"mx{i}", 3, RED)
+        text(c, "半个月", 380, 330, 26, hexc("4f8a7a"))
+    # 窗边的小桌、晾着的衣服、趴着的猫：像住在这里
+    shape(c, rect(560, 60, 360, 260), hexc("bfe0f2"), "mwin", lw=3)
+    line(c, [(560, 110), (920, 110)], "mrope", 2, hexc("6b5a4a"))
+    with keep():
+        for k, col in enumerate(("f2a6a0", "f7e27a", "9fc5e8")):
+            shape(c, rect(600 + k * 100, 110, 60, 70), hexc(col), f"mcl{k}", lw=1.6)
+    shape(c, rect(560, 420, 360, 22), hexc("8c5a3c"), "mtab", lw=2.4)
+    with keep():
+        shape(c, [(640, 395), (670, 395), (666, 420), (644, 420)], hexc("f2efe8"), "mcup", lw=1.6)
+        for k in range(2):
+            line(c, [(648 + k * 12, 390), (644 + k * 12 + math.sin(t * 3 + k) * 4, 370), (650 + k * 12, 350)],
+                 f"mst{k}", 2, (1, 1, 1), alpha=0.7)
+        shape(c, ell(860, 410, 34, 16, 12), hexc("4a4038"), "cat", lw=1.6)
+        shape(c, ell(886, 398, 12, 11, 10), hexc("4a4038"), "cath", lw=1.4)
+    girl(c, 760, 420, 1.0, sit=True, hat=False, pack=False, look=-0.4, mouth="smile", arms=[(-30, -60), (-60, -70)],
+         key="gmo")
 
 
 def s_alley(c, t, w, h):
@@ -474,11 +525,11 @@ def s_alley(c, t, w, h):
             line(c, [(260, 400), (280, 385), (300, 400)], "amr", 1.6, RED)
 
 
-PAIRS = [(s_plan, s_book), (s_stuff, s_pack), (s_flag, s_alley)]
+PAIRS = [(s_plan, s_book), (s_days, s_month), (s_stuff, s_pack), (s_flag, s_alley)]
 
 
 def d09_split(c, t):
-    k = min(int(t / 8.0), 2)
+    k = min(int(t / 8.0), len(PAIRS) - 1)
     lt = t - k * 8.0
     top, bot = PAIRS[k]
     reveal = ease_io(prog(lt, 3.6, 0.6))
