@@ -1027,13 +1027,87 @@ def wok(c, t):
             text(c, "滋啦！", 360, 560, 60, RED, a=a)
 
 
-def w17(c, t):
-    if t < 4.4:
-        chop_close(c, t)
-    elif t < 6.2:
-        wok(c, t - 4.4)
+def kitchen_wide(c, t):
+    """广角的厨房：她在案板前切菜，奶奶在灶台前翻炒；她把菜端过去倒进锅里，“滋啦”一声，奶奶颠锅，两个人都笑了。"""
+    fill_all(c, hexc("efe3cc"))
+    for i in range(7):                                             # 墙砖
+        shape(c, rect(70 + i * 140, 420, 120, 90), hexc("e2ece9"), f"kt{i}", lw=1.4, amp=0.4)
+    shape(c, rect(120, 150, 300, 220), hexc("cfe6f2"), "kwin", lw=3)                  # 窗
+    line(c, [(270, 150), (270, 370)], "kwinm", 4, hexc("8c5a3c"))
+    shape(c, rect(560, 300, 420, 20), hexc("8c5a3c"), "shelf", lw=2.4)               # 架子上的瓶瓶罐罐
+    with keep():
+        for k, col in enumerate(("c9473b", "e8c040", "6fa860", "f2a6a0", "9fc5e8")):
+            shape(c, rrect(590 + k * 78, 230, 50, 70, 10), hexc(col), f"jar{k}", lw=2)
+        for k in range(3):                                         # 挂着的辣椒和蒜
+            line(c, [(470 + k * 30, 120), (470 + k * 30, 220)], f"hang{k}", 2, hexc("6b4a32"))
+            shape(c, ell(470 + k * 30, 232, 12, 18, 10), hexc(["c9473b", "f4f0e0", "c9473b"][k]), f"hg{k}", lw=1.4)
+    carry = ease_io(prog(t, 2.4, 0.8))                            # 端着案板走到锅边
+    tip = ease_io(prog(t, 3.2, 0.4))
+    toss = max(0.0, math.sin(prog(t, 3.8, 0.8) * math.pi))
+    laugh = t > 3.6
+    # 人站在灶台后面
+    gx = lerp(300, 560, carry)
+    chopping = t < 2.4
+    up = abs(math.sin(t * 6)) if chopping else 0.0
+    if chopping:
+        g_arms = [(-30, -56), (34, -56 - 30 * up)]
+    elif laugh:
+        g_arms = [(-36, -150), (36, -150)]
     else:
-        courtyard(c, t - 6.2 + 1.0)
+        g_arms = [(-30, -70), (34, -70)]
+    girl(c, gx, 960, 1.7, hat=False, mouth="laugh" if laugh else ("o" if chopping and t > 1.4 else "smile"),
+         look=0.3 if chopping else 0.6, head_down=6 if chopping else 0, arms=g_arms, key="g17k")
+    gr_arm = (-50, -56 - 18 * toss) if t > 3.6 else (-50 + 10 * math.sin(t * 5), -56)
+    local(c, 800, 960, 1.7, "cookgran", GRAN_SLEEVE, GRAN, "granny", look=-0.6, mouth="laugh",
+          arms=[gr_arm, (24, -56)])
+    # 灶台
+    shape(c, rect(40, 900, 1000, 900), hexc("8c7a62") + (1.0,), "kcounter", lw=3)
+    shape(c, rect(40, 880, 1000, 30), hexc("b9a587") + (1.0,), "kctop", lw=2.4)
+    for k in range(3):
+        shape(c, rect(90 + k * 320, 960, 260, 300), hexc("7a6a54"), f"kdoor{k}", lw=2)
+        circle(c, 330 + k * 320, 1100, 8, hexc("d9b778"))
+    with keep():
+        # 锅和火
+        wy = 870 - toss * 30
+        glow(c, 700, 880, 130, hexc("ff9a50"), 0.55 + 0.2 * math.sin(t * 9))
+        shape(c, ell(700, wy, 90, 26, 20, 0, math.pi), hexc("3a3a3a"), "kwok", lw=3)
+        line(c, [(790, wy), (840, wy - 26)], "kwokh", 8, hexc("3a3a3a"))
+        if t > 3.4:                                                # 锅里的菜，颠起来
+            for k in range(6):
+                fy = wy - 6 - toss * (80 + k * 16) * (0.4 + 0.6 * abs(math.sin(k + 1)))
+                shape(c, ell(664 + k * 15, fy, 9, 6, 8), hexc(["f6ecc8", "6fa860", "d9433a"][k % 3]), f"kf{k}", lw=1)
+        sm = 0.4 + 0.6 * clamp((t - 3.2) * 2)
+        for k in range(6):
+            ph = (t * 0.8 + k / 6) % 1
+            shape(c, ell(670 + k * 14 + math.sin(t + k) * 10, 820 - ph * 300, 26 + ph * 40, 16 + ph * 20, 12),
+                  (1, 1, 1), f"ksmk{k}", lw=0.8, amp=0.4, alpha=0.55 * (1 - ph) * sm)
+        a = math.sin(prog(t, 3.3, 1.0) * math.pi)
+        if a > 0:
+            text(c, "滋啦！", 900, 620, 56, RED, a=a)
+        # 案板和切好的菜（她端着走）
+        bx = gx + 40 * carry
+        by = 878 - 30 * carry
+        c.save()
+        c.translate(bx, by)
+        c.rotate(-0.5 * tip)
+        shape(c, rect(-90, -14, 180, 16), hexc("d9b778"), "kboard", lw=2)
+        n = int(clamp(t / 0.25, 0, 9))
+        r = random.Random(3)
+        for k in range(n if tip < 0.6 else 0):
+            sz = r.uniform(8, 16)
+            shape(c, rect(-70 + k * 15, -14 - sz * 0.8, sz, sz * 0.8), hexc("f6ecc8"), f"kp{k}", lw=1.2, amp=0.3)
+        if chopping:                                               # 小小的菜刀
+            line(c, [(56, -16 - 40 * up), (60, -16 - 40 * up - 34)], "kknife", 5, hexc("c9ccd0"))
+        c.restore()
+    if t < 2.4:                                                    # 奶奶：“慢慢来～”
+        bubble(c, 840, 520, "慢慢来～", a=math.sin(prog(t, 0.8, 1.4) * math.pi), key="b17", size=34)
+
+
+def w17(c, t):
+    if t < 4.8:
+        kitchen_wide(c, t)
+    else:
+        courtyard(c, t - 4.8 + 1.0)
 
 
 def w18(c, t):
