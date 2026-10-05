@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, bandnoise, bass, cello, chug, heartbeat, jingle, kick, knock, music_box, pad,  # noqa: E402
                    piano, pluck, rain, reed, rumble, scratch, shaker, snap, swell, swish, thump, tick, whistle, _t)
 
-DUR = 180.0
+DUR = 149.5
 M = Mix(DUR)
 
 # 第九稿调整了段落顺序：配乐仍按旧时间轴书写，放置时整段搬到新位置
@@ -39,8 +39,19 @@ def remap2(t):
     return t
 
 
+# 第十一稿：“一个人上路的辛苦”和“习惯”挪到第三章，结尾直接接回台灯下
+def remap3(t):
+    if 131.5 <= t + 0.3 < 162.0:
+        return None
+    if t + 0.3 >= 162.0:
+        return t - 30.5
+    return t
+
+
 def P(sig, t, vol=1.0, pan=0.0):
-    M.place(sig, remap2(remap(t)), vol, pan)
+    t3 = remap3(remap2(remap(t)))
+    if t3 is not None:
+        M.place(sig, t3, vol, pan)
 
 
 def PA(sig, t, vol=1.0, pan=0.0):
@@ -335,7 +346,7 @@ PA(pluck(65, length=1.8, bright=0.18), 87.6, 0.25)
 
 # ---------------------------------------------------------------- 混音
 M.gain([(0, 0.85), (6, 0.9), (29, 1.0), (48.5, 1.1), (70.5, 1.0), (104.5, 1.0), (116.5, 0.95), (123.3, 1.15),
-        (126.5, 1.0), (151.5, 1.15), (156.5, 1.0), (162, 0.75), (174, 0.62), (DUR + 1, 0.62)])
+        (126.5, 1.0), (131.5, 0.75), (143.5, 0.62), (DUR + 1, 0.62)])
 M.muffle([(0, 0), (116.4, 0), (116.6, 0.8), (123.2, 0.8), (123.35, 0), (DUR + 1, 0)])
 duck = [(0, 1), (DUR + 1, 1)]
 
@@ -343,4 +354,4 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 180, 4)))
+                   for t in range(0, 149, 4)))

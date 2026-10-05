@@ -5,7 +5,7 @@ from scenes02 import (c00_box, c01_rush, c02_ask, c03_bus, c04_couples, c05_alti
 from draw import ease_io, lerp, prog
 
 NAME = "chapter02_一个人"
-DUR = 180.0
+DUR = 149.5
 
 SCENES = [
     (0.0, 6.0, intro),
@@ -25,17 +25,12 @@ SCENES = [
     (110.5, 116.5, c14_scale),
     (116.5, 126.5, c15_old),
     (126.5, 131.5, c16_go),
-    (131.5, 141.5, c07_hard),
-    (141.5, 151.5, c09_alone),
-    (151.5, 156.5, c10_eyes),
-    (156.5, 162.0, c09_montage),
-    (162.0, 174.0, c17_desk),
-    (174.0, 180.0, outro2),
+    (131.5, 143.5, c17_desk),
+    (143.5, 149.5, outro2),
 ]
 
 TRANSITIONS = [(6.0, "fade"), (20.0, "page"), (29.0, "fade"), (48.5, "page"), (70.5, "page"), (76.0, "fade"),
-               (85.5, "fade"), (88.5, "page"), (104.5, "page"), (126.5, "page"), (131.5, "page"), (141.5, "page"),
-               (156.5, "fade"), (162.0, "page")]
+               (85.5, "fade"), (88.5, "page"), (104.5, "page"), (126.5, "page"), (131.5, "page")]
 
 SUBS = [
     (6.4, 10.4, "第一次一个人出门旅行，\n是什么时候呢？", "light"),
@@ -62,20 +57,13 @@ SUBS = [
     (116.8, 122.3, "害怕有一天，终于有了时间，\n也终于遇到了对的人，", "dark"),
     (122.5, 126.3, "却已经没有了现在这样强烈的，\n想出发、想看世界的心情。", "dark"),
     (126.8, 131.3, "于是不再等了，\n一个人出发。", "dark"),
-    (131.8, 136.3, "真的一个人上路以后，\n才知道一个人旅行并不浪漫。", "dark"),
-    (136.8, 141.3, "旅途中会有危险，\n会有很多只能自己解决的时刻，", "dark"),
-    (141.8, 144.6, "会一个人吃饭，", "dark"),
-    (144.8, 147.6, "一个人看风景，", "dark"),
-    (147.8, 151.3, "一个人面对一座陌生的城市。", "dark"),
-    (151.8, 156.3, "一开始最怕的，\n是别人看自己一个人时的眼神。", "dark"),
-    (156.8, 161.8, "可慢慢地，\n也越来越习惯一个人旅行。", "dark"),
-    (165.0, 173.3, "不知不觉，\n一个人去了很多地方。", "light"),
+    (134.5, 142.8, "不知不觉，\n一个人去了很多地方。", "light"),
 ]
 
 
 def grade_at(t):
     """色彩：灯下的现在 → 灰色的回忆 → 高原的蓝 → 团餐 → 灰色的等待与害怕 → 上路 → 回到灯下。"""
-    if t < 6.0 or t >= 174.0:
+    if t < 6.0 or t >= 143.5:
         return dict(sat=1.0, dark=0.0, warm=0.0)
     if t < 15.0:
         return dict(sat=0.55, dark=0.0, warm=0.3)
@@ -95,8 +83,4 @@ def grade_at(t):
         return dict(sat=0.1, dark=0.1, warm=0.0)
     if t < 131.5:
         return dict(sat=0.45, dark=0.0, warm=0.25)
-    if t < 156.5:
-        return dict(sat=0.2, dark=0.0, warm=0.0)
-    if t < 162.0:
-        return dict(sat=0.6, dark=0.0, warm=0.2)
-    return dict(sat=lerp(0.6, 0.95, ease_io(prog(t, 162.0, 3.0))), dark=0.0, warm=0.25)
+    return dict(sat=lerp(0.6, 0.95, ease_io(prog(t, 131.5, 3.0))), dark=0.0, warm=0.25)
