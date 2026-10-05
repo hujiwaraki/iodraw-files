@@ -161,7 +161,11 @@ def chapter_page(c, x, y, w, h, no, title, illus=None):
     page_paper(c, x, y, w, h, "chp")
     with keep():
         text(c, no, x + w / 2, y + h * 0.36, 40, INK, a=0.85)
-        text(c, title, x + w / 2, y + h * 0.52, 104, INK)
+        c.select_font_face(FONT_FACE)                     # 标题太长时自动缩小，留出页边
+        c.set_font_size(104)
+        tw = c.text_extents(title).x_advance
+        size = 104 if tw <= w * 0.84 else 104 * w * 0.72 / tw
+        text(c, title, x + w / 2, y + h * 0.52, size, INK)
         line(c, [(x + w * 0.3, y + h * 0.6), (x + w * 0.7, y + h * 0.6)], "chl", 2, hexc("b48a4f"))
         if illus:
             illus(c, x + w / 2, y + h * 0.78)
