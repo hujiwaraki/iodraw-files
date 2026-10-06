@@ -1045,20 +1045,19 @@ def memory_bubble(c, fn, u, t, cx=540, cy=500, R=300):
 
 
 def mem_feet(c, t):
-    """脚踝边的浪花漫上来，又退下去。"""
-    vgrad(c, 0, 1920, [(0, hexc("f2b88a")), (1, hexc("e8c8a0"))])
+    """落日下，几个人站在浅浅的浪里，浪花一次次漫过脚面。"""
+    sunset_beach(c, t, sun_y=820, runners=False, sun_r=170)
     w = 0.5 + 0.5 * math.sin(t * 1.6)
-    for k, (x, col, skin) in enumerate(((330, "4f8a8a", SKIN_L), (470, "e2a93f", SKIN), (630, "c98d72", SKIN_L),
-                                        (760, "7d6a8f", SKIN_L))):
-        for sg in (-1, 1):
-            lx = x + sg * 26
-            shape(c, rect(lx - 18, 560, 36, 120), hexc(col), f"pant{k}{sg}", lw=2)        # 卷起来的裤腿
-            shape(c, rect(lx - 14, 680, 28, 320), skin, f"leg{k}{sg}", lw=2)
-            shape(c, ell(lx + 14, 1010, 34, 16, 12), skin, f"ft{k}{sg}", lw=2)
-    pts = [(-40, 1920)] + [(x, 1050 - w * 120 + 16 * math.sin(x * 0.02 + t * 3)) for x in range(-40, W + 80, 40)] + [(W + 40, 1920)]
-    shape(c, pts, hexc("e8f4f8") + (0.8,), "foam", lw=2)
+    for k, x in enumerate((330, 470, 610, 750)):
+        if k == 1:
+            girl(c, x, 1280, 1.5, hat=True, look=0.3, mouth="laugh", arms=[(-30, -110), (30, -110)], key="mf")
+        else:
+            mate(c, (k - (k > 1)) % 3, x, 1280, 1.45, look=-0.3 if k > 1 else 0.3, mouth="laugh", k="mf")
+    edge = 1300 - w * 50
+    pts = [(-40, 1920)] + [(x, edge + 12 * math.sin(x * 0.02 + t * 3)) for x in range(-40, W + 80, 40)] + [(W + 40, 1920)]
+    shape(c, pts, hexc("f6e6d8") + (0.75,), "foam", lw=2)
     for k in range(3):
-        line(c, [(x, 1050 - w * 120 - 14 - k * 22 + 8 * math.sin(x * 0.03 + t * 2 + k)) for x in range(-40, W + 80, 60)],
+        line(c, [(x, edge - 10 - k * 18 + 6 * math.sin(x * 0.03 + t * 2 + k)) for x in range(-40, W + 80, 60)],
              f"fm{k}", 2, (1, 1, 1), alpha=0.7)
 
 
