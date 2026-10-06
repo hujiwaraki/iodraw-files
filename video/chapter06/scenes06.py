@@ -961,6 +961,49 @@ def g14(c, t):
             shape(c, ell(bx - 16 + j * 16, by - 4, 12, 10, 10), hexc(col), f"veg{j}", lw=1)
 
 
+# ================================================================ 15 很多答案，都是走了很久很久才明白的
+def long_road(c, t, lamps_on):
+    """从她身后看出去的一条长路，路灯一盏接一盏亮到远处。"""
+    vgrad(c, -500, 900, [(0, hexc("1a2244")), (0.6, hexc("3a4a7a")), (1, hexc("d89a8c"))], -400, W + 400)
+    r = random.Random(6)
+    with keep():
+        for k in range(40):
+            star(c, r.uniform(-100, W + 100), r.uniform(-480, 500), r.uniform(1.5, 3.0), 0.4 + 0.4 * math.sin(t * 2 + k))
+    crescent(c, 800, 180, 56)
+    shape(c, hill_pts(860, 26, 0.006, 0.4, -400, W + 400, bottom=2400), hexc("4a4458"), "rfar", lw=2)
+    VY = 900
+    shape(c, [(-600, 2400), (530, VY), (550, VY), (1700, 2400)], hexc("7a6a72"), "road15", lw=3)
+    with keep():
+        for k in range(14):                                        # 路中间的虚线
+            z0, z1 = 1.4 + k * 0.9, 1.4 + k * 0.9 + 0.4
+            line(c, [(540, VY + 1100 / z0), (540, VY + 1100 / z1)], f"dash{k}", max(1.0, 9 / z0), hexc("d8c8b0"),
+                 alpha=0.6)
+    for k, z in enumerate((1.6, 2.3, 3.2, 4.4, 6.0, 8.2, 11.0, 15.0)):
+        for sg in (-1, 1):
+            x, y, h = 540 + sg * 820 / z, VY + 1100 / z, 620 / z
+            on = clamp((lamps_on - k * 0.45) * 3)
+            line(c, [(x, y), (x, y - h)], f"lp15{k}{sg}", max(1.2, 9 / z), hexc("2e2e3a"))
+            with keep():
+                if on > 0:
+                    glow(c, x, y - h, 260 / z, WARM, 0.6 * on)
+                circle(c, x, y - h, max(2.0, 16 / z), mix(hexc("8a8a8a"), hexc("fff0b8"), on))
+    return VY
+
+
+def g15(c, t):
+    """接着回家的路，镜头慢慢升高拉远：路变得很长，她变成路上一个小小的身影，不紧不慢地往前走，没有回头。"""
+    rise = ease_io(prog(t, 1.2, 5.6))
+    with cam(c, 540, 960, 1.0, ty=rise * 150):
+        VY = long_road(c, t, t * 2.2)
+        z = lerp(3.0, 7.0, prog(t, 0.0, 7.0))
+        x, y, sc = 540 + 70 / z, VY + 1100 / z, 3.6 / z
+        girl(c, x, y, sc, view="back", hat=True, walk=t * 6, key="g15")
+        with keep():                                               # 一袋菜
+            bx, by = x + 36 * sc, y - 72 * sc
+            shape(c, [(bx - 16 * sc, by), (bx + 16 * sc, by), (bx + 20 * sc, by + 38 * sc), (bx - 20 * sc, by + 38 * sc)],
+                  hexc("e8e0d0"), "bag15", lw=1.6)
+
+
 # ================================================================ 片尾
 _STILL = {}
 
@@ -971,7 +1014,7 @@ def end_still():
         cc = cairo.Context(surf)
         set_time(120.0)
         with grade(sat=1.0, dark=0.0, warm=0.1):
-            g14(cc, 8.5)
+            g15(cc, 6.9)
         _STILL["s"] = surf
     return _STILL["s"]
 
