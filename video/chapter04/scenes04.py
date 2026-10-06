@@ -1,4 +1,8 @@
-"""第四章 · 不敢抵达的地方 —— 分镜实现（竖屏 1080×1920）。每个函数 fn(c, t)，t 为镜头内本地时间。"""
+"""第四章 · 不敢抵达的地方（第三稿）—— 分镜实现（竖屏 1080×1920）。每个函数 fn(c, t)，t 为镜头内本地时间。
+
+贯穿全章的是一颗她随身带着的种子：想找个地方把它种下，却总种不下去；最后发现它是一颗蒲公英的种子。
+画面里不写字，用光、影子和玻璃上的倒影说话。
+"""
 import math
 import os
 import random
@@ -16,34 +20,8 @@ from scenes02 import RED  # noqa: E402
 
 SKIN_L = hexc("e8c09a")
 WOOD = hexc("8c5a3c")
-NIGHT = hexc("1f2a4a")
-SEA_N = hexc("2b4470")
 TURQ = hexc("4fd0d0")
 DOME = hexc("2f6fc8")
-
-
-# ================================================================ 通用小物件
-def anchor(c, x, y, s, key, paper=0.0, rot=0.0, col=hexc("5d6470")):
-    """船锚。paper=1 时是一只纸折的锚：白色、带折痕。"""
-    c.save()
-    c.translate(x, y)
-    c.rotate(rot)
-    c.scale(s, s)
-    fill = mix(col, hexc("f8f6ee"), paper)
-    with keep():
-        shape(c, ell(0, -92, 16, 16, 14), None, key + "ring", lw=6)
-        shape(c, rect(-7, -76, 14, 120), fill, key + "sh", lw=2.4)
-        shape(c, rrect(-44, -70, 88, 14, 6), fill, key + "st", lw=2.4)
-        arc = [(math.cos(a) * 58, 6 + math.sin(a) * 40) for a in [math.pi * (0.05 + 0.9 * i / 16) for i in range(17)]]
-        line(c, arc, key + "arc", 13, darker(fill, 0.95))
-        line(c, arc, key + "arci", 2.4)
-        for sg in (-1, 1):
-            shape(c, [(sg * 56, 14), (sg * 72, -10), (sg * 46, 0)], fill, f"{key}fl{sg}", lw=2.4)
-        if paper > 0.3:                                            # 纸的折痕
-            for k, (a, b) in enumerate((((-7, -76), (7, -20)), ((-7, 0), (7, 44)), ((-44, -70), (0, -56)))):
-                line(c, [a, b], f"{key}fold{k}", 1.4, hexc("b8b2a4"), alpha=paper)
-    c.restore()
-
 
 def boat(c, x, y, s, key, rock=0.0):
     """小木船（船身盖住她的腿）。"""
@@ -79,39 +57,6 @@ def night_sea(c, t, horizon=820, moon=(780, 300)):
                 line(c, [(cx - w_ / 2, y), (cx + w_ / 2, y)], f"mp{k}{j}", 2.6, hexc("fdf3d6"), alpha=0.5 - k * 0.018)
 
 
-def ghost(c, a=0.75):
-    """虚线、半透明的想象画面。"""
-    class _G:
-        def __enter__(self):
-            self.g = group_alpha(c, a)
-            self.g.__enter__()
-            self.i = ink_style(hexc("6f8fb8"), dash=[10, 7])
-            self.i.__enter__()
-            self.gr = grade(sat=0.35, warm=0.2)
-            self.gr.__enter__()
-
-        def __exit__(self, *e):
-            self.gr.__exit__(*e)
-            self.i.__exit__(*e)
-            self.g.__exit__(*e)
-    return _G()
-
-
-def bubble_text(c, s, x, y, size, col=INK, a=1.0):
-    with keep():
-        text(c, s, x, y, size, col, a=a)
-
-
-def anchor_illus(c, cx, cy):
-    """章节页小插画：一只小小的船锚。"""
-    anchor(c, cx, cy + 20, 0.75, "ill")
-
-
-def intro(c, t):
-    book_intro(c, t, "第四章", "不敢抵达的地方", anchor_illus)
-
-
-# ================================================================ 1 去哪都不对：同一个机位，换了很多房间
 def view_snow(c, x, y, w, h, t):
     vgrad(c, y, y + h, [(0, hexc("b9cde0")), (1, hexc("eef2f6"))], x, x + w)
     for k in range(3):
@@ -223,46 +168,6 @@ def boat_front(c, x, y, s, key, rock=0.0):
     c.restore()
 
 
-# ================================================================ 2 抛不下的锚
-def e02(c, t):
-    """小船漂在月光的海上，她把锚抛下去；镜头跟着锚往下沉：绳子放到了头，锚还悬在水里，碰不到底。"""
-    throw = prog(t, 1.2, 0.5)
-    fall = clamp((t - 1.7) / 4.0)
-    ay = 900 + ease_out(fall) * 1700 if t > 1.7 else 0
-    jerk = math.sin(max(0.0, t - 5.7) * 9) * math.exp(-max(0.0, t - 5.7) * 2) * 30 if t > 5.7 else 0.0
-    cam_y = clamp(ay - 1000, 0, 1500) if t > 1.7 else 0
-    c.save()
-    c.translate(0, -cam_y)
-    night_sea(c, t)
-    vgrad(c, 1100, 3400, [(0, hexc("1f3560")), (0.6, hexc("0f1a33")), (1, hexc("05080f"))])
-    r = random.Random(3)
-    with keep():
-        for k in range(30):                                        # 水里的小光点
-            bx, by = r.uniform(0, W), r.uniform(1000, 3300)
-            circle(c, bx + math.sin(t + k) * 6, by - (t * 20) % 60, 3, hexc("8fb8e0"), a=0.4)
-    rock = math.sin(t * 1.4) * 0.03
-    sitting = True
-    arm = [(-24, -78), (60, -180)] if t < 1.2 else [(-24, -78), (lerp(60, 70, throw), lerp(-180, -100, throw))]
-    if t > 1.7:
-        arm = [(-24, -78), (40, -110 + 6 * math.sin(t * 10) * (fall < 1))]
-    boat(c, 540, 900, 1.2, "b2", rock)
-    girl(c, 500, 880, 1.2, sit=sitting, legs=False, hat=True, look=0.6, mouth="flat", head_down=6, arms=arm, key="g2")
-    boat_front(c, 540, 900, 1.2, "b2", rock)
-    if t < 1.7:                                                    # 举起锚
-        hx, hy = 500 + arm[1][0] * 1.2, 880 + arm[1][1] * 1.2
-        anchor(c, hx + 30 * throw * 3, hy + 40 + throw * 120, 0.55, "a2")
-    else:
-        line(c, [(560, 880), (620, 905), (620 + jerk * 0.2, ay - 70)], "rope", 2.4, hexc("d9c39a"))
-        anchor(c, 620 + jerk * 0.2, ay, 0.8, "a2", rot=jerk * 0.004)
-        if fall < 0.15:                                            # 水花
-            with keep():
-                for k in range(6):
-                    shape(c, ell(600 + k * 10, 900 - 30 * math.sin(fall / 0.15 * math.pi) - k * 4, 8, 6, 8), (1, 1, 1),
-                          f"spl{k}", lw=1, alpha=1 - fall / 0.15)
-    c.restore()
-
-
-# ================================================================ 3 三座小岛
 def isle_city(c, x, base, t):
     shape(c, ell(x, base, 260, 40, 24), hexc("3d4a3a"), "ic_g", lw=2.4)
     r = random.Random(7)
@@ -310,90 +215,6 @@ def isle_pier(c, x, base, t, fog):
                       lw=0, edge=False, alpha=0.75 * fog)
 
 
-def e03(c, t):
-    """小船漂过三座小岛：每一座她都举起锚，又放下。"""
-    night_sea(c, t, moon=(860, 220))
-    i = min(int(t / 3.33), 2)
-    u = t - i * 3.33
-    x = 540 + (1.665 - u) * 420
-    base = 820
-    if i == 0:
-        isle_city(c, x, base, t)
-    elif i == 1:
-        isle_cabin(c, x, base, t)
-    else:
-        isle_pier(c, x, base, t, fog=ease_io(prog(u, 1.8, 1.2)))
-    lift = math.sin(clamp((u - 0.7) / 1.8) * math.pi)
-    rock = math.sin(t * 1.4) * 0.03
-    boat(c, 520, 1150, 1.3, "b3", rock)
-    girl(c, 480, 1130, 1.3, sit=True, legs=False, hat=True, look=0.8, mouth="flat",
-         arms=[(-24, -78), (40, lerp(-90, -200, lift))], key="g3")
-    anchor(c, 480 + 40 * 1.3, 1130 + lerp(-90, -200, lift) * 1.3 + 50, 0.5, "a3")
-    boat_front(c, 520, 1150, 1.3, "b3", rock)
-
-
-# ================================================================ 4 就是这里了
-def e04(c, t):
-    """小船靠上沙滩，她用树枝在沙子上写“就是这里了”，退后一步看看；一个浪打过来，字被抹平了。"""
-    vgrad(c, 0, 560, [(0, hexc("1e2a4c")), (1, hexc("44587e"))])
-    with keep():
-        circle(c, 820, 200, 56, hexc("fdf3d6"))
-        glow(c, 820, 200, 220, hexc("fff3c8"), 0.3)
-    shape(c, rect(-20, 560, W + 40, 300), hexc("2b4470"), "e4sea", lw=2)
-    vgrad(c, 760, 1920, [(0, hexc("cdbb98")), (1, hexc("a8977a"))])
-    # 浪：盖过来，再退回去
-    w_in = ease_io(prog(t, 3.5, 0.8)) * (1 - ease_io(prog(t, 4.5, 1.0)))
-    edge = 760 + w_in * 420
-    pts = [(-20, 740)] + [(x, edge + 14 * math.sin(x * 0.02 + t * 3)) for x in range(-20, W + 60, 60)] + [(W + 40, 740)]
-    # 字
-    written = 1.0 if t > 2.4 else t / 2.4
-    erased = ease_io(prog(t, 3.8, 0.6))
-    s = "就是这里了"
-    n = int(len(s) * written)
-    if n > 0:
-        with keep():
-            text(c, s[:n], 380, 1030, 80, hexc("6b5a40"), a=0.85 * (1 - erased))
-    shape(c, pts, hexc("e8f2f6") + (0.85,), "wave", lw=2.4)
-    for k in range(3):
-        line(c, [(x, edge - 20 - k * 30 + 8 * math.sin(x * 0.03 + t * 2 + k)) for x in range(-20, W + 60, 60)],
-             f"foam{k}", 2, (1, 1, 1), alpha=0.6)
-    boat(c, 150, 840, 0.9, "b4", -0.08)
-    boat_front(c, 150, 840, 0.9, "b4", -0.08)
-    back = ease_io(prog(t, 2.6, 0.7))
-    gx = lerp(700, 860, back)
-    gy = lerp(1180, 1150, back)
-    write = t < 2.4
-    wob = math.sin(t * 9) * 20 if write else 0
-    girl(c, gx, gy, 1.6, hat=True, mouth="smile" if t < 4.0 else "o", look=-0.5 if write else -0.2, head_down=10 if write else 0,
-         arms=[(-24, -78), (-40 + wob * 0.4, -60)] if write else [(-24, -78), (24, -78)], key="g4")
-    if write or t < 2.6:
-        line(c, [(gx - 40 * 1.6 + wob * 0.6, gy - 60 * 1.6), (gx - 120 + wob, gy - 20)], "stick", 4, WOOD)
-
-
-# ================================================================ 5 很难被锚住的人
-def underwater(c, t, depth=0.0):
-    vgrad(c, 0, 1920, [(0, mix(hexc("1f3560"), hexc("0b1222"), depth)), (1, hexc("04070d"))])
-    r = random.Random(8)
-    with keep():
-        for k in range(40):
-            bx, by = r.uniform(0, W), r.uniform(0, 1900)
-            circle(c, bx + math.sin(t + k) * 6, (by - t * 30) % 1900, r.uniform(2, 4), hexc("8fb8e0"), a=0.35)
-        for k in range(5):                                         # 光柱
-            x = 200 + k * 180
-            c.save()
-            g = cairo.LinearGradient(x, 0, x, 1200)
-            g.add_color_stop_rgba(0, 0.7, 0.85, 1, 0.12 * (1 - depth))
-            g.add_color_stop_rgba(1, 0.7, 0.85, 1, 0)
-            c.set_source(g)
-            c.move_to(x - 30, 0)
-            c.line_to(x + 30, 0)
-            c.line_to(x + 140, 1200)
-            c.line_to(x + 60, 1200)
-            c.close_path()
-            c.fill()
-            c.restore()
-
-
 def dawn_sea(c, t, u):
     """月夜 → 天亮。"""
     sky_top = mix(hexc("141c36"), hexc("8fb8e0"), u)
@@ -406,47 +227,6 @@ def dawn_sea(c, t, u):
     vgrad(c, 820, 1920, [(0, mix(hexc("2b4470"), hexc("6f9ac0"), u)), (1, mix(hexc("16223e"), hexc("3f6890"), u))])
 
 
-def e05(c, t):
-    if t < 3.3:                                                    # 水下：锚悬着，下面看不到底
-        underwater(c, t, depth=prog(t, 0, 3.3) * 0.6)
-        sw = math.sin(t * 1.2) * 0.06
-        line(c, [(540, -20), (540 + sw * 200, 760)], "rope5", 2.4, hexc("d9c39a"))
-        anchor(c, 540 + sw * 200, 840, 1.1, "a5", rot=sw)
-        return
-    lt = t - 3.3
-    u = ease_io(prog(lt, 2.5, 4.5))
-    dawn_sea(c, t, u)
-    rock = math.sin(t * 1.4) * 0.03
-    boat(c, 540, 1160, 1.5, "b5", rock)
-    pull = lt < 1.8
-    if pull:                                                       # 一把一把拉上来
-        ph = math.sin(lt * 6)
-        girl(c, 520, 1140, 1.5, sit=True, legs=False, hat=True, look=0.5, mouth="flat",
-             arms=[(-30, -110 + 30 * ph), (30, -110 - 30 * ph)], key="g5")
-        line(c, [(520 + 30 * 1.5, 1140 - 100 * 1.5), (700, 1220)], "rope5b", 2.4, hexc("d9c39a"))
-    else:
-        fly = ease_in(prog(lt, 3.9, 3.6))
-        hold = fly <= 0
-        look_up = 0.6 * ease_io(prog(lt, 3.9, 1.0))
-        girl(c, 520, 1140, 1.5, sit=True, legs=False, hat=True, look=0.0, look_up=look_up,
-             mouth="o" if lt < 3.6 else "smile", arms=[(-34, -150), (34, -150)] if hold else [(-24, -78), (40, -130)],
-             key="g5")
-        ax = 520 + fly * 260 + math.sin(lt * 3) * 30 * fly
-        ay = 1140 - 150 * 1.5 - 40 - fly * 900
-        paper = ease_io(prog(lt, 1.8, 1.0))
-        if fly > 0:                                                # 像风筝：线还拖在下面
-            line(c, [(520 + 40 * 1.5, 1140 - 130 * 1.5), ((520 + ax) / 2 + 60, (1140 - 195 + ay) / 2 + 80), (ax, ay + 40)],
-                 "kite", 2, hexc("d9c39a"), alpha=1 - fly)
-            with keep():
-                for k in range(4):                                 # 风
-                    yy = 500 + k * 120
-                    xx = (lt * 700 + k * 260) % 1400 - 200
-                    line(c, [(xx, yy), (xx + 120, yy - 10), (xx + 200, yy + 6)], f"wind{k}", 2.4, (1, 1, 1), alpha=0.6)
-        anchor(c, ax, ay, 0.9 - 0.3 * fly, "a5p", paper=paper, rot=math.sin(lt * 2) * 0.2 * fly)
-    boat_front(c, 540, 1160, 1.5, "b5", rock)
-
-
-# ================================================================ 6–7 旅行社的橱窗
 def poster_snow(c, x, y, w, h, t):
     vgrad(c, y, y + h, [(0, hexc("9fc0e0")), (1, hexc("eef2f8"))], x, x + w)
     for k in range(3):
@@ -477,207 +257,9 @@ def poster_jungle(c, x, y, w, h, t):
     shape(c, rect(x, y + h * 0.88, w, h * 0.12), hexc("6f9a50"), "pjg", lw=1.4)
 
 
-POSTERS = [(poster_snow, "雪山"), (poster_desert, "沙漠"), (poster_town, "古城"), (poster_jungle, "雨林")]
-
-
-def poster_frame(c, x, y, w, h, fn, label, t, key):
-    with keep():
-        shape(c, rect(x - 10, y - 10, w + 20, h + 70), (1, 1, 1), key + "pf", lw=2.4)
-    c.save()
-    c.rectangle(x, y, w, h)
-    c.clip()
-    fn(c, x, y, w, h, t)
-    c.restore()
-    shape(c, rect(x, y, w, h), None, key + "pb", lw=2)
-    with keep():
-        text(c, label, x + w / 2, y + h + 44, 30, INK)
-
-
 X0, X1, Y0, Y1 = -500, W + 500, -600, 2800                    # 画得比画面大，镜头拉远时不露边
 
 
-def island_scene(c, t, couple=True, sun=0.0, warm=0.0):
-    """蓝白色的海岛：左边的山坡上层层叠叠的白房子、蓝圆顶，右边是海和落日，一段台阶通向海边。"""
-    sky_a = mix(hexc("5fb0f0"), hexc("e8885a"), warm)
-    sky_b = mix(hexc("cfeafc"), hexc("ffd9a0"), warm)
-    vgrad(c, Y0, 820, [(0, sky_a), (1, sky_b)], X0, X1)
-    if sun > 0:
-        with keep():
-            glow(c, 720, 760, 520 * sun, hexc("ffb060"), 0.55 * min(1.0, warm + 0.3))
-            circle(c, 720, 760, 110 * sun, mix(hexc("fff3c0"), hexc("ffc060"), warm))
-    vgrad(c, 820, 1300, [(0, mix(hexc("2f8fd8"), hexc("d8805a"), warm)), (1, mix(hexc("1f6fb0"), hexc("9a5a5a"), warm))],
-          X0, X1)
-    with keep():
-        for k in range(8):                                         # 海面的光
-            y = 840 + k * k * 6
-            w_ = 40 + k * 22
-            off = math.sin(t * 1.5 + k * 1.3) * 16
-            line(c, [(720 - w_ / 2 + off, y), (720 + w_ / 2 + off, y)], f"isl{k}", 3,
-                 mix(hexc("e6f4fc"), hexc("ffe0a0"), warm), alpha=0.6 - k * 0.05)
-    white = mix(hexc("fbfaf6"), hexc("ffe2c0"), warm)
-    shade = mix(hexc("dfe6ee"), hexc("e8b890"), warm)
-    # 左边的山坡
-    shape(c, [(X0, 300), (80, 340), (360, 560), (560, 820), (640, 1000), (X0, 1000)], mix(hexc("cdbb98"), hexc("c8946a"), warm),
-          "hill", lw=3)
-    rows = [(430, [-60, 60, 180]), (560, [-80, 50, 180, 300]), (700, [-40, 90, 220, 350, 470]),
-            (850, [-60, 70, 200, 330, 460])]
-    for ri, (base, xs) in enumerate(rows):
-        for k, x in enumerate(xs):
-            if x > 80 + (base - 300) * 1.05:
-                continue
-            sz = 100 + ri * 8
-            shape(c, rect(x, base - sz, sz * 1.1, sz), white, f"ih{ri}{k}", lw=2)
-            shape(c, rect(x + sz * 1.1 - 14, base - sz, 14, sz), shade, f"ihs{ri}{k}", lw=1, edge=False)
-            with keep():
-                shape(c, ell(x + sz * 0.4, base - sz * 0.45, sz * 0.12, sz * 0.18, 12, math.pi, 2 * math.pi) +
-                      [(x + sz * 0.52, base - sz * 0.25), (x + sz * 0.28, base - sz * 0.25)], DOME, f"ihw{ri}{k}", lw=1.4)
-            if (k + ri) % 2 == 0:
-                shape(c, ell(x + sz * 0.55, base - sz, sz * 0.36, sz * 0.36, 18, math.pi, 2 * math.pi), DOME,
-                      f"id{ri}{k}", lw=2)
-                line(c, [(x + sz * 0.55, base - sz * 1.36), (x + sz * 0.55, base - sz * 1.58)], f"ix{ri}{k}", 3, white)
-                line(c, [(x + sz * 0.47, base - sz * 1.5), (x + sz * 0.63, base - sz * 1.5)], f"ixh{ri}{k}", 3, white)
-    # 一段白台阶通向海边
-    for k in range(6):
-        shape(c, rect(380 + k * 40, 900 + k * 50, 260, 50), white, f"ist{k}", lw=1.8)
-    shape(c, [(X0, 1200), (X1, 1200), (X1, Y1), (X0, Y1)], mix(hexc("f4f0e6"), hexc("ffd9a8"), warm), "iground", lw=3)
-    if couple:                                                     # 台阶下拍婚纱照的新人
-        veil = math.sin(t * 2.2)
-        local(c, 680, 1190, 1.5, "groom", hexc("2f3a4a"), hexc("2f2a28"), "short", look=-0.4, mouth="smile",
-              arms=[(-30, -100), (24, -78)])
-        with keep():
-            pts = [(560 - 10, 1190 - 230), (560 + 20, 1190 - 236), (560 - 80 - 50 * veil, 1190 - 120),
-                   (560 - 240 - 70 * veil, 1190 - 170 + 50 * veil), (560 - 190, 1190 - 260 - 30 * veil)]
-            shape(c, pts, (1, 1, 1, 0.7), "veil", lw=1.8)
-        local(c, 560, 1190, 1.5, "bride", hexc("fbfaf6"), hexc("5a3a2a"), "bang_long", look=0.4, mouth="laugh",
-              arms=[(-24, -78), (30, -100)])
-        with keep():
-            shape(c, [(560 - 36, 1190 - 70), (560 + 36, 1190 - 70), (560 + 66, 1190), (560 - 66, 1190)], (1, 1, 1),
-                  "skirt", lw=2)
-
-
-def villas_scene(c, t, sign=True, night=0.0):
-    """碧绿的浅海上，木栈道连着一间间水上小木屋。"""
-    vgrad(c, 0, 600, [(0, mix(hexc("6fc8f0"), hexc("0f1630"), night)), (1, mix(hexc("e6f6fc"), hexc("2a3a6a"), night))])
-    vgrad(c, 600, 1920, [(0, mix(TURQ, hexc("10203a"), night)), (1, mix(hexc("2fb0b8"), hexc("0a1428"), night))])
-    if night > 0.5:
-        r = random.Random(12)
-        with keep():
-            for k in range(70):
-                star(c, r.uniform(0, W), r.uniform(0, 560), r.uniform(1.5, 3.2), 0.6 + 0.4 * math.sin(t * 1.5 + k))
-    with keep():                                                   # 浅海里的光斑
-        for k in range(14):
-            cx = (k * 173) % W
-            cy = 700 + (k * 97) % 500
-            ph = math.sin(t * 2 + k)
-            shape(c, ell(cx, cy, 60 + ph * 10, 14, 16), None, f"caus{k}", lw=1.6, amp=0.6, alpha=0.3 * (1 - night))
-    # 栈道
-    shape(c, [(80, 720), (1000, 720), (1000, 744), (80, 744)], WOOD, "board", lw=2.4)
-    for k in range(5):                                             # 水上小木屋
-        x = 120 + k * 200
-        for sg in (-1, 1):
-            line(c, [(x + sg * 50, 690), (x + sg * 50, 780)], f"stilt{k}{sg}", 5, hexc("6b4a32"))
-        shape(c, rect(x - 70, 600, 140, 100), hexc("d9b778"), f"vil{k}", lw=2.4)
-        shape(c, [(x - 90, 604), (x + 90, 604), (x, 530)], hexc("b88a52"), f"vr{k}", lw=2.4)
-        lit = night > 0.5 and k == 3
-        with keep():
-            shape(c, rect(x - 20, 640, 40, 50), hexc("ffd98a") if lit else hexc("6b4a32"), f"vd{k}", lw=1.6)
-            if lit:
-                glow(c, x, 660, 120, hexc("ffd98a"), 0.7)
-                for j in range(5):                                 # 水里的倒影
-                    line(c, [(x - 16 + j * 2, 800 + j * 20), (x + 16 - j * 2, 800 + j * 20)], f"refl{j}", 3,
-                         hexc("ffd98a"), alpha=0.5 - j * 0.08)
-    if sign:
-        with keep():
-            shape(c, rect(640, 520, 180, 50), (1, 1, 1), "vsign", lw=2)
-            text(c, "蜜月套房", 730, 556, 30, RED)
-    # 近处的小木屋：门开着，床上用花瓣摆成一颗心
-    if sign:
-        shape(c, rect(80, 900, 920, 360), hexc("e8d0a8"), "bigvil", lw=3)
-        shape(c, rect(80, 880, 920, 30), hexc("b88a52"), "bigvr", lw=2.4)
-        with keep():
-            shape(c, rect(260, 960, 560, 260), hexc("fbf6ec"), "bed8", lw=2.4)
-            shape(c, rect(260, 960, 560, 40), hexc("e8e0d0"), "bed8h", lw=2)
-            for k in range(40):                                    # 花瓣摆成的心
-                a = k / 40 * 2 * math.pi
-                hx = 16 * math.sin(a) ** 3
-                hy = -(13 * math.cos(a) - 5 * math.cos(2 * a) - 2 * math.cos(3 * a) - math.cos(4 * a))
-                shape(c, ell(540 + hx * 7, 1100 + hy * 7, 9, 6, 8), hexc("e8506a"), f"pet{k}", lw=0.8, amp=0.3)
-
-
-def street(c, t, ox=0.0, n_post=5, island_poster=True):
-    """旅行社的橱窗（世界坐标比画面宽，ox 是镜头横移）。"""
-    vgrad(c, 0, 1000, [(0, hexc("cfe4ef")), (1, hexc("f6efe0"))])
-    c.save()
-    c.translate(-ox, 0)
-    shape(c, rect(-200, 120, 2900, 960), hexc("e8d6b8"), "shopw", lw=3)
-    with keep():
-        shape(c, rect(-100, 150, 2700, 90), hexc("2f6a6a"), "shopsign", lw=2.4)
-        for k in range(3):
-            text(c, "旅 行 社", 300 + k * 900, 212, 46, (1, 1, 1))
-    shape(c, rect(-60, 280, 2620, 720), hexc("dfeef4"), "glass", lw=4)
-    for k, (fn, label) in enumerate(POSTERS):
-        poster_frame(c, 60 + k * 480, 360, 340, 460, fn, label, t, f"pp{k}")
-    if island_poster:
-        island_poster_at(c, 2000, 330, 420, 560, t)
-    with keep():                                                   # 玻璃反光
-        for k in range(8):
-            x = k * 340
-            line(c, [(x, 300), (x + 120, 980)], f"refl{k}", 6, (1, 1, 1), alpha=0.35)
-    shape(c, rect(-200, 1000, 2900, 900), hexc("c9c2b4"), "walk", lw=3)
-    for k in range(20):
-        line(c, [(k * 150 - 200, 1000), (k * 150 - 260, 1900)], f"wk{k}", 1.4, hexc("b3ab9c"), alpha=0.5)
-    c.restore()
-
-
-def island_poster_at(c, x, y, w, h, t):
-    """最后一张海报：蓝白色的海岛。“蜜月之选 · 双人成行”。"""
-    with keep():
-        shape(c, rect(x - 12, y - 12, w + 24, h + 120), (1, 1, 1), "ipf", lw=3)
-    c.save()
-    c.rectangle(x, y, w, h)
-    c.clip()
-    c.translate(x, y)
-    c.scale(w / W, w / W)
-    island_scene(c, t, couple=True)
-    c.restore()
-    shape(c, rect(x, y, w, h), None, "ipb", lw=2.4)
-    with keep():
-        text(c, "蜜月之选 · 双人成行", x + w / 2, y + h + 70, 34, RED)
-
-
-def e06(c, t):
-    """纸锚飘过一条街，落在旅行社的橱窗前；她背着包一张张看过去，走到最后一张前停住了。"""
-    walk = ease_io(prog(t, 1.2, 6.0))
-    gx = lerp(200, 2210, walk)
-    ox = clamp(gx - 540, 0, 1700)
-    street(c, t, ox)
-    # 飘下来的纸锚
-    fall = ease_out(prog(t, 0.0, 1.6))
-    anchor(c, lerp(900, 640, fall) - ox * 0 + math.sin(t * 3) * 20 * (1 - fall), lerp(200, 960, fall), 0.4, "a6", paper=1.0,
-           rot=math.sin(t * 2) * 0.3 * (1 - fall))
-    # 她：每张海报前轻松地点点头
-    nod = 0.0
-    for k in range(4):
-        px = 60 + k * 480 + 170
-        nod = max(nod, 1 - abs(gx - px) / 120)
-    moving = 0 < walk < 1
-    girl(c, gx - ox, 1240, 1.6, hat=True, pack=True, look=-0.0 if not moving else 0.7, head_down=6 * nod, look_up=0.3,
-         mouth="smile", walk=t * 7 if moving else None, key="g6")
-
-
-def e07(c, t):
-    """海报特写：她伸手想碰，手停在玻璃前，又收了回来。"""
-    vgrad(c, 0, 1920, [(0, hexc("dfeef4")), (1, hexc("cfe4ef"))])
-    island_poster_at(c, 110, 140, 860, 1040, t)
-    with keep():
-        for k in range(4):
-            line(c, [(k * 320 - 60, 100), (k * 320 + 120, 1300)], f"refl7{k}", 8, (1, 1, 1), alpha=0.3)
-    reach = math.sin(clamp(prog(t, 0.8, 3.6)) * math.pi)
-    girl(c, 560, 1900, 2.8, view="back", hat=True, pack=True,
-         arms=[(-24, -78), (lerp(24, 60, reach), lerp(-78, -260, reach))], key="g7")
-
-
-# ================================================================ 8–12 走进海报
 def zoom_into(c, t, rect_, fn, t0, d, reverse=False):
     """镜头穿过玻璃，从海报的框推进到满屏（reverse：从满屏退回框里）。"""
     x, y, w, h = rect_
@@ -694,60 +276,546 @@ def zoom_into(c, t, rect_, fn, t0, d, reverse=False):
     c.restore()
 
 
+# ================================================================ 种子
+def seed(c, x, y, s, key, open_=0.0, glow_a=0.6, rot=0.0):
+    """一颗小种子；open_ → 1 时张开一圈白色的蒲公英绒毛。"""
+    c.save()
+    c.translate(x, y)
+    c.rotate(rot)
+    c.scale(s, s)
+    with keep():
+        if glow_a > 0:
+            glow(c, 0, -10 - 30 * open_, 70 + 40 * open_, hexc("fff3c8"), glow_a)
+        shape(c, ell(0, 0, 7, 12, 12), hexc("a8754a"), key + "b", lw=1.6, amp=0.3)
+        if open_ > 0:
+            stalk = 40 * open_
+            line(c, [(0, -10), (0, -10 - stalk)], key + "st", 1.6, hexc("efe8d8"))
+            n = 18
+            for k in range(n):
+                a = math.pi * (1.1 + 0.8 * k / (n - 1))
+                ln = 34 * open_
+                ex, ey = math.cos(a) * ln, -10 - stalk + math.sin(a) * ln
+                line(c, [(0, -10 - stalk), (ex, ey)], f"{key}f{k}", 1.2, (1, 1, 1), alpha=0.9)
+                circle(c, ex, ey, 2.2, (1, 1, 1), a=0.9)
+    c.restore()
+
+
+def seed_illus(c, cx, cy):
+    seed(c, cx, cy + 40, 1.4, "ill", open_=1.0, glow_a=0.0)
+
+
+def intro(c, t):
+    book_intro(c, t, "第四章", "不敢抵达的地方", seed_illus)
+
+
+# ================================================================ 2 手心里的种子
+def e02(c, t):
+    """小船漂在月光的海上。她摊开手心，一颗小小的种子微微发亮；四周全是水，没有一处可以把它放下。"""
+    k = lerp(1.15, 1.7, ease_io(prog(t, 0.0, 8.0)))
+    with cam(c, 540, 960, k):
+        night_sea(c, t)
+        rock = math.sin(t * 1.4) * 0.03
+        boat(c, 540, 1080, 1.3, "b2", rock)
+        openh = ease_io(prog(t, 0.6, 1.0))
+        look = 0.0 if t < 2.6 else math.sin((t - 2.6) * 1.3) * 0.9
+        girl(c, 520, 1060, 1.3, sit=True, legs=False, hat=True, look=look, head_down=8 if t < 2.6 else 2, mouth="flat",
+             arms=[(-24, -78), (lerp(24, 54, openh), lerp(-78, -112, openh))], key="g2")
+        boat_front(c, 540, 1080, 1.3, "b2", rock)
+        if openh > 0:
+            seed(c, 520 + 54 * 1.3, 1060 - 112 * 1.3 - 14, 1.1, "s2", glow_a=0.8 * openh)
+
+
+# ================================================================ 3 三座小岛
+def e03(c, t):
+    """小船漂过三座小岛：每一座她都捧着种子往前伸一伸，又收回来。"""
+    night_sea(c, t, moon=(860, 220))
+    i = min(int(t / 3.33), 2)
+    u = t - i * 3.33
+    x = 540 + (1.665 - u) * 420
+    base = 820
+    if i == 0:
+        isle_city(c, x, base, t)
+    elif i == 1:
+        isle_cabin(c, x, base, t)
+    else:
+        isle_pier(c, x, base, t, fog=ease_io(prog(u, 1.8, 1.2)))
+    reach = math.sin(clamp((u - 0.6) / 2.0) * math.pi)
+    rock = math.sin(t * 1.4) * 0.03
+    boat(c, 520, 1150, 1.3, "b3", rock)
+    hx, hy = lerp(50, 70, reach), lerp(-110, -190, reach)
+    girl(c, 500, 1130, 1.3, sit=True, legs=False, hat=True, look=0.6, look_up=0.3 * reach, mouth="flat",
+         arms=[(-24, -78), (hx, hy)], key="g3")
+    boat_front(c, 520, 1150, 1.3, "b3", rock)
+    seed(c, 500 + hx * 1.3, 1130 + hy * 1.3 - 14, 1.0, "s3", glow_a=0.7)
+
+
+# ================================================================ 4 埋进沙里
+def beach(c, t, wave_in=0.0, dawn=0.0):
+    sky_a = mix(hexc("1e2a4c"), hexc("8fb8e0"), dawn)
+    sky_b = mix(hexc("44587e"), hexc("f6c9a0"), dawn)
+    vgrad(c, 0, 560, [(0, sky_a), (1, sky_b)])
+    with keep():
+        if dawn < 0.8:
+            circle(c, 820, 200, 56, hexc("fdf3d6"))
+            glow(c, 820, 200, 220, hexc("fff3c8"), 0.3 * (1 - dawn))
+        if dawn > 0:
+            glow(c, 300, 560, 380, hexc("ffd9a0"), 0.6 * dawn)
+    shape(c, rect(-20, 560, W + 40, 300), mix(hexc("2b4470"), hexc("6f9ac0"), dawn), "bsea", lw=2)
+    vgrad(c, 760, 1920, [(0, mix(hexc("cdbb98"), hexc("e8d4b0"), dawn)), (1, mix(hexc("a8977a"), hexc("cdb898"), dawn))])
+    boat(c, 150, 840, 0.9, "b4", -0.08)
+    boat_front(c, 150, 840, 0.9, "b4", -0.08)
+    edge = 760 + wave_in * 440
+    pts = [(-20, 740)] + [(x, edge + 14 * math.sin(x * 0.02 + t * 3)) for x in range(-20, W + 60, 60)] + [(W + 40, 740)]
+    return pts, edge
+
+
+def draw_wave(c, t, pts, edge):
+    shape(c, pts, hexc("e8f2f6") + (0.85,), "wave", lw=2.4)
+    for k in range(3):
+        line(c, [(x, edge - 20 - k * 30 + 8 * math.sin(x * 0.03 + t * 2 + k)) for x in range(-20, W + 60, 60)],
+             f"foam{k}", 2, (1, 1, 1), alpha=0.6)
+
+
+def e04(c, t):
+    """她跪下来把种子埋进沙里，轻轻拍平，抱着膝盖坐在旁边笑了；一个浪漫上来又退下去，沙子被抹得平平的。"""
+    w_in = ease_io(prog(t, 3.6, 0.8)) * (1 - ease_io(prog(t, 4.6, 1.2)))
+    pts, edge = beach(c, t, w_in)
+    mound = 1.0 - ease_io(prog(t, 3.9, 0.5))
+    if mound > 0 and t > 0.6:                                      # 小沙包
+        with keep():
+            shape(c, ell(420, 1160, 80 * mound, 30 * mound, 16, math.pi, 2 * math.pi), hexc("bca888"), "mound", lw=1.8)
+            glow(c, 420, 1150, 60, hexc("fff3c8"), 0.25 * mound)
+    if t < 0.8:
+        seed(c, 430, 1110, 1.1, "s4", glow_a=0.7)
+    pat = t < 1.8
+    if pat:                                                        # 跪着拍
+        ph = abs(math.sin(t * 8))
+        girl(c, 520, 1180, 1.6, sit=True, crouch=True, hat=True, look=-0.6, head_down=12, mouth="smile",
+             arms=[(-60, -40 - 20 * ph), (-30, -50)], key="g4")
+    else:                                                          # 抱着膝盖坐着
+        girl(c, 540, 1180, 1.6, sit=True, crouch=True, hat=True, look=-0.4, mouth="laugh" if t < 3.6 else "o",
+             arms=[(-16, -30), (16, -30)], key="g4")
+    draw_wave(c, t, pts, edge)
+
+
+# ================================================================ 5 原来是一颗蒲公英
+def e05(c, t):
+    if t < 3.4:                                                    # 退下去的浪花里，种子浮出来
+        w_in = 0.35 * (1 - ease_io(prog(t, 0.0, 1.6)))
+        pts, edge = beach(c, t, w_in)
+        sx = lerp(420, 470, ease_io(prog(t, 1.6, 1.2)))
+        sy = lerp(1140, 1060, ease_io(prog(t, 1.6, 1.2)))
+        bob = math.sin(t * 3) * 6 * (t < 1.6)
+        draw_wave(c, t, pts, edge)
+        reach = ease_io(prog(t, 1.0, 0.8))
+        girl(c, 560, 1180, 1.6, sit=True, crouch=True, hat=True, look=-0.6, head_down=10, mouth="o",
+             arms=[(-24, -30), (lerp(-16, -60, reach), lerp(-30, -70, reach))], key="g5")
+        seed(c, sx, sy + bob, 0.8, "s5", glow_a=0.6)
+        return
+    lt = t - 3.4                                                   # 手心里张开绒毛 → 风把它带走，飞进晨光
+    dawn = ease_io(prog(lt, 1.0, 5.0))
+    beach(c, t, 0.0, dawn)
+    fly = ease_in(prog(lt, 3.8, 3.6))
+    up = 0.5 * ease_io(prog(lt, 3.6, 1.2))
+    girl(c, 560, 1200, 1.9, sit=True, crouch=True, hat=True, look=0.0, look_up=up, mouth="o" if lt < 3.6 else "smile",
+         arms=[(-24, -40), (50, -110)] if fly < 0.05 else [(-16, -30), (16, -30)], key="g5b")
+    opn = ease_io(prog(lt, 0.6, 2.2))
+    sx = 560 + 50 * 1.9 + fly * 260 + math.sin(lt * 2.4) * 40 * fly
+    sy = 1200 + (-110 + 52) * 1.9 - 20 - fly * 1000
+    seed(c, sx, sy, 1.3 - 0.4 * fly, "s5b", open_=opn, glow_a=0.5, rot=math.sin(lt * 2) * 0.25 * fly)
+    if fly > 0:
+        with keep():
+            for k in range(4):                                     # 风
+                yy = 420 + k * 130
+                xx = (lt * 600 + k * 260) % 1400 - 200
+                line(c, [(xx, yy), (xx + 120, yy - 10), (xx + 200, yy + 6)], f"wind{k}", 2.4, (1, 1, 1), alpha=0.5)
+
+
+# ================================================================ 海岛：一笔一笔画出来的白房子
+BOUG = hexc("e0559a")                                              # 三角梅
+
+
+def bougainvillea(c, x, y, r, key, warm=0.0):
+    rr = random.Random(hash(key) & 0xffff)
+    with keep():
+        for k in range(22):
+            a = rr.uniform(0, 2 * math.pi)
+            d = rr.uniform(0, r)
+            shape(c, ell(x + math.cos(a) * d, y + math.sin(a) * d * 0.7, rr.uniform(8, 14), rr.uniform(7, 11), 8),
+                  mix(BOUG, hexc("f08a5a"), warm * 0.4), f"{key}{k}", lw=0.8, amp=0.3)
+        for k in range(5):
+            a = rr.uniform(0, 2 * math.pi)
+            shape(c, ell(x + math.cos(a) * r * 0.8, y + math.sin(a) * r * 0.5, 9, 5, 8), hexc("4f8a4a"), f"{key}l{k}",
+                  lw=0.8, amp=0.3)
+
+
+def cyc_house(c, x, base, w, h, key, warm=0.0, door=None, win=1, dome=False, balcony=False, flowers=None,
+              arch=False, chimney=False):
+    """一间基克拉泽斯式的白房子：圆角的白墙、右侧一点阴影、蓝色的门和百叶窗。"""
+    white = mix(hexc("fbfaf6"), hexc("ffe2c0"), warm)
+    shade = mix(hexc("dde4ec"), hexc("e8b48a"), warm)
+    blue = mix(DOME, hexc("3a5aa8"), warm * 0.3)
+    shape(c, rrect(x, base - h, w, h, 10), white, key + "w", lw=2.2, amp=0.6)
+    shape(c, rrect(x + w - 16, base - h + 4, 14, h - 6, 6), shade, key + "sh", lw=0, edge=False, amp=0.4)
+    line(c, [(x - 4, base - h), (x + w + 4, base - h)], key + "roof", 4, white)
+    if chimney:
+        shape(c, rrect(x + w * 0.7, base - h - 26, 22, 30, 6), white, key + "ch", lw=1.8)
+    with keep():
+        if door is not None:                                       # 蓝门 + 门框
+            dx = x + w * door
+            if arch:
+                shape(c, rect(dx - 18, base - 56, 36, 56) + [], blue, key + "d", lw=1.8)
+                shape(c, ell(dx, base - 56, 18, 16, 12, math.pi, 2 * math.pi), blue, key + "da", lw=1.8)
+            else:
+                shape(c, rect(dx - 17, base - 66, 34, 66), blue, key + "d", lw=1.8)
+            line(c, [(dx - 21, base - 70), (dx + 21, base - 70)], key + "dl", 2.4, shade)
+            circle(c, dx + 9, base - 34, 2.4, hexc("e8c040"))
+        for k in range(win):                                       # 窗 + 两扇蓝色百叶
+            wx = x + w * (0.22 + 0.5 * k) if win > 1 else x + w * (0.3 if door and door > 0.5 else 0.7)
+            wy = base - h * 0.62
+            shape(c, rect(wx - 12, wy - 16, 24, 30), hexc("2a3a5a"), f"{key}win{k}", lw=1.4)
+            shape(c, rect(wx - 22, wy - 16, 10, 30), blue, f"{key}shl{k}", lw=1.2)
+            shape(c, rect(wx + 12, wy - 16, 10, 30), blue, f"{key}shr{k}", lw=1.2)
+    if balcony:                                                    # 屋顶的小露台栏杆
+        for k in range(int(w / 18)):
+            line(c, [(x + 6 + k * 18, base - h), (x + 6 + k * 18, base - h - 20)], f"{key}bal{k}", 2, white)
+        line(c, [(x + 4, base - h - 20), (x + w - 4, base - h - 20)], key + "balt", 3, white)
+    if dome:                                                       # 蓝圆顶 + 白色小十字
+        cx = x + w / 2
+        shape(c, rect(cx - w * 0.32, base - h - 18, w * 0.64, 20), white, key + "drum", lw=1.8)
+        shape(c, ell(cx, base - h - 18, w * 0.34, w * 0.34, 20, math.pi, 2 * math.pi), blue, key + "dome", lw=2)
+        line(c, [(cx, base - h - 18 - w * 0.34), (cx, base - h - 18 - w * 0.34 - 26)], key + "cr", 3, white)
+        line(c, [(cx - 9, base - h - 18 - w * 0.34 - 16), (cx + 9, base - h - 18 - w * 0.34 - 16)], key + "crh", 3, white)
+    if flowers:
+        fx, fy, fr = flowers
+        bougainvillea(c, x + w * fx, base - h * fy, fr, key + "bg", warm)
+
+
+def bell_tower(c, x, base, key, warm=0.0):
+    """白色的小钟楼：两层拱，挂着一口钟。"""
+    white = mix(hexc("fbfaf6"), hexc("ffe2c0"), warm)
+    shape(c, rrect(x - 50, base - 150, 100, 150, 8), white, key + "t", lw=2.2)
+    with keep():
+        for k, (cx, cy) in enumerate(((x - 22, base - 110), (x + 22, base - 110))):
+            shape(c, rect(cx - 12, cy, 24, 44), hexc("2a3a5a"), f"{key}ar{k}", lw=1.4)
+            shape(c, ell(cx, cy, 12, 12, 12, math.pi, 2 * math.pi), hexc("2a3a5a"), f"{key}arr{k}", lw=1.4)
+            shape(c, ell(cx, cy + 22, 7, 9, 10), hexc("c9a04a"), f"{key}bell{k}", lw=1.2)
+    shape(c, [(x - 34, base - 150), (x + 34, base - 150), (x + 34, base - 186), (x, base - 210), (x - 34, base - 186)],
+          white, key + "top", lw=2)
+    line(c, [(x, base - 210), (x, base - 236)], key + "cr", 3, white)
+    line(c, [(x - 9, base - 226), (x + 9, base - 226)], key + "crh", 3, white)
+
+
+CLIFF = [  # x, base, w, h, door, win, dome, balcony, flowers, arch, chimney
+    (-60, 420, 170, 110, 0.7, 1, False, True, None, False, True),
+    (120, 440, 130, 130, None, 2, True, False, None, False, False),
+    (260, 470, 150, 100, 0.3, 1, False, True, (0.9, 0.3, 40), False, False),
+    (-90, 560, 210, 120, 0.5, 2, False, False, None, True, False),
+    (130, 590, 160, 130, 0.65, 1, False, True, (0.1, 0.4, 46), False, True),
+    (300, 620, 140, 110, None, 1, True, False, None, False, False),
+    (-40, 730, 180, 120, 0.3, 1, False, True, (0.95, 0.5, 50), True, False),
+    (150, 760, 220, 140, 0.8, 2, False, False, None, False, True),
+    (380, 790, 140, 100, 0.5, 0, False, True, None, True, False),
+]
+
+
+def caldera(c, t, sun=0.0, warm=0.0, night=0.0, tower=True):
+    """悬崖上一层层的白房子，右边是大海；天空占了大半个画面。"""
+    sky_a = mix(mix(hexc("5fb0f0"), hexc("e8885a"), warm), hexc("0f1630"), night)
+    sky_b = mix(mix(hexc("cfeafc"), hexc("ffd9a0"), warm), hexc("2a3a6a"), night)
+    vgrad(c, Y0, 860, [(0, sky_a), (1, sky_b)], X0, X1)
+    if night > 0.5:
+        r = random.Random(12)
+        with keep():
+            for k in range(80):
+                star(c, r.uniform(X0, X1), r.uniform(Y0, 800), r.uniform(1.5, 3.2), 0.6 + 0.4 * math.sin(t * 1.5 + k))
+    if sun > 0:
+        with keep():
+            glow(c, 760, 800, 560 * sun, hexc("ffb060"), 0.55 * min(1.0, warm + 0.3))
+            circle(c, 760, 800, 110 * sun, mix(hexc("fff3c0"), hexc("ffc060"), warm))
+    vgrad(c, 860, 1400, [(0, mix(mix(hexc("2f8fd8"), hexc("d8805a"), warm), hexc("10203a"), night)),
+                         (1, mix(mix(hexc("1f6fb0"), hexc("9a5a5a"), warm), hexc("0a1428"), night))], X0, X1)
+    with keep():
+        for k in range(9):                                         # 海面上的光
+            y = 880 + k * k * 6
+            w_ = 40 + k * 24
+            off = math.sin(t * 1.5 + k * 1.3) * 16
+            line(c, [(760 - w_ / 2 + off, y), (760 + w_ / 2 + off, y)], f"cal{k}", 3,
+                 mix(hexc("e6f4fc"), hexc("ffe0a0"), warm), alpha=(0.6 - k * 0.05) * (1 - night))
+    rock = mix(mix(hexc("b89a78"), hexc("b8805a"), warm), hexc("3a3046"), night)
+    shape(c, [(X0, 300), (-80, 330), (200, 400), (420, 560), (560, 780), (600, 900), (640, 1000), (X0, 1000)], rock,
+          "cliff", lw=3)
+    with group_alpha(c, 1 - 0.5 * night):
+        for i, (x, base, w, h, door, win, dome, bal, fl, arch, ch) in enumerate(CLIFF):
+            cyc_house(c, x, base, w, h, f"cy{i}", warm, door, win, dome, bal, fl, arch, ch)
+        if tower:
+            bell_tower(c, 480, 660, "bt", warm)
+        for k in range(5):                                         # 弯下去的白台阶
+            line(c, [(420 + k * 30, 830 + k * 34), (500 + k * 30, 830 + k * 34)], f"stp{k}", 5,
+                 mix(hexc("fbfaf6"), hexc("ffe2c0"), warm))
+
+
+def chapel(c, t, veil_t=None, warm=0.0):
+    """悬崖边一座白墙蓝顶的小教堂，大片的天空；一条白纱被风吹过来，飘过蓝顶，飘向海。"""
+    vgrad(c, Y0, 1100, [(0, mix(hexc("4f9fe0"), hexc("e8885a"), warm)), (1, mix(hexc("d6eefc"), hexc("ffd9a0"), warm))],
+          X0, X1)
+    vgrad(c, 1100, 1500, [(0, hexc("2f8fd8")), (1, hexc("1f6fb0"))], X0, X1)
+    shape(c, [(X0, 1060), (300, 1040), (760, 1080), (840, 1200), (X0, 1300)], hexc("b89a78"), "chcliff", lw=3)
+    white = hexc("fbfaf6")
+    shape(c, rrect(260, 760, 420, 300, 12), white, "chw", lw=2.6)
+    shape(c, rrect(640, 772, 34, 286, 8), hexc("dde4ec"), "chsh", lw=0, edge=False)
+    shape(c, rect(320, 690, 300, 80), white, "chdrum", lw=2.4)
+    shape(c, ell(470, 690, 160, 160, 28, math.pi, 2 * math.pi), DOME, "chdome", lw=2.6)
+    line(c, [(470, 530), (470, 470)], "chcr", 5, white)
+    line(c, [(448, 494), (492, 494)], "chcrh", 5, white)
+    with keep():
+        shape(c, rect(440, 940, 60, 120), DOME, "chdoor", lw=2)
+        shape(c, ell(470, 940, 30, 26, 14, math.pi, 2 * math.pi), DOME, "chdoora", lw=2)
+        for k, x in enumerate((340, 580)):
+            shape(c, rect(x - 14, 840, 28, 50), hexc("2a3a5a"), f"chwn{k}", lw=1.4)
+            shape(c, ell(x, 840, 14, 14, 12, math.pi, 2 * math.pi), hexc("2a3a5a"), f"chwna{k}", lw=1.4)
+    bell_tower(c, 760, 1080, "chbt")
+    bougainvillea(c, 250, 1000, 70, "chbg")
+    if veil_t is not None:                                         # 白纱
+        u = veil_t
+        x0 = lerp(-300, 1400, u)
+        y0 = lerp(900, 380, u) + math.sin(u * 9) * 40
+        pts = []
+        for k in range(12):
+            a = k / 11
+            pts.append((x0 - 380 * a, y0 + 70 * math.sin(a * 5 + u * 12) + a * 60))
+        for k in range(11, -1, -1):
+            a = k / 11
+            pts.append((x0 - 380 * a + 10, y0 + 70 * math.sin(a * 5 + u * 12) + a * 60 + 50 - 30 * a))
+        with keep():
+            shape(c, pts, (1, 1, 1, 0.7), "veil", lw=1.6, amp=0.8)
+
+
+def villa_dusk(c, t, night=0.0):
+    """黄昏，碧绿的浅海上一间水上小木屋，水面漂着一路玫瑰花瓣，一直通到木屋门口。"""
+    vgrad(c, Y0, 700, [(0, mix(hexc("e89a6a"), hexc("0f1630"), night)), (1, mix(hexc("ffd9a8"), hexc("2a3a6a"), night))],
+          X0, X1)
+    if night > 0.5:
+        r = random.Random(12)
+        with keep():
+            for k in range(90):
+                star(c, r.uniform(X0, X1), r.uniform(Y0, 660), r.uniform(1.5, 3.2), 0.6 + 0.4 * math.sin(t * 1.5 + k))
+    vgrad(c, 700, Y1, [(0, mix(hexc("6fc8c0"), hexc("10203a"), night)), (1, mix(hexc("2fa0a8"), hexc("0a1428"), night))],
+          X0, X1)
+    # 木屋
+    for sg in (-1, 1):
+        for k in range(3):
+            line(c, [(540 + sg * (60 + k * 40), 760), (540 + sg * (60 + k * 40), 860)], f"vst{sg}{k}", 6, hexc("6b4a32"))
+    shape(c, rect(380, 740, 320, 30), WOOD, "vdeck", lw=2.4)
+    shape(c, rect(420, 560, 240, 180), hexc("d9b778"), "vwall", lw=2.6)
+    shape(c, [(380, 570), (700, 570), (600, 450), (480, 450)], hexc("a8754a"), "vroof", lw=2.6)
+    for k in range(9):
+        line(c, [(400 + k * 35, 570), (490 + k * 15, 456)], f"vth{k}", 1.4, hexc("8c5a3c"), alpha=0.6)
+    lit = 0.6 + 0.4 * night
+    with keep():
+        shape(c, rect(510, 620, 60, 120), hexc("ffd98a"), "vdoor", lw=2)
+        glow(c, 540, 680, 160, hexc("ffd98a"), 0.4 * lit)
+        if night > 0.5:                                            # 水里的倒影
+            for j in range(6):
+                line(c, [(520 + j * 2, 900 + j * 26), (560 - j * 2, 900 + j * 26)], f"vrf{j}", 4, hexc("ffd98a"),
+                     alpha=0.5 - j * 0.07)
+    # 一路玫瑰花瓣
+    r = random.Random(3)
+    with keep():
+        for k in range(46):
+            a = k / 45
+            px = lerp(540, 300, a) + math.sin(a * 6) * 60 + r.uniform(-20, 20)
+            py = lerp(780, 1500, a) + r.uniform(-14, 14) + math.sin(t * 1.2 + k) * 3
+            s = lerp(0.6, 1.4, a)
+            shape(c, ell(px, py, 9 * s, 5 * s, 8), hexc("e8506a"), f"vp{k}", lw=0.8, amp=0.3, alpha=1 - night * 0.5)
+    with keep():
+        for k in range(10):                                        # 水面的波纹
+            y = 900 + k * 70
+            line(c, [(X0, y), (X1, y + 8)], f"vw{k}", 1.6, (1, 1, 1), alpha=0.2)
+
+
+# ================================================================ 6–7 橱窗
+def poster_art(c, x, y, w, h, t, warm=0.0, couple=True, sun=0.0):
+    """最后一张海报：白房子和台阶上，两个人牵着手的背影。"""
+    c.save()
+    c.rectangle(x, y, w, h)
+    c.clip()
+    c.translate(x, y)
+    sc = w / W
+    c.scale(sc, sc)
+    c.translate(0, -100)
+    caldera(c, t, sun=sun, warm=warm)
+    if couple:
+        local(c, 250, 1160, 1.6, "pc1", hexc("2f3a4a"), hexc("2f2a28"), "short", view="back",
+              arms=[(-24, -78), (30, -84)])
+        local(c, 340, 1160, 1.6, "pc2", hexc("fbfaf6"), hexc("5a3a2a"), "bang_long", view="back",
+              arms=[(-30, -84), (24, -78)])
+        line(c, [(250 + 30 * 1.6, 1160 - 84 * 1.6), (340 - 30 * 1.6, 1160 - 84 * 1.6)], "pchand", 4, SKIN_L)
+    c.restore()
+
+
+def window(c, t, ox, posters=True):
+    vgrad(c, 0, 1000, [(0, hexc("cfe4ef")), (1, hexc("f6efe0"))])
+    c.save()
+    c.translate(-ox, 0)
+    shape(c, rect(-200, 120, 2900, 960), hexc("e8d6b8"), "shopw", lw=3)
+    with keep():
+        shape(c, rect(-100, 150, 2700, 90), hexc("2f6a6a"), "shopsign", lw=2.4)
+    shape(c, rect(-60, 280, 2620, 720), hexc("dfeef4"), "glass", lw=4)
+    if posters:
+        for k, fn in enumerate((poster_snow, poster_desert, poster_town, poster_jungle)):
+            px = 60 + k * 480
+            with keep():
+                shape(c, rect(px - 10, 350, 360, 480), (1, 1, 1), f"pf{k}", lw=2.4)
+            c.save()
+            c.rectangle(px, 360, 340, 460)
+            c.clip()
+            fn(c, px, 360, 340, 460, t)
+            c.restore()
+            shape(c, rect(px, 360, 340, 460), None, f"pb{k}", lw=2)
+        with keep():
+            shape(c, rect(1988, 318, 444, 584), (1, 1, 1), "ipf", lw=3)
+        poster_art(c, 2000, 330, 420, 560, t)
+        shape(c, rect(2000, 330, 420, 560), None, "ipb", lw=2.4)
+    with keep():
+        for k in range(8):
+            x = k * 340
+            line(c, [(x, 300), (x + 120, 980)], f"refl{k}", 6, (1, 1, 1), alpha=0.3)
+    shape(c, rect(-200, 1000, 2900, 900), hexc("c9c2b4"), "walk", lw=3)
+    for k in range(20):
+        line(c, [(k * 150 - 200, 1000), (k * 150 - 260, 1900)], f"wk{k}", 1.4, hexc("b3ab9c"), alpha=0.5)
+    c.restore()
+
+
+def e06(c, t):
+    """蒲公英种子飘过来，停在橱窗上。她走过一张张海报，只轻轻看一眼；走到最后一张前停住了。"""
+    walk = ease_io(prog(t, 1.2, 6.0))
+    gx = lerp(200, 2210, walk)
+    ox = clamp(gx - 540, 0, 1700)
+    window(c, t, ox)
+    fall = ease_out(prog(t, 0.0, 2.0))
+    sx = lerp(980, 2380, fall) - ox if t < 2.0 else 2380 - ox
+    sy = lerp(160, 300, fall)
+    seed(c, sx + math.sin(t * 3) * 20 * (1 - fall), sy, 0.9, "s6", open_=1.0, glow_a=0.2)
+    moving = 0 < walk < 1
+    glance = max(0.0, max(1 - abs(gx - (230 + k * 480)) / 140 for k in range(4)))
+    girl(c, gx - ox, 1240, 1.6, hat=True, pack=True, look=0.7 - 0.9 * glance if moving else 0.0, look_up=0.3,
+         mouth="smile" if walk < 1 else "flat", walk=t * 7 if moving else None, key="g6")
+
+
+def reflection(c, x, y, s, a, key, others=0.0):
+    """玻璃上的倒影：她自己（正面、淡淡的），以及慢慢多出来的模糊身影。"""
+    with group_alpha(c, a):
+        with grade(sat=0.5):
+            if others > 0:
+                with group_alpha(c, clamp(others * 2)):
+                    local(c, x + 130 * s / 1.6, y, s * 1.05, key + "o1", hexc("6b7a8a"), hexc("3a3a3a"), "short",
+                          mouth="smile", look=-0.3)
+                if others > 0.5:
+                    with group_alpha(c, clamp((others - 0.5) * 2)):
+                        for k, (dx, ss, col) in enumerate(((-180, 0.95, "c98d72"), (-90, 0.85, "8fb39a"), (220, 0.9, "7d6a8f"),
+                                                           (300, 0.8, "e8c040"))):
+                            local(c, x + dx * s / 1.6, y - 40, s * ss, f"{key}o{k + 2}", hexc(col), hexc("3a3a3a"), "short",
+                                  mouth="laugh", look=0.3 if dx < 0 else -0.3)
+            girl(c, x, y, s, hat=True, pack=True, mouth="smile", look=0.0, keep_color=False, key=key + "me")
+
+
+def glass_scene(c, t, poster_warm=0.0, sun=0.0, refl_a=0.35, others=0.0, me=True):
+    """正对着橱窗：海报占满玻璃，她背对着我们站在玻璃前。"""
+    vgrad(c, 0, 1920, [(0, hexc("dfeef4")), (1, hexc("cfe4ef"))])
+    with keep():
+        shape(c, rect(96, 126, 888, 1068), (1, 1, 1), "bigpf", lw=3)
+    poster_art(c, 110, 140, 860, 1040, t, warm=poster_warm, sun=sun)
+    shape(c, rect(110, 140, 860, 1040), None, "bigpb", lw=2.4)
+    c.save()                                                       # 玻璃上的倒影
+    c.rectangle(110, 140, 860, 1040)
+    c.clip()
+    reflection(c, 760, 1150, 1.9, refl_a, "rf", others)
+    with keep():
+        for k in range(4):
+            line(c, [(k * 320 - 60, 100), (k * 320 + 120, 1300)], f"gl{k}", 8, (1, 1, 1), alpha=0.25)
+    c.restore()
+
+
+def e07(c, t):
+    """海报：两个人牵手的背影。她伸手想去碰，停在玻璃前；玻璃上映出她自己——只有她一个人；她把手收回来。"""
+    glass_scene(c, t, refl_a=lerp(0.0, 0.4, ease_io(prog(t, 1.6, 1.2))))
+    reach = math.sin(clamp(prog(t, 0.6, 4.2)) * math.pi)
+    girl(c, 820, 1900, 2.8, view="back", hat=True, pack=True,
+         arms=[(-24, -78), (lerp(24, 60, reach), lerp(-78, -260, reach))], key="g7")
+
+
+# ================================================================ 8–11 走进海报
 def e08(c, t):
     if t < 1.2:                                                    # 穿过玻璃
         zoom_into(c, t, (110, 140, 860, 1040), lambda cc: e07(cc, 6.0), 0.0, 1.2)
         return
     if t < 5.2:
-        island_scene(c, t, couple=True)
+        chapel(c, t, veil_t=prog(t, 1.4, 3.6))
         return
-    villas_scene(c, t, sign=True)
+    villa_dusk(c, t)
 
 
-def terrace(c, t, sun=0.0, warm=0.0, chairs=2, table=False):
-    """海岛的露台：面朝大海和落日，两把躺椅，桌上两只香槟杯。"""
-    island_scene(c, t, couple=False, sun=sun, warm=warm)
+def terrace(c, t, sun=0.0, warm=0.0, shadows=False):
+    """海岛的露台：面朝大海和落日，两把椅子，桌上两只杯子。"""
+    caldera(c, t, sun=sun, warm=warm, tower=False)
     tf = mix(hexc("fbfaf6"), hexc("ffe2c0"), warm)
     rail = mix(hexc("d9d4c8"), hexc("e8b080"), warm)
     shape(c, [(X0, 1060), (X1, 1060), (X1, Y1), (X0, Y1)], tf, "terr", lw=3)
-    line(c, [(X0, 980), (X1, 980)], "rail", 6, rail)
-    for k in range(-6, 18):
-        line(c, [(k * 95, 980), (k * 95, 1060)], f"railp{k}", 3, rail)
-    for k, x in enumerate((230, 850)):                             # 两把躺椅
+    shape(c, [(X0, 1000), (X1, 1000), (X1, 1060), (X0, 1060)], tf, "parapet", lw=2.4)
+    for k, x in enumerate((300, 780)):                             # 两把椅子
         with keep():
-            shape(c, [(x - 110, 1200), (x + 90, 1200), (x + 110, 1150), (x - 70, 1150)], hexc("f4f0e6"), f"lou{k}", lw=2.4)
-            shape(c, [(x + 60, 1150), (x + 110, 1150), (x + 140, 1060), (x + 100, 1060)], hexc("f4f0e6"), f"loub{k}", lw=2.4)
+            shape(c, rrect(x - 50, 1080, 100, 90, 10), hexc("2f6fc8"), f"chb{k}", lw=2.4)
+            shape(c, rect(x - 56, 1160, 112, 18), hexc("f4f0e6"), f"chs{k}", lw=2.4)
             for sg in (-1, 1):
-                line(c, [(x + sg * 80, 1200), (x + sg * 80, 1240)], f"loul{k}{sg}", 4, hexc("8c7a62"))
-    with keep():                                                   # 小桌和两只香槟杯
-        shape(c, ell(540, 1150, 70, 18, 16), hexc("f4f0e6"), "ctab", lw=2.4)
-        line(c, [(540, 1150), (540, 1240)], "ctabl", 5, hexc("8c7a62"))
-        for k, dx in enumerate((-24, 24)):
-            shape(c, [(540 + dx - 12, 1080), (540 + dx + 12, 1080), (540 + dx + 4, 1110), (540 + dx - 4, 1110)],
-                  hexc("f6e08a"), f"gl{k}", lw=1.6)
-            line(c, [(540 + dx, 1110), (540 + dx, 1140)], f"gls{k}", 2)
-            line(c, [(540 + dx - 10, 1142), (540 + dx + 10, 1142)], f"glb{k}", 2)
+                line(c, [(x + sg * 46, 1178), (x + sg * 46, 1240)], f"chl{k}{sg}", 4, hexc("8c7a62"))
 
 
 def e09(c, t):
-    """那里的一切都是成双的：两把躺椅、两只香槟杯、一架双人秋千、两只一起游过的海龟。"""
-    z = 1.0 + 0.06 * t
-    with cam(c, 540, 1000, z):
-        terrace(c, t)
-        with keep():                                               # 远处栈道尽头的双人秋千
-            shape(c, rect(760, 900, 300, 14), WOOD, "spier", lw=2)       # 小栈道尽头的双人秋千
-            line(c, [(900, 780), (900, 900)], "swpL", 4, WOOD)
-            line(c, [(1020, 780), (1020, 900)], "swpR", 4, WOOD)
-            line(c, [(890, 780), (1030, 780)], "swpT", 5, WOOD)
-            sw = math.sin(t * 1.6) * 10
-            line(c, [(920, 780), (920 + sw, 860)], "swr1", 2)
-            line(c, [(1000, 780), (1000 + sw, 860)], "swr2", 2)
-            shape(c, rect(910 + sw, 860, 100, 12), hexc("f4f0e6"), "swseat", lw=1.6)
-            for k in range(2):                                     # 两只海龟
-                tx = 640 + (t * 30 + k * 70) % 300
-                ty = 940 - k * 30
-                shape(c, ell(tx, ty, 26, 18, 14), hexc("6f9a5a"), f"tur{k}", lw=1.6)
-                shape(c, ell(tx + 28, ty - 4, 10, 8, 10), hexc("8fb07a"), f"turh{k}", lw=1.4)
+    """露台上两把椅子的影子并排拉得很长；小桌上两只杯子，杯沿碰在一起；海里两只海龟并排游过去。"""
+    k = min(int(t / 2.33), 2)
+    u = t - k * 2.33
+    if k == 0:                                                     # 长长的影子
+        with cam(c, 540, 1200, 1.15, ty=-u * 30):
+            terrace(c, t, sun=1.0, warm=0.7)
+            with keep():
+                for j, x in enumerate((300, 780)):
+                    shape(c, [(x - 50, 1240), (x + 50, 1240), (x - 140, 1800), (x - 300, 1800)], (0.35, 0.25, 0.3, 0.35),
+                          f"shd{j}", lw=0, edge=False)
+    elif k == 1:                                                   # 两只杯子，杯沿碰在一起
+        vgrad(c, 0, 1920, [(0, hexc("f6c99a")), (1, hexc("fbe6c4"))])
+        with keep():
+            glow(c, 760, 500, 500, hexc("ffd08a"), 0.6)
+            shape(c, ell(540, 1180, 360, 60, 30), hexc("fbfaf6"), "tabtop", lw=3)
+            tilt = 0.12 * ease_out(prog(u, 0.3, 0.6))
+            for j, sg in enumerate((-1, 1)):
+                c.save()
+                c.translate(540 + sg * 70, 1170)
+                c.rotate(-sg * tilt)
+                shape(c, [(-46, -300), (46, -300), (16, -170), (-16, -170)], hexc("f6e08a") + (0.85,), f"cup{j}", lw=2.4)
+                line(c, [(0, -170), (0, -40)], f"cupst{j}", 5)
+                shape(c, ell(0, -30, 46, 12, 16), (1, 1, 1, 0.6), f"cupb{j}", lw=2)
+                for b in range(4):
+                    circle(c, -10 + b * 7, -220 - ((u * 40 + b * 13) % 70), 3, (1, 1, 1), a=0.8)
+                c.restore()
+            if tilt > 0.1:
+                star(c, 540, 870, 14, 1 - prog(u, 0.9, 0.6), hexc("fff3b0"))
+    else:                                                          # 两只海龟
+        vgrad(c, 0, 1920, [(0, hexc("5fd0d0")), (1, hexc("2fa0a8"))])
+        with keep():
+            for j in range(14):
+                ph = math.sin(t * 2 + j)
+                shape(c, ell((j * 173) % W, (j * 131) % 1700, 70 + ph * 10, 16, 16), None, f"caus{j}", lw=1.6, alpha=0.35)
+            for j in range(2):
+                tx = lerp(-120, 1200, u / 2.33) + j * 40
+                ty = 760 + j * 170 + math.sin(u * 3 + j) * 10
+                fl = math.sin(u * 6 + j) * 0.4
+                for sg in (-1, 1):
+                    shape(c, ell(tx + 30, ty + sg * 60, 46, 16, 12), hexc("7fa06a"), f"tfl{j}{sg}", lw=1.6)
+                shape(c, ell(tx, ty, 90, 64, 18), hexc("6f8a4a"), f"tsh{j}", lw=2.4)
+                for q in range(5):
+                    shape(c, ell(tx - 40 + q * 20, ty + (q % 2) * 14 - 7, 16, 14, 8), hexc("8aa05a"), f"tsc{j}{q}", lw=1)
+                shape(c, ell(tx + 100, ty, 26, 20, 12), hexc("8fb07a"), f"th{j}", lw=1.8)
 
 
 def e10(c, t):
@@ -755,217 +823,189 @@ def e10(c, t):
     k = min(int(t / 3.33), 2)
     u = t - k * 3.33
     if k == 0:
-        villas_scene(c, t, sign=False)
+        vgrad(c, 0, 1920, [(0, hexc("7fe0e0")), (1, hexc("2fb0c0"))])
         with keep():
-            for j in range(20):
-                ph = (u * 0.4 + j / 20) % 1
-                shape(c, ell((j * 211) % W, 780 + (j * 131) % 900, 40 + ph * 80, 10 + ph * 20, 16), None, f"ring{j}",
-                      lw=2, alpha=0.5 * (1 - ph))
+            for j in range(26):
+                ph = (u * 0.3 + j / 26) % 1
+                cx, cy = (j * 211) % W, (j * 137) % 1700
+                shape(c, ell(cx, cy, 30 + ph * 90, 10 + ph * 26, 18), None, f"ring{j}", lw=2.2, alpha=0.6 * (1 - ph))
+                circle(c, cx, cy, 4, (1, 1, 1), a=0.6 * (1 - ph))
     elif k == 1:
-        island_scene(c, t, couple=False, sun=1.6 + 0.4 * u / 3.33, warm=0.9)
+        caldera(c, t, sun=1.7 + 0.3 * u / 3.33, warm=0.9)
     else:
-        villas_scene(c, t, sign=False, night=1.0)
+        villa_dusk(c, t, night=1.0)
 
 
-def gray_snow(c, t, amount):
-    r = random.Random(21)
-    n = int(1400 * amount)
+def gold_press(c, amount, t):
+    """金色的光像一床厚厚的被子，一层一层压下来。"""
     with keep():
-        for k in range(n):
-            x = r.uniform(0, W)
-            sp = r.uniform(60, 160)
-            y = (r.uniform(0, 1900) + t * sp) % 1900
-            circle(c, x + math.sin(t + k) * 8, y, r.uniform(2, 5), hexc("8a8f99"), a=0.55)
-        veil(c, hexc("3a3f4a"), 0.35 * amount)
+        for k in range(7):
+            u = clamp(amount * 7 - k)
+            if u <= 0:
+                continue
+            y = lerp(-400, 200 + k * 120, ease_io(u))
+            c.save()
+            g = cairo.LinearGradient(0, y - 400, 0, y + 60)
+            g.add_color_stop_rgba(0, 1.0, 0.72, 0.38, 0.0)
+            g.add_color_stop_rgba(1, 1.0, 0.72, 0.38, 0.22)
+            c.set_source(g)
+            c.rectangle(-600, y - 400, W + 1200, 460)
+            c.fill()
+            c.restore()
 
 
 def e11(c, t):
-    """她一个人站在露台上，落日越来越大，她越来越小；成千上万个灰色小光点像雪一样压下来。"""
-    grow = ease_io(prog(t, 0.0, 9.0))
-    k = lerp(1.0, 0.62, grow)
-    with cam(c, 540, 1100, k, ty=lerp(0, -200, grow)):
-        terrace(c, t, sun=1.0 + 1.4 * grow, warm=0.8)
-        girl(c, 540, 1230, 1.5, view="back", hat=True, pack=True, key="g11")
-    gray_snow(c, t, ease_io(prog(t, 6.6, 3.0)))
+    """她一个人站在露台上看落日。落日越来越大，天越来越低，金色的光一层层压下来，她越来越小，只剩一个剪影。"""
+    grow = ease_io(prog(t, 0.0, 9.5))
+    k = lerp(1.0, 0.6, grow)
+    with cam(c, 540, 1150, k, ty=lerp(0, -180, grow)):
+        terrace(c, t, sun=1.0 + 1.5 * grow, warm=0.8)
+        dark = ease_io(prog(t, 5.0, 4.0))
+        if dark > 0.02:                                            # 慢慢只剩一个剪影
+            with nokeep():
+                with grade(sat=lerp(1.0, 0.2, dark), dark=0.75 * dark, warm=0.0):
+                    girl(c, 540, 1240, 1.5, view="back", hat=True, pack=True, key="g11")
+        else:
+            girl(c, 540, 1240, 1.5, view="back", hat=True, pack=True, key="g11")
+    gold_press(c, ease_io(prog(t, 5.6, 5.0)), t)
 
 
 def e12(c, t):
-    """她往后退了一步；镜头退出海报，回到街上的橱窗前，海报上的落日安安静静。"""
-    def big(cc):
-        terrace(cc, 4.0, sun=1.6, warm=0.8)
-        back = ease_io(prog(t, 0.0, 0.8))
-        girl(cc, 540, lerp(1230, 1260, back), lerp(1.5, 1.6, back), view="back", hat=True, pack=True, key="g12")
-
+    """她往后退了一步。镜头退出海报，回到街上：玻璃上映着她一个人。"""
     if t < 1.0:
-        big(c)
+        terrace(c, 4.0, sun=1.6, warm=0.8)
+        back = ease_io(prog(t, 0.0, 0.8))
+        girl(c, 540, lerp(1240, 1270, back), lerp(1.5, 1.6, back), view="back", hat=True, pack=True, key="g12")
         return
+
+    def street_glass(cc):
+        glass_scene(cc, t, poster_warm=0.8, sun=1.6, refl_a=0.4)
+        girl(cc, 820, 1900, 2.8, view="back", hat=True, pack=True, key="g12b")
     e = ease_io(prog(t, 1.0, 1.4))
     if e < 1:
-        x, y, w, h = 300, 330, 420, 560
+        x, y, w, h = 110, 140, 860, 1040
         sf = w / W
         z = lerp(1.0 / sf, 1.0, e)
         c.save()
-        ox, oy = lerp(x, 0, e), lerp(y, 0, e)
         c.scale(z, z)
-        c.translate(-ox, -oy)
-        street_sunset(c, t, girl_on=e > 0.6)
+        c.translate(-lerp(x, 0, e), -lerp(y, 0, e))
+        street_glass(c)
         c.restore()
         return
-    street_sunset(c, t)
-
-
-def street_sunset(c, t, girl_on=True):
-    """街上：橱窗里的海报换成了落日的那一页。"""
-    vgrad(c, 0, 1000, [(0, hexc("cfe4ef")), (1, hexc("f6efe0"))])
-    shape(c, rect(-20, 120, W + 40, 960), hexc("e8d6b8"), "shopw2", lw=3)
-    shape(c, rect(40, 280, 1000, 720), hexc("dfeef4"), "glass2", lw=4)
-    with keep():
-        shape(c, rect(288, 318, 444, 584 + 100), (1, 1, 1), "ipf2", lw=3)
-    c.save()
-    c.rectangle(300, 330, 420, 560)
-    c.clip()
-    c.translate(300, 330)
-    c.scale(420 / W, 420 / W)
-    terrace(c, 4.0, sun=1.6, warm=0.8)
-    c.restore()
-    shape(c, rect(300, 330, 420, 560), None, "ipb2", lw=2.4)
-    with keep():
-        text(c, "蜜月之选 · 双人成行", 510, 960, 30, RED)
-        for k in range(3):
-            line(c, [(k * 380 + 20, 300), (k * 380 + 140, 980)], f"refl2{k}", 6, (1, 1, 1), alpha=0.3)
-    shape(c, rect(-20, 1000, W + 40, 900), hexc("c9c2b4"), "walk2", lw=3)
-    if girl_on:
-        girl(c, 540, 1240, 1.6, view="back", hat=True, pack=True, key="g12s")
+    street_glass(c)
 
 
 # ================================================================ 13–14 留给一些人
-CARDS = ["TA", "在乎的人", "老朋友们"]
-
-
-def long_table(c, grow, cards):
-    """露台上多出来的长桌和椅子；卡片一张张放上去。"""
-    with keep():
-        y = 1150
-        for k in range(5):
-            x = 180 + k * 180
-            pop = ease_back(clamp(grow * 5 - k))
-            if pop <= 0:
-                continue
-            c.save()
-            c.translate(x, y + 60)
-            c.scale(1, pop)
-            shape(c, rect(-40, -120, 80, 120), hexc("f4f0e6"), f"chb{k}", lw=2.4)
-            shape(c, rect(-50, -10, 100, 14), hexc("f4f0e6"), f"chs{k}", lw=2.4)
-            c.restore()
-        if grow > 0.3:
-            shape(c, rect(120, 1160, 840, 22), hexc("e8e0d0"), "ltab", lw=2.4)
-            for x in (150, 930):
-                line(c, [(x, 1182), (x, 1250)], f"ltl{x}", 5, hexc("8c7a62"))
-        for k, lab in enumerate(CARDS):
-            a = cards[k]
-            if a <= 0:
-                continue
-            x = 260 + k * 280
-            c.save()
-            c.translate(x, 1160 - 40 * (1 - a))
-            shape(c, [(-60, 0), (60, 0), (50, -50), (-50, -50)], (1, 1, 1), f"card{k}", lw=2, alpha=a)
-            text(c, lab, 0, -16, 26, RED, a=a)
-            c.restore()
-
-
 def e13(c, t):
-    terrace(c, t, sun=1.2, warm=0.6)
-    grow = ease_io(prog(t, 0.2, 1.4))
-    cards = [ease_out(prog(t, 2.0 + k * 1.6, 0.5)) for k in range(3)]
-    long_table(c, grow, cards)
-    gx = 260 + min(2, int(max(0.0, t - 1.6) / 1.6)) * 280 + 40
-    gx = lerp(180, gx, ease_io(prog(t, 1.4, 0.6)))
-    girl(c, gx, 1240, 1.5, hat=True, pack=True, look=-0.6, head_down=6, mouth="smile",
-         arms=[(-40, -110), (24, -78)], key="g13")
+    """倒影里只有她；然后她身边慢慢多出一个模糊的身影，身后又多出好几个。她没有回头，只是对着玻璃笑了一下。"""
+    others = ease_io(prog(t, 3.8, 3.2))
+    glass_scene(c, t, poster_warm=0.6, sun=1.2, refl_a=0.42, others=others)
+    girl(c, 820, 1900, 2.8, view="back", hat=True, pack=True, key="g13")
 
 
-def ghost_sunset(c, u):
-    with ghost(c, 0.85 * math.sin(clamp(u) * math.pi) ** 0.5):
-        girl(c, 450, 1000, 1.5, sit=True, legs=False, hat=False, keep_color=False, view="back", key="gh1")
-        local(c, 630, 1000, 1.6, "gh1b", hexc("9aa6b5"), hexc("6a6f7d"), "short", sit=True, legs=False, view="back")
+def two_shadows(c, t):
+    terrace(c, t, sun=1.3, warm=0.8)
+    with keep():                                                   # 两个人的影子并排坐着，落日在他们之间
+        for j, x in enumerate((360, 720)):
+            c.save()
+            c.push_group()
+            local(c, x, 1150, 1.7, f"sh{j}", hexc("3a2a3a"), hexc("3a2a3a"), "short" if j else "bang_short",
+                  sit=True, legs=False, view="back")
+            c.pop_group_to_source()
+            c.paint_with_alpha(0.85)
+            c.restore()
 
 
-def ghost_sea(c, u, t):
-    with ghost(c, 0.85 * math.sin(clamp(u) * math.pi) ** 0.5):
-        for k, (x, s) in enumerate(((620, 1.2), (740, 1.0), (850, 0.8), (950, 1.15))):
-            local(c, x, 930, s, f"gh2{k}", hexc(["c98d72", "8fb39a", "f2a6a0", "7d6a8f"][k]), hexc("6a6f7d"), "short",
-                  walk=t * 4 + k, look=-0.7, mouth="smile", arms=[(-24, -78), (40, -170)] if k % 2 else None)
-        for k in range(4):
-            line(c, [(600 + k * 110, 936), (680 + k * 110, 940)], f"gh2w{k}", 2, (1, 1, 1))
+def shallow_walk(c, t):
+    vgrad(c, Y0, 700, [(0, hexc("7fc0f0")), (1, hexc("e6f6fc"))], X0, X1)
+    vgrad(c, 700, Y1, [(0, hexc("7fe0d8")), (1, hexc("3fb8c0"))], X0, X1)
+    with keep():
+        for j in range(16):
+            ph = math.sin(t * 2 + j)
+            shape(c, ell((j * 173) % W, 800 + (j * 97) % 700, 60 + ph * 10, 12, 16), None, f"sc{j}", lw=1.6, alpha=0.35)
+    people = [(250, 1.6, "c98d72", "bang_long"), (430, 1.3, "8fb39a", "short"), (600, 1.0, "f2a6a0", "pony"),
+              (800, 1.5, "7d6a8f", "short")]
+    for k, (x, s, col, st) in enumerate(people):
+        xx = x + t * 25
+        wave = k % 2 == 1
+        local(c, xx, 1180 - (1.6 - s) * 120, s, f"sw{k}", hexc(col), hexc("3a3a3a"), st, walk=t * 4 + k,
+              look=-0.8, mouth="laugh", arms=[(-24, -78), (44, -176 + 14 * math.sin(t * 8))] if wave else None,
+              leg=SKIN_L)
+        fy = 1180 - (1.6 - s) * 120
+        with keep():                                               # 浅浅的海水没过脚踝
+            shape(c, ell(xx, fy - 6, 46 * s / 1.6, 14 * s / 1.6, 16), hexc("6fd8d0") + (0.75,), f"ank{k}", lw=1.4, amp=0.4)
+            for q in range(3):
+                line(c, [(xx - 40 + q * 10, 1180 - (1.6 - s) * 120 - 10 + q * 8),
+                         (xx + 40 - q * 10, 1180 - (1.6 - s) * 120 - 6 + q * 8)], f"rip{k}{q}", 2, (1, 1, 1), alpha=0.6)
 
 
-def ghost_friends(c, u, t):
-    with ghost(c, 0.85 * math.sin(clamp(u) * math.pi) ** 0.5):
+def night_table(c, t):
+    caldera(c, t, night=1.0, tower=False)
+    shape(c, [(X0, 1060), (X1, 1060), (X1, Y1), (X0, Y1)], hexc("3a3550"), "nterr", lw=3)
+    line(c, [(-40, 760), (1120, 800)], "lights", 2, hexc("6a6560"))
+    with keep():
+        for k in range(10):                                        # 晃来晃去的灯
+            x = k * 120
+            y = 770 + k * 3 + math.sin(t * 2 + k) * 8
+            glow(c, x, y + 14, 70, hexc("ffd98a"), 0.5)
+            circle(c, x, y + 14, 9, hexc("fff0b8"))
+    for k in range(6):
+        x = 130 + k * 165
+        sway = math.sin(t * 3 + k) * 0.04
+        local(c, x, 1130, 1.25, f"nt{k}", hexc(["c98d72", "8fb39a", "e8c040", "7d6a8f", "6b7a8a", "f2a6a0"][k]),
+              hexc("2f2a28"), ["short", "bang_long", "short", "pony", "short", "bang_short"][k], sit=True, legs=False,
+              mouth="laugh", look=0.3 * (1 if k % 2 else -1), tilt=sway, arms=[(-24, -70), (30, -176)])
+        with keep():
+            shape(c, [(x + 30 * 1.25 - 10, 1130 - 176 * 1.25 + 52 * 1.25 - 30), (x + 30 * 1.25 + 10, 1130 - 176 * 1.25 + 52 * 1.25 - 30),
+                      (x + 30 * 1.25 + 6, 1130 - 176 * 1.25 + 52 * 1.25), (x + 30 * 1.25 - 6, 1130 - 176 * 1.25 + 52 * 1.25)],
+                  hexc("f6e08a"), f"ntg{k}", lw=1.4)
+    shape(c, rect(60, 1140, 960, 26), hexc("8c5a3c"), "ntab", lw=2.4)
+    with keep():
         for k in range(5):
-            x = 180 + k * 180
-            sway = math.sin(t * 3 + k) * 6
-            local(c, x, 1120, 1.2, f"gh3{k}", hexc(["c98d72", "8fb39a", "e8c040", "7d6a8f", "6b7a8a"][k]), hexc("6a6f7d"),
-                  "short", sit=True, legs=False, mouth="laugh", look=0.3 * (1 if k % 2 else -1), tilt=sway * 0.01,
-                  arms=[(-24, -70), (30, -170)])
+            glow(c, 160 + k * 190, 1130, 50, hexc("ffd98a"), 0.5)
+            shape(c, rect(150 + k * 190, 1108, 20, 30), hexc("fff0b8"), f"cand{k}", lw=1.2)
 
 
-def e14(c, t):
-    """三个虚线的、半透明的画面一个个浮现，又淡去；只剩放着卡片的空椅子。镜头拉远回到街上，她转身走进人群。"""
-    if t < 12.4:
-        terrace(c, t, sun=1.2, warm=0.6)
-        long_table(c, 1.0, [1, 1, 1])
-        if t < 4.2:
-            ghost_sunset(c, t / 4.2)
-        elif t < 8.4:
-            ghost_sea(c, (t - 4.2) / 4.2, t)
-        else:
-            ghost_friends(c, (t - 8.4) / 4.0, t)
-        return
-    lt = t - 12.4                                                  # 拉远：回到街上，她转身走进人群
-    e = ease_io(prog(lt, 0.0, 1.4))
-    x, y, w, h = 300, 330, 420, 560
-    sf = w / W
-    if e < 1:
-        z = lerp(1.0 / sf, 1.0, e)
-        c.save()
-        ox, oy = lerp(x, 0, e), lerp(y, 0, e)
-        c.scale(z, z)
-        c.translate(-ox, -oy)
-        street_end(c, lt, girl_on=e > 0.5)
-        c.restore()
-        return
-    street_end(c, lt)
-
-
-def street_end(c, lt, girl_on=True):
+def street_end(c, lt):
+    """玻璃里又只剩她一个人，可她在笑。她转身往前走，橱窗上的蒲公英种子也被风带起来，跟着她飘走。"""
     vgrad(c, 0, 1000, [(0, hexc("f2c79a")), (1, hexc("fbecd0"))])
     shape(c, rect(-20, 120, W + 40, 960), hexc("e8d6b8"), "shopw3", lw=3)
     shape(c, rect(40, 280, 1000, 720), hexc("dfeef4"), "glass3", lw=4)
     with keep():
-        shape(c, rect(288, 318, 444, 684), (1, 1, 1), "ipf3", lw=3)
-    c.save()
-    c.rectangle(300, 330, 420, 560)
-    c.clip()
-    c.translate(300, 330)
-    c.scale(420 / W, 420 / W)
-    terrace(c, 4.0, sun=1.2, warm=0.6)
-    long_table(c, 1.0, [1, 1, 1])
-    c.restore()
+        shape(c, rect(288, 318, 444, 584), (1, 1, 1), "ipf3", lw=3)
+    poster_art(c, 300, 330, 420, 560, lt, warm=0.6, sun=1.2)
     shape(c, rect(300, 330, 420, 560), None, "ipb3", lw=2.4)
-    with keep():
-        text(c, "蜜月之选 · 双人成行", 510, 960, 30, RED)
     shape(c, rect(-20, 1000, W + 40, 900), hexc("c9c2b4"), "walk3", lw=3)
     r = random.Random(9)
-    crowd = ease_io(prog(lt, 1.0, 1.0))
-    for k in range(int(7 * crowd)):
+    crowd = ease_io(prog(lt, 1.2, 1.0))
+    for k in range(int(6 * crowd)):
         px = (r.uniform(0, 1200) + lt * (70 if k % 2 else -60)) % 1300 - 100
-        local(c, px, 1180 + r.uniform(0, 100), 1.3, f"cr{k}", hexc(["8fb39a", "c98d72", "7d6a8f", "e8c040"][k % 4]),
+        local(c, px, 1160 + r.uniform(0, 100), 1.25, f"cr{k}", hexc(["8fb39a", "c98d72", "7d6a8f", "e8c040"][k % 4]),
               hexc("2f2a28"), "short", walk=lt * 6 + k, look=0.8 if k % 2 else -0.8, mouth="smile")
-    if girl_on:
-        turn = lt > 1.6
-        walk = ease_in(prog(lt, 2.0, 2.4))
-        girl(c, 540 + walk * 420, 1240 - walk * 60, 1.6 - walk * 0.4, view="front" if turn else "back", hat=True, pack=True,
-             look=0.9 if turn else 0.0, mouth="smile", walk=lt * 6 if walk > 0 else None, key="g14")
+    turn = lt > 0.8
+    walk = ease_in(prog(lt, 1.2, 2.4))
+    gx, gy, gs = 540 + walk * 420, 1240 - walk * 60, 1.6 - walk * 0.4
+    girl(c, gx, gy, gs, view="front" if turn else "back", hat=True, pack=True, look=0.9 if turn else 0.0, mouth="smile",
+         walk=lt * 6 if walk > 0 else None, key="g14")
+    lift = ease_in(prog(lt, 1.6, 2.4))                             # 蒲公英种子跟着她飘走
+    seed(c, lerp(760, gx + 80, lift), lerp(300, gy - 300 * gs, lift) + math.sin(lt * 3) * 16, 0.8, "s14", open_=1.0,
+         glow_a=0.2)
+
+
+def e14(c, t):
+    if t < 4.2:
+        two_shadows(c, t)
+    elif t < 8.4:
+        shallow_walk(c, t - 4.2)
+    elif t < 12.4:
+        night_table(c, t)
+    else:
+        lt = t - 12.4
+        street_end(c, lt)
+        a = 1 - ease_io(prog(lt, 0.0, 0.8))
+        if a > 0:
+            with group_alpha(c, a):
+                night_table(c, t)
 
 
 # ================================================================ 片尾
@@ -978,7 +1018,7 @@ def end_still():
         cc = cairo.Context(surf)
         set_time(130.0)
         with grade(sat=1.0, dark=0.0, warm=0.1):
-            e14(cc, 15.0)
+            street_end(cc, 0.5)
         _STILL["s"] = surf
     return _STILL["s"]
 
