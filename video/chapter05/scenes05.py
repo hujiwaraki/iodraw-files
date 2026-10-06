@@ -800,22 +800,25 @@ def f11(c, t):
             girl(c, 580, 1250, 1.5, hat=True, pack=True, look=0.5, head_down=nod, mouth="smile",
                  arms=[(-24, -78), (40, -150)] if 4.6 < t < 5.6 else None, key="g11")
             phone = 4.6 < t < 5.6
-            mate(c, 0, 720, 1250, 1.5, look=-0.6, head_down=nod, mouth="smile",
+            mate(c, 0, 740, 1250, 1.5, look=-0.6, head_down=nod, mouth="smile",
                  arms=[(-40, -150), (24, -78)] if phone else None, k="b")
             if phone:
-                phone_at(c, 720 - 40 * 1.5, 1250 - 150 * 1.5 - 20, 1.2, "ph11", glow_a=0.4)
+                phone_at(c, 740 - 40 * 1.5, 1250 - 150 * 1.5 - 20, 1.2, "ph11", glow_a=0.4)
             if t < 4.2:                                            # 一副耳机分着听
                 with keep():
-                    hx1, hy1 = 580 + 22, 1250 - 165 * 1.5
-                    hx2, hy2 = 720 - 22, 1250 - 165 * 1.5
-                    line(c, [(hx1, hy1), ((hx1 + hx2) / 2, 1250 - 110 * 1.5), (hx2, hy2)], "ear", 2, (1, 1, 1))
-                    circle(c, hx1, hy1, 5, (1, 1, 1))
-                    circle(c, hx2, hy2, 5, (1, 1, 1))
+                    ey = 1250 - 148 * 1.5 + nod * 1.5             # 耳朵的高度
+                    hx1, hx2 = 580 + 32 * 1.5, 740 - 30 * 1.5      # 她的左耳、朋友的右耳（两人挨着的那一侧）
+                    jx, jy = (hx1 + hx2) / 2, 1250 - 112 * 1.5
+                    line(c, [(hx1, ey), (hx1 + 4, ey + 40), (jx, jy)], "earL", 2, (1, 1, 1))
+                    line(c, [(hx2, ey), (hx2 - 4, ey + 40), (jx, jy)], "earR", 2, (1, 1, 1))
+                    line(c, [(jx, jy), (jx - 10, 1250 - 84 * 1.5)], "earC", 2, (1, 1, 1))
+                    shape(c, ell(hx1, ey, 7, 9, 10), (1, 1, 1), "budL", lw=1.4)
+                    shape(c, ell(hx2, ey, 7, 9, 10), (1, 1, 1), "budR", lw=1.4)
                     for k in range(3):                             # 音符一样的小点
                         ph = (t * 0.8 + k / 3) % 1
                         circle(c, 650 + math.sin(ph * 6 + k) * 30, 1250 - 200 * 1.5 - ph * 120, 4, WARM, a=1 - ph)
     else:
-        mate(c, 0, 720, 1250, 1.5, look=-0.8, mouth="smile", arms=[(-40, -180 + 14 * math.sin(t * 10)), (24, -78)], k="b")
+        mate(c, 0, 740, 1250, 1.5, look=-0.8, mouth="smile", arms=[(-40, -180 + 14 * math.sin(t * 10)), (24, -78)], k="b")
 
 
 # ================================================================ 12 吹散一朵蒲公英
