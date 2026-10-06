@@ -145,12 +145,20 @@ def e01(c, t):
         if f > 0:
             veil(c, hexc("fbf6e8"), 0.6 * math.sin(f * math.pi))
         return
-    lt = t - 9.2                                                   # 床 → 小船
+    lt = t - 9.2                                                   # 床 → 小船；她坐起来（和下一幕同一个构图）
     night_sea(c, t)
-    boat(c, 560, 1020, 1.3, "b1")
-    lying_girl(c, 560, 990, 1.3, key="g1b", hat=False, mouth="flat")
-    boat_front(c, 560, 1020, 1.3, "b1")
-    a = 1 - ease_io(prog(lt, 0.0, 1.4))
+    rock = math.sin(t * 1.4) * 0.03
+    boat(c, 540, 1080, 1.3, "b2", rock)
+    sit = ease_io(prog(lt, 0.9, 0.7))
+    if sit < 1:
+        with group_alpha(c, 1 - sit):
+            lying_girl(c, 600, 1050, 1.3, key="g1b", hat=False, mouth="flat")
+    if sit > 0:
+        with group_alpha(c, sit):
+            girl(c, 520, 1060, 1.3, sit=True, legs=False, hat=True, look=0.0, head_down=8, mouth="flat",
+                 arms=[(-24, -78), (24, -78)], key="g2")
+    boat_front(c, 540, 1080, 1.3, "b2", rock)
+    a = 1 - ease_io(prog(lt, 0.0, 1.0))
     if a > 0:
         with group_alpha(c, a):
             room(c, t, 3)
@@ -311,7 +319,7 @@ def intro(c, t):
 # ================================================================ 2 手心里的种子
 def e02(c, t):
     """小船漂在月光的海上。她摊开手心，一颗小小的种子微微发亮；四周全是水，没有一处可以把它放下。"""
-    k = lerp(1.15, 1.7, ease_io(prog(t, 0.0, 8.0)))
+    k = lerp(1.0, 1.6, ease_io(prog(t, 0.0, 8.0)))
     with cam(c, 540, 960, k):
         night_sea(c, t)
         rock = math.sin(t * 1.4) * 0.03
@@ -714,7 +722,7 @@ def reflection(c, x, y, s, a, key, others=0.0):
                 if others > 0.5:
                     with group_alpha(c, clamp((others - 0.5) * 2)):
                         for k, (dx, ss, col) in enumerate(((-180, 0.95, "c98d72"), (-90, 0.85, "8fb39a"), (220, 0.9, "7d6a8f"),
-                                                           (300, 0.8, "e8c040"))):
+                                                           (300, 0.8, "4f8a8a"))):
                             local(c, x + dx * s / 1.6, y - 40, s * ss, f"{key}o{k + 2}", hexc(col), hexc("3a3a3a"), "short",
                                   mouth="laugh", look=0.3 if dx < 0 else -0.3)
             girl(c, x, y, s, hat=True, pack=True, mouth="smile", look=0.0, keep_color=False, key=key + "me")
@@ -952,7 +960,7 @@ def night_table(c, t):
     for k in range(6):
         x = 130 + k * 165
         sway = math.sin(t * 3 + k) * 0.04
-        local(c, x, 1130, 1.25, f"nt{k}", hexc(["c98d72", "8fb39a", "e8c040", "7d6a8f", "6b7a8a", "f2a6a0"][k]),
+        local(c, x, 1130, 1.25, f"nt{k}", hexc(["c98d72", "8fb39a", "4f8a8a", "7d6a8f", "6b7a8a", "f2a6a0"][k]),
               hexc("2f2a28"), ["short", "bang_long", "short", "pony", "short", "bang_short"][k], sit=True, legs=False,
               mouth="laugh", look=0.3 * (1 if k % 2 else -1), tilt=sway, arms=[(-24, -70), (30, -176)])
         with keep():
@@ -980,7 +988,7 @@ def street_end(c, lt):
     crowd = ease_io(prog(lt, 1.2, 1.0))
     for k in range(int(6 * crowd)):
         px = (r.uniform(0, 1200) + lt * (70 if k % 2 else -60)) % 1300 - 100
-        local(c, px, 1160 + r.uniform(0, 100), 1.25, f"cr{k}", hexc(["8fb39a", "c98d72", "7d6a8f", "e8c040"][k % 4]),
+        local(c, px, 1160 + r.uniform(0, 100), 1.25, f"cr{k}", hexc(["8fb39a", "c98d72", "7d6a8f", "4f8a8a"][k % 4]),
               hexc("2f2a28"), "short", walk=lt * 6 + k, look=0.8 if k % 2 else -0.8, mouth="smile")
     turn = lt > 0.8
     walk = ease_in(prog(lt, 1.2, 2.4))

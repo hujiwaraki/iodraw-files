@@ -24,7 +24,7 @@ SCENES = [
     (134.0, 140.0, outro),
 ]
 
-TRANSITIONS = [(6.0, "fade"), (17.0, "fade"), (25.0, "fade"), (35.0, "fade"), (41.0, "fade"), (52.0, "fade"),
+TRANSITIONS = [(6.0, "fade"), (25.0, "fade"), (35.0, "fade"), (41.0, "fade"), (52.0, "fade"),
                (60.0, "fade"), (76.0, "fade"), (83.0, "fade"), (93.0, "fade"), (110.0, "fade"), (134.0, "fade")]
 
 SUBS = [
