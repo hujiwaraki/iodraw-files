@@ -192,21 +192,6 @@ def table(c, x0, x1, top, floor, key, col=WOOD):
             line(c, [(x, top + 18), (x, floor)], f"{key}l{x}", 7, darker(col, 0.85))
 
 
-def door_ajar(c, t, x=330, y0=420, y1=1240, w=380):
-    """一扇虚掩的门：开着一道缝，光从缝里漏出来；风一吹晃一下，又停回原来的位置。"""
-    gap = 46 + 10 * math.sin(clamp(prog(t, 0.8, 1.6)) * math.pi) * math.sin(t * 4)
-    with keep():
-        shape(c, rect(x - 16, y0 - 16, w + 32, y1 - y0 + 16), hexc("3a3248"), "dframe", lw=3)
-        shape(c, rect(x, y0, gap, y1 - y0), hexc("ffd98a"), "dlight", lw=1)
-        glow(c, x + gap / 2, (y0 + y1) / 2, 260, WARM, 0.35)
-        shape(c, [(x, y1), (x + gap, y1), (x + gap + 120, y1 + 200), (x - 30, y1 + 200)], hexc("ffd98a"), "dspill",
-              lw=0, edge=False, alpha=0.16)
-        shape(c, rect(x + gap, y0, w - gap, y1 - y0), hexc("6a4a3a"), "dpanel", lw=3)
-        for k, (yy, hh) in enumerate(((y0 + 60, 300), (y0 + 420, 300))):
-            shape(c, rect(x + gap + 40, yy, w - gap - 80, hh), None, f"dp{k}", lw=2)
-        circle(c, x + gap + 30, (y0 + y1) / 2 + 40, 9, hexc("d8b060"))
-
-
 def open_circle_illus(c, cx, cy):
     """章节页小插画：一个缺了一口、没有画完的圆。"""
     with keep():
@@ -701,17 +686,52 @@ def regret_cup(c, t):
     chipped_cup(c, cup_x, cup_y, 0.75, "cup10", steam=lift < 0.2, t=t)
 
 
-def regret_door(c, t):
-    """夜里的走廊，一扇门虚掩着：不开，也不关。"""
-    fill_all(c, hexc("232a42"))
-    shape(c, rect(780, 160, 200, 220), hexc("141c36"), "hwin", lw=3)
-    c.save()
-    c.rectangle(780, 160, 200, 220)
-    c.clip()
-    crescent(c, 890, 260, 40)
-    c.restore()
-    shape(c, rect(-20, 1240, W + 40, 900), hexc("2e3448"), "hfl", lw=3)
-    door_ajar(c, t)
+def regret_balloon(c, t):
+    """夜里，一只气球挂在光秃秃的树枝上：风一吹，它扯了扯，像要飞走，又停回原来的位置。飞不走，也落不下来。"""
+    vgrad(c, -100, 1300, [(0, hexc("141c36")), (0.7, hexc("2c3c66")), (1, hexc("4a4e78"))], -400, W + 400)
+    r = random.Random(9)
+    with keep():
+        for k in range(45):
+            star(c, r.uniform(0, W), r.uniform(0, 1000), r.uniform(1.4, 3.0), 0.4 + 0.5 * math.sin(t * 2 + k))
+    crescent(c, 250, 230, 54)
+    shape(c, hill_pts(1150, 40, 0.004, 1.2, -400, W + 400, bottom=2400), hexc("1c2236"), "bhill", lw=2)
+    TREE = hexc("1c2236")
+    with keep():                                                   # 光秃秃的树，枝丫伸向夜空
+        line(c, [(230, 1160), (250, 960), (300, 800), (380, 660)], "trunk", 26, TREE)
+        for k, pts in enumerate((
+                [(380, 660), (500, 560), (640, 520)],
+                [(380, 660), (420, 520), (470, 400)],
+                [(300, 800), (180, 680), (120, 560)],
+                [(500, 560), (560, 440), (600, 380)],
+                [(250, 960), (130, 900), (60, 860)],
+                [(640, 520), (700, 470)],
+                [(420, 520), (360, 430)])):
+            line(c, pts, f"br{k}", max(4, 16 - k * 1.6), TREE)
+    wind = math.sin(clamp(prog(t, 0.9, 1.8)) * math.pi)            # 一阵风
+    sway = 0.12 * math.sin(t * 1.6) + 0.5 * wind * (0.7 + 0.3 * math.sin(t * 7))
+    ax, ay = 690, 474                                              # 绳子缠在枝头
+    L = 190
+    ang = 0.35 + sway                                              # 气球往右上飘，被绳子拽着
+    bx, by = ax + math.sin(ang) * L, ay - math.cos(ang) * L - 70
+    with keep():
+        line(c, [(ax - 4, ay + 16), (ax + 6, ay + 10), (ax, ay), ((ax + bx) / 2 - 8, (ay + by + 70) / 2 + 6), (bx, by + 72)],
+             "bstr", 1.6, hexc("c8c4d8"))
+        line(c, [(ax - 4, ay + 16), (ax - 10, ay + 70), (ax - 2, ay + 110)], "btail", 1.4, hexc("c8c4d8"))   # 垂下来的一截
+        glow(c, bx, by, 150, hexc("f6b8c8"), 0.25)
+        c.save()
+        c.translate(bx, by)
+        c.rotate(sway * 0.5)
+        shape(c, ell(0, 0, 54, 64, 26), hexc("f2a6b4") + (1.0,), "balloon", lw=2.4)
+        shape(c, [(-8, 62), (8, 62), (0, 74)], hexc("e08a9a"), "bknot", lw=1.6)
+        shape(c, ell(-18, -24, 10, 18, 12), (1, 1, 1), "bhl", lw=0, edge=False, alpha=0.5)
+        c.restore()
+    with keep():                                                   # 风吹过的几道线
+        for j in range(3):
+            u = prog(t, 0.9 + j * 0.25, 1.2)
+            if 0 < u < 1:
+                xx = lerp(-200, 1200, u)
+                line(c, [(xx, 700 + j * 70), (xx + 160, 690 + j * 70), (xx + 240, 704 + j * 70)], f"bw{j}", 2,
+                     (1, 1, 1), alpha=0.4 * math.sin(u * math.pi))
 
 
 def letter_and_message(c, t):
@@ -761,7 +781,7 @@ def letter_and_message(c, t):
             line(c, [(300 + n * 28, 998), (300 + n * 28, 1034)], "cur", 3, hexc("3f6fb5"))
 
 
-REGRETS = [regret_cup, regret_door, letter_and_message]
+REGRETS = [regret_cup, regret_balloon, letter_and_message]
 
 
 def g10(c, t):
