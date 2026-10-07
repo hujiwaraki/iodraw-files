@@ -176,6 +176,37 @@ def seesaw(c, x, y, tilt, key, kids=0.0, t=0.0):
                   legs=False, mouth="laugh", look=-sg * 0.6, arms=[(-20, -80), (20, -80)])
 
 
+def chair(c, x, seat, floor, key, col=WOOD, back=-1):
+    """侧面看的椅子：座面在 seat，椅背在 back 一侧。"""
+    with keep():
+        line(c, [(x + back * 50, seat), (x + back * 50, seat - 150)], key + "b", 8, darker(col, 0.85))
+        shape(c, rect(x - 60, seat, 120, 16), col, key + "s", lw=2)
+        for sg in (-1, 1):
+            line(c, [(x + sg * 50, seat + 16), (x + sg * 50, floor)], f"{key}l{sg}", 6, darker(col, 0.85))
+
+
+def table(c, x0, x1, top, floor, key, col=WOOD):
+    with keep():
+        shape(c, rect(x0, top, x1 - x0, 18), col, key + "t", lw=2.4)
+        for x in (x0 + 30, x1 - 30):
+            line(c, [(x, top + 18), (x, floor)], f"{key}l{x}", 7, darker(col, 0.85))
+
+
+def door_ajar(c, t, x=330, y0=420, y1=1240, w=380):
+    """一扇虚掩的门：开着一道缝，光从缝里漏出来；风一吹晃一下，又停回原来的位置。"""
+    gap = 46 + 10 * math.sin(clamp(prog(t, 0.8, 1.6)) * math.pi) * math.sin(t * 4)
+    with keep():
+        shape(c, rect(x - 16, y0 - 16, w + 32, y1 - y0 + 16), hexc("3a3248"), "dframe", lw=3)
+        shape(c, rect(x, y0, gap, y1 - y0), hexc("ffd98a"), "dlight", lw=1)
+        glow(c, x + gap / 2, (y0 + y1) / 2, 260, WARM, 0.35)
+        shape(c, [(x, y1), (x + gap, y1), (x + gap + 120, y1 + 200), (x - 30, y1 + 200)], hexc("ffd98a"), "dspill",
+              lw=0, edge=False, alpha=0.16)
+        shape(c, rect(x + gap, y0, w - gap, y1 - y0), hexc("6a4a3a"), "dpanel", lw=3)
+        for k, (yy, hh) in enumerate(((y0 + 60, 300), (y0 + 420, 300))):
+            shape(c, rect(x + gap + 40, yy, w - gap - 80, hh), None, f"dp{k}", lw=2)
+        circle(c, x + gap + 30, (y0 + y1) / 2 + 40, 9, hexc("d8b060"))
+
+
 def open_circle_illus(c, cx, cy):
     """章节页小插画：一个缺了一口、没有画完的圆。"""
     with keep():
@@ -361,17 +392,19 @@ def kitchen_3am(c, t):
         shape(c, rect(760, 500, 240, 740), hexc("dfe8f0"), "fridge", lw=2.4, alpha=0.9)
         line(c, [(780, 860), (980, 860)], "frl", 2)
     shape(c, rect(-20, 1240, W + 40, 700), hexc("1a1c28"), "kfl", lw=3)
-    shape(c, rect(120, 1000, 520, 24), hexc("3a3040"), "ktab", lw=2.4)
+    table(c, 420, 700, 1070, 1240, "ktab", hexc("3a3040"))
+    chair(c, 320, 1150, 1240, "kch", hexc("3a3040"))
     down = ease_io(prog(t, 2.0, 0.6))
     with nokeep():
         with grade(sat=0.7, dark=0.25):
-            girl(c, 380, 1000, 1.5, sit=True, legs=False, hat=False, look=0.0, head_down=10, mouth="flat",
-                 arms=[(-14, -96), (14, -96)] if down < 1 else [(-24, -70), (40, -60)], key="g2e")
+            girl(c, 320, 1150, 1.7, sit=True, hat=False, look=0.0 if down < 1 else 0.3, head_down=10, mouth="flat",
+                 arms=[(-14, -90), (14, -90)] if down < 1 else [(-24, -70), (56, -96)], key="g2e")
     if down < 1:
-        phone_at(c, 380, 1000 - 96 * 1.5 + 52 * 1.5 - 14, 1.3, "ph2", glow_a=0.6 * (1 - down) * (0.8 + 0.2 * math.sin(t * 9)))
+        phone_at(c, lerp(320, 430, down), lerp(1150 - 90 * 1.7 + 52 * 1.7 - 14, 1062, down), 1.4, "ph2",
+                 glow_a=0.6 * (1 - down) * (0.8 + 0.2 * math.sin(t * 9)))
     else:
         with keep():
-            shape(c, rrect(420, 990, 60, 12, 4), hexc("3a3f4a"), "phdown", lw=1.6)
+            shape(c, rrect(420, 1058, 60, 12, 4), hexc("3a3f4a"), "phdown", lw=1.6)
 
 
 SAD = [(cafe_clock, 3.0), (wilting, 3.0), (umbrella_give, 3.2), (fireworks, 3.4), (kitchen_3am, 5.4)]
@@ -616,10 +649,12 @@ def g08(c, t):
                 glow(c, x, 560, 60, WARM, 0.5)
                 circle(c, x, 560, 8, hexc("fff0b8"))
             c.restore()
-        shape(c, rect(-20, 1100, W + 40, 900), hexc("2a2e3a"), "bfl", lw=3)
-        shape(c, rrect(300, 860, 480, 300, 30), hexc("5a6a8a"), "seat", lw=3)
-        girl(c, 560, 1100, 1.6, sit=True, legs=False, hat=True, pack=True, look=-0.3, eyes_closed=True, mouth="flat",
+        shape(c, rect(-20, 1240, W + 40, 900), hexc("2a2e3a"), "bfl", lw=3)
+        shape(c, rrect(320, 870, 460, 290, 30), hexc("5a6a8a"), "seat", lw=3)
+        shape(c, rect(360, 1189, 380, 51), hexc("3a4050"), "seatb", lw=2)
+        girl(c, 560, 1165, 1.6, sit=True, hat=True, pack=True, look=-0.3, eyes_closed=True, mouth="flat",
              tilt=-0.18, arms=[(-20, -70), (20, -70)], key="g8d")
+        shape(c, rrect(300, 1150, 500, 40, 16), hexc("6a7a9a") + (1.0,), "seatc", lw=3)
 
 
 def g09(c, t):
@@ -656,21 +691,27 @@ def regret_cup(c, t):
     line(c, [(800, 160), (800, 580)], "cwm10", 5, hexc("4a5068"))
     with keep():
         glow(c, 800, 900, 600, hexc("cfe0ff"), 0.12)
-    shape(c, rect(-20, 1100, W + 40, 900), hexc("6a5040"), "dtab", lw=3)
+    shape(c, rect(-20, 1240, W + 40, 900), hexc("3a3448"), "dfl", lw=3)
+    table(c, 450, 900, 1070, 1240, "dtab", hexc("6a5040"))
+    chair(c, 340, 1150, 1240, "dch", hexc("6a5040"))
     lift = ease_io(clamp(prog(t, 0.6, 0.8))) - ease_io(clamp(prog(t, 2.4, 0.8)))
-    cup_x, cup_y = lerp(620, 520, lift), lerp(1100, 1010, lift)     # 杯子从桌上举到嘴边，再放回去
-    girl(c, 420, 1100, 1.6, sit=True, legs=False, hat=False, look=0.5, head_down=lerp(4, -4, lift), mouth="flat",
-         eyes_closed=lift > 0.8, arms=[(-20, -70), ((cup_x - 20 - 420) / 1.6, (cup_y - 40 - 1100) / 1.6 - 52)], key="g10a")
+    cup_x, cup_y = lerp(510, 440, lift), lerp(1070, 1040, lift)     # 杯子从桌上举到嘴边，再放回去
+    girl(c, 340, 1150, 1.6, sit=True, hat=False, look=0.5, head_down=lerp(4, -4, lift), mouth="flat",
+         eyes_closed=lift > 0.8, arms=[(-20, -70), ((cup_x - 20 - 340) / 1.6, (cup_y - 40 - 1150) / 1.6 - 52)], key="g10a")
     chipped_cup(c, cup_x, cup_y, 0.75, "cup10", steam=lift < 0.2, t=t)
 
 
-def regret_seesaw(c, t):
-    vgrad(c, 0, 1000, [(0, NIGHT_A), (1, NIGHT_B)])
-    crescent(c, 820, 260, 56)
-    shape(c, rect(-20, 1000, W + 40, 900), hexc("3a4a3a"), "pg", lw=3)
-    for k in range(3):
-        tree(c, 120 + k * 400, 1000, 1.4, f"pt{k}", col=hexc("2a4a3a"))
-    seesaw(c, 540, 1180, 0.1, "ss")
+def regret_door(c, t):
+    """夜里的走廊，一扇门虚掩着：不开，也不关。"""
+    fill_all(c, hexc("232a42"))
+    shape(c, rect(780, 160, 200, 220), hexc("141c36"), "hwin", lw=3)
+    c.save()
+    c.rectangle(780, 160, 200, 220)
+    c.clip()
+    crescent(c, 890, 260, 40)
+    c.restore()
+    shape(c, rect(-20, 1240, W + 40, 900), hexc("2e3448"), "hfl", lw=3)
+    door_ajar(c, t)
 
 
 def letter_and_message(c, t):
@@ -720,7 +761,7 @@ def letter_and_message(c, t):
             line(c, [(300 + n * 28, 998), (300 + n * 28, 1034)], "cur", 3, hexc("3f6fb5"))
 
 
-REGRETS = [regret_cup, regret_seesaw, letter_and_message]
+REGRETS = [regret_cup, regret_door, letter_and_message]
 
 
 def g10(c, t):
@@ -835,14 +876,15 @@ def g12(c, t):
         fill_all(c, hexc("dcdcd4"))
         shape(c, rect(-20, 1080, W + 40, 900), hexc("b8a888"), "wdesk", lw=3)
         with keep():
-            shape(c, rrect(560, 660, 380, 260, 14), hexc("3a3f4a"), "lap", lw=3)
-            shape(c, rect(580, 680, 340, 220), hexc("cfe4ff"), "laps", lw=1)
-            for j in range(5):
-                line(c, [(600, 710 + j * 34), (900 - (j * 47) % 120, 710 + j * 34)], f"lpl{j}", 3, hexc("6a7a8a"))
-            shape(c, [(540, 1080), (960, 1080), (940, 920), (560, 920)], hexc("8a909a"), "kb", lw=2)
+            glow(c, 760, 960, 180, hexc("cfe4ff"), 0.3)
+            shape(c, rrect(650, 890, 220, 150, 10), hexc("3a3f4a"), "lap", lw=2.4)
+            shape(c, rect(664, 902, 192, 126), hexc("cfe4ff"), "laps", lw=1)
+            for j in range(4):
+                line(c, [(678, 924 + j * 26), (840 - (j * 37) % 70, 924 + j * 26)], f"lpl{j}", 2, hexc("6a7a8a"))
+            shape(c, [(620, 1080), (900, 1080), (880, 1040), (640, 1040)], hexc("8a909a"), "kb", lw=2)
         tap = math.sin(u * 30) * 8
-        girl(c, 480, 1080, 1.6, sit=True, legs=False, hat=False, look=0.8, mouth="flat",
-             arms=[(34, -56 + tap), (52, -56 - tap)], key="g12c")
+        girl(c, 520, 1080, 1.6, sit=True, legs=False, hat=False, look=0.8, mouth="flat",
+             arms=[(52, -40 + tap), (66, -40 - tap)], key="g12c")
     else:                                                          # 追着公交车跑，挤了上去
         rain_city(c, u, dark=-0.3)
         with keep():
@@ -930,8 +972,14 @@ def g14(c, t):
         else:                                                      # 公园长椅，和老人一起笑；跷跷板上两个孩子
             vgrad(c, 0, 1000, [(0, hexc("9fd0ec")), (1, hexc("f4efe4"))])
             shape(c, rect(-20, 1000, W + 40, 900), hexc("a8c48b"), "pkg", lw=3)
-            tilt = 0.18 * math.sin(u * 3)
-            seesaw(c, 760, 1060, tilt, "ss2", kids=1.0, t=u)
+            kx, ky = 820 + 30 * math.sin(u * 2), 420 + 20 * math.sin(u * 3)   # 远处一个孩子在放风筝
+            with keep():
+                line(c, [(850, 1060 - 150 * 0.9), (kx, ky + 60)], "kstr", 1.4, hexc("6a6a6a"))
+                shape(c, [(kx, ky - 50), (kx + 36, ky), (kx, ky + 60), (kx - 36, ky)], hexc("e8743a"), "kite", lw=2)
+                line(c, [(kx, ky + 60), (kx - 10 + 10 * math.sin(u * 6), ky + 120), (kx + 6, ky + 170)], "ktail", 2,
+                     hexc("d9433a"))
+            local(c, 830, 1060, 0.9, "kid", hexc("9fc5e8"), hexc("2f2a28"), "short", look=0.5, look_up=0.8,
+                  mouth="laugh", arms=[(-20, -80), (22, -150)])
             shape(c, rect(160, 1150, 520, 24), WOOD, "pb", lw=2.4)
             shape(c, rect(160, 1040, 520, 20), WOOD, "pbb", lw=2.4)
             laugh = math.sin(u * 10) * 3
