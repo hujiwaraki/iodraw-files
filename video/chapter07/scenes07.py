@@ -1,7 +1,7 @@
 """第七章 · 那个人 —— 分镜实现（竖屏 1080×1920）。每个函数 fn(c, t)，t 为镜头内本地时间。
 
-ta 只用虚线勾出轮廓，没有脸、没有颜色。贯穿全章的是一根线：纸杯后面的细线连到远处 ta 的窗，
-机票是顺着线滑过来的纸飞机；后来线松了、积了雪，最后断了，线头的小纸条被风吹走。
+ta 只用虚线勾出轮廓，没有脸、没有颜色。贯穿全章的是纸飞机：隔着一片屋顶的两扇窗，纸飞机飞来飞去；
+后来再没有纸飞机飞来，远处那扇窗灭了；最后一只纸飞机打开是一张空白的纸，被风吹走。
 画面里不写字。
 """
 import math
@@ -26,7 +26,6 @@ PAPER = (0.98, 0.97, 0.94)
 NIGHT_A, NIGHT_B = hexc("141c36"), hexc("2c3c66")
 WOOD = hexc("8c5a3c")
 F_WIN = (760, 830)                        # 远处 ta 的窗（窗口机位里）
-CUP_N = (512, 1030)                       # 她手里纸杯的位置（窗口机位里）
 
 
 # ================================================================ 小物件
@@ -71,13 +70,6 @@ def ghost(c, x, y, s, key, sit=False, walk=None, a=0.9, phone=0.0, arms=None, he
     c.restore()
 
 
-def paper_cup(c, x, y, s, key):
-    with keep():
-        shape(c, [(x - 16 * s, y - 20 * s), (x + 16 * s, y - 20 * s), (x + 12 * s, y + 20 * s), (x - 12 * s, y + 20 * s)],
-              PAPER, key, lw=2)
-        line(c, [(x - 16 * s, y - 14 * s), (x + 16 * s, y - 14 * s)], key + "r", 1.6, hexc("c9b8a0"))
-
-
 def pplane(c, x, y, s, key, rot=0.0, col=PAPER):
     """纸飞机，机头朝右。"""
     c.save()
@@ -89,19 +81,6 @@ def pplane(c, x, y, s, key, rot=0.0, col=PAPER):
         shape(c, [(-40, -2), (42, 0), (-30, -18)], darker(col, 0.92), key + "b", lw=2.2)
         line(c, [(-40, 2), (42, 0)], key + "c", 1.4, darker(col, 0.7))
     c.restore()
-
-
-def thread_pt(p0, p1, sag, u, wob=0.0, t=0.0):
-    x = lerp(p0[0], p1[0], u)
-    y = lerp(p0[1], p1[1], u) + sag * 4 * u * (1 - u) + wob * math.sin(u * math.pi * 7 + t * 40) * math.sin(u * math.pi)
-    return x, y
-
-
-def thread(c, p0, p1, key, sag=20.0, wob=0.0, t=0.0, u0=0.0, u1=1.0, col=hexc("efe6d6"), lw=2.0, a=1.0):
-    pts = [thread_pt(p0, p1, sag, u0 + (u1 - u0) * k / 40, wob, t) for k in range(41)]
-    with keep():
-        line(c, pts, key, lw, col, alpha=a, amp=0.4)
-    return pts
 
 
 def backpack(c, x, y, s, key):
@@ -128,7 +107,8 @@ def intro(c, t):
 
 # ================================================================ 窗口机位：从她身后往外看
 def window_scene(c, t, mode="night", sag=20.0, wob=0.0, broken=None, leaves=0.0, snow_on=0.0, snowfall=0.0,
-                 lights=1.0, star_a=0.0, panes=None, gale=0.0, string=True, girl=None, far_ghost=0.0, cup_in_hand=True):
+                 lights=1.0, star_a=0.0, panes=None, gale=0.0, string=False, girl=None, far_ghost=0.0, cup_in_hand=False,
+                 far_on=1.0):
     """她坐在窗台上（背影），窗外一片屋顶，远处一扇亮着的窗是 ta 的。"""
     X0, Y0, X1, Y1 = 160, 360, 920, 1240
     night = mode in ("night", "snow")
@@ -178,14 +158,13 @@ def window_scene(c, t, mode="night", sag=20.0, wob=0.0, broken=None, leaves=0.0,
         for j, (wx, wy) in enumerate(wins):
             if night and j / 16 < lights:
                 shape(c, rect(wx, wy, 14, 18), WARM, f"fw{j}", lw=0, edge=False, alpha=0.7, amp=0.2)
-        on = 1.0 if (night and lights > 0.02) else (0.0 if night else 0.0)
-        shape(c, rect(F_WIN[0] - 22, F_WIN[1] - 28, 44, 52), WARM if on else hexc("a8b4c4"), "fwin", lw=0.8, amp=0.12)
-        if on:
-            glow(c, F_WIN[0], F_WIN[1], 60, WARM, 0.4)
+        on = far_on if (night and lights > 0.02) else 0.0
+        shape(c, rect(F_WIN[0] - 22, F_WIN[1] - 28, 44, 52), mix(hexc("2a3048") if night else hexc("a8b4c4"), WARM, on),
+              "fwin", lw=0.8, amp=0.12)
+        if on > 0:
+            glow(c, F_WIN[0], F_WIN[1], 60, WARM, 0.4 * on)
     if far_ghost > 0:
-        ghost(c, F_WIN[0], F_WIN[1] + 18, 0.17, "fg", sit=True, a=far_ghost, legs=False,
-              arms=[(-20, -100), (14, -150)])
-        paper_cup(c, F_WIN[0] - 2, F_WIN[1] - 6, 0.12, "fcup")
+        ghost(c, F_WIN[0], F_WIN[1] + 18, 0.17, "fg", sit=True, a=far_ghost * far_on, legs=False)
     if snowfall > 0:
         rs = random.Random(11)
         with keep():
@@ -208,66 +187,45 @@ def window_scene(c, t, mode="night", sag=20.0, wob=0.0, broken=None, leaves=0.0,
                 shape(c, rect(px0, Y0, w_, Y1 - Y0), None, f"panef{sg}", lw=3)
     if girl:
         girl()
-    # 线
-    sill_cup = (300, 1214)
-    p0 = CUP_N if cup_in_hand else (sill_cup[0] + 10, sill_cup[1] - 14)
-    if string:
-        if broken is None:
-            thread(c, p0, F_WIN, "str", sag=sag, wob=wob, t=t)
-            if leaves > 0:
-                with keep():
-                    for j in range(int(5 * leaves)):
-                        u = 0.18 + j * 0.15
-                        lx, ly = thread_pt(p0, F_WIN, sag, u)
-                        shape(c, ell(lx + 4, ly + 6, 9, 5, 10), hexc(["c9763a", "d9a04a", "a8603a"][j % 3]), f"lf{j}", lw=1)
-            if snow_on > 0:
-                pts = [thread_pt(p0, F_WIN, sag, k / 40) for k in range(41)]
-                with keep():
-                    line(c, [(x_, y_ - 3) for x_, y_ in pts], "snowon", 2 + 4 * snow_on, (1, 1, 1), alpha=0.9 * snow_on)
-        else:
-            fall = ease_out(clamp(broken))
-            mid = thread_pt(p0, F_WIN, sag, 0.45)
-            near = []
-            for k in range(21):
-                u = k / 20
-                tx, ty = thread_pt(p0, mid, 0, u)                  # 断开前：绷着
-                hx, hy = p0[0] + 220 * u, 1234 - 5 * math.sin(u * math.pi)   # 断开后：软软地落在窗台上
-                near.append((lerp(tx, hx, fall), lerp(ty, hy, fall)))
-            farp = []
-            for k in range(21):
-                u = k / 20
-                tx, ty = thread_pt(mid, F_WIN, 0, u)
-                hx, hy = F_WIN[0] - (1 - u) * 30, F_WIN[1] + (1 - u) * 220
-                farp.append((lerp(tx, hx, fall), lerp(ty, hy, fall)))
-            with keep():
-                line(c, near, "brA", 2, hexc("efe6d6"))
-                line(c, farp, "brB", 1.4, hexc("efe6d6"), alpha=0.8)
-    if not cup_in_hand and string:
-        paper_cup(c, *sill_cup, 1.0, "scup")
-    with keep():
+    with keep():                                                   # 窗台上慢慢落了叶子，又积了雪
+        if leaves > 0:
+            for j in range(int(7 * leaves)):
+                shape(c, ell(200 + j * 97 % 700, 1236, 12, 6, 10), hexc(["c9763a", "d9a04a", "a8603a"][j % 3]), f"lf{j}", lw=1)
         shape(c, rect(X0 - 40, Y1, X1 - X0 + 80, 40), hexc("6a5040") if night else hexc("c8b090"), "sill", lw=2.4)
+        if snow_on > 0:
+            shape(c, [(X0 - 36, Y1 + 2), (X0 - 36, Y1 - 6 * snow_on), (X1 + 36, Y1 - 10 * snow_on), (X1 + 36, Y1 + 2)],
+                  (0.98, 0.98, 1.0), "snowsill", lw=1.4, alpha=snow_on)
 
 
-def sill_girl(look=0.0, cup=True, arm_up=0.0, scale=1.7, x=430, extra=None):
-    """窗台上的她（背影）。"""
-    def fn(c=None):
-        pass
-    return fn
-
-
-def _her_back(c, cup=True, arm_up=0.0, x=430, hat=False, tilt=0.0):
+def _her_back(c, plane=False, arm_up=0.0, x=430, hat=False, tilt=0.0):
+    """窗台上的她（背影）。plane：手里拿着一只纸飞机。"""
     if arm_up > 0:
-        arms = [(-24, -78), (lerp(40, 60, arm_up), lerp(-150, -250, arm_up))]
-    elif cup:
-        arms = [(-24, -78), (42, -150)]
+        arms = [(-24, -78), (lerp(60, 70, arm_up), lerp(-110, -230, arm_up))]
+    elif plane:
+        arms = [(-24, -78), (60, -110)]
     else:
         arms = [(-24, -78), (24, -78)]
     girl(c, x, 1240, 1.7, view="back", sit=True, legs=False, hat=hat, arms=arms, tilt=tilt, key="hb")
-    if cup:
-        paper_cup(c, CUP_N[0] - 6, CUP_N[1] + 14, 1.0, "hcup")
+    if plane:
+        hx = x + arms[1][0] * 1.7
+        hy = 1240 + (arms[1][1] + 52) * 1.7
+        pplane(c, hx + 20, hy - 10, 0.75, "hand_pl", rot=-0.25 * arm_up)
 
 
-# ================================================================ 1 一根线
+HAND = (562, 1076)                        # 她手里纸飞机的位置（窗口机位里）
+
+
+def fly_pt(u, a=HAND, b=F_WIN, lift=200):
+    """纸飞机从她的窗飞向远处 ta 的窗：一段弧线，越飞越小。"""
+    x = lerp(a[0], b[0], u)
+    y = lerp(a[1], b[1], u) - lift * math.sin(u * math.pi)
+    sc = lerp(0.75, 0.1, u)
+    dx = b[0] - a[0]
+    dy = (b[1] - a[1]) - lift * math.pi * math.cos(u * math.pi)
+    return x, y, sc, math.atan2(dy, dx)
+
+
+# ================================================================ 1 纸飞机
 def side_talk(c, t):
     """侧面：她坐在窗台上，对着纸杯雀跃地说话，细线从纸杯后面伸出窗外。"""
     fill_all(c, hexc("4a3a40"))
@@ -293,66 +251,74 @@ def side_talk(c, t):
     with keep():
         shape(c, rect(620, 286, 24, 920), hexc("5a4a40"), "sfr", lw=2)
         shape(c, rect(100, 1180, 980, 40), hexc("6a5040"), "ssill", lw=2.4)
-    talk = (math.sin(t * 11) > 0) if (t % 1.6) < 1.2 else False
-    girl(c, 420, 1180, 1.9, sit=True, crouch=True, hat=False, look=0.9, mouth="laugh" if talk else "smile",
-         arms=[(-24, -70), (48, -150)], key="st")
-    cx, cy = 420 + 52 * 1.9, 1180 + (-150 + 52) * 1.9 + 4
-    paper_cup(c, cx, cy, 1.3, "stcup")
-    thread(c, (cx + 22, cy), (1200, cy - 60), "sts", sag=30)
+    throw = ease_out(prog(t, 2.0, 1.4))
+    fold = math.sin(t * 5) * 4 if t < 1.9 else 0
+    reach = min(1, throw * 4)
+    girl(c, 420, 1180, 1.9, sit=True, crouch=True, hat=False, look=0.9, head_down=8 if t < 1.9 else -2,
+         mouth="smile" if t < 1.9 else "laugh",
+         arms=[(-10, -96 + fold), (lerp(28, 70, reach), lerp(-96 - fold, -170, reach))], key="st")
+    if throw <= 0:
+        pplane(c, 420 + 30 * 1.9, 1180 + (-96 + 52) * 1.9 - 14, 0.9, "stpl", rot=0.1 * math.sin(t * 4))
+    elif throw < 1:
+        pplane(c, lerp(560, 1150, throw), lerp(1060, 700, throw) - math.sin(throw * math.pi) * 120, lerp(0.9, 0.5, throw),
+               "stpl", rot=-0.35)
 
 
 def h01(c, t):
     if t < 3.5:
         side_talk(c, t)
         return
-    u = ease_io(prog(t, 3.7, 3.0))                                # 镜头顺着线往外走
+    u = ease_io(prog(t, 3.6, 3.0))                                # 镜头跟着纸飞机，飞向远处那扇亮着的窗
     k = lerp(1.0, 4.0, u)
     cx, cy = lerp(540, F_WIN[0], u), lerp(960, F_WIN[1] + 10, u)
     with cam(c, cx, cy, k):
-        window_scene(c, t, far_ghost=1.0, girl=lambda: _her_back(c, cup=True))
+        window_scene(c, t, far_ghost=1.0, girl=lambda: _her_back(c, arm_up=1 - ease_out(prog(t, 3.5, 0.8))))
+        fu = ease_io(prog(t, 3.5, 3.2))
+        if fu < 1:
+            x, y, sc, rot = fly_pt(fu)
+            pplane(c, x, y, sc, "fly1", rot=rot)
 
 
 def h02(c, t):
-    """线一颤，一只纸飞机顺着线滑过来，镜头跟着退回她的窗台。"""
-    slide = ease_io(prog(t, 0.5, 3.0))
-    u = 1 - slide
+    """远处的窗里，一只纸飞机飞了回来，镜头跟着退回她的窗台。"""
     k = lerp(4.0, 1.0, ease_io(prog(t, 0.4, 3.2)))
     v = (k - 1) / 3.0
     cx, cy = lerp(540, F_WIN[0], v), lerp(960, F_WIN[1] + 10, v)
-    wob = 6 * math.exp(-t * 2.5)
     with cam(c, cx, cy, k):
-        window_scene(c, t, wob=wob, far_ghost=1.0, girl=lambda: _her_back(c, cup=t < 3.3))
+        window_scene(c, t, far_ghost=1.0, girl=lambda: _her_back(c))
+        fu = 1 - ease_io(prog(t, 0.5, 3.0))
         if t < 3.5:
-            px, py = thread_pt(CUP_N, F_WIN, 20, u)
-            pplane(c, px, py - 6, lerp(0.7, 0.12, u), "pl1", rot=-0.35 * (1 - u) + 0.2)
+            x, y, sc, rot = fly_pt(fu, lift=160)
+            pplane(c, x, y, sc, "pl1", rot=rot + math.pi)
         else:
             land = ease_out(prog(t, 3.5, 0.4))
-            pplane(c, lerp(CUP_N[0], 720, land), lerp(CUP_N[1] - 6, 1222, land), 0.7, "pl1", rot=lerp(0.2, 0.0, land))
+            pplane(c, lerp(HAND[0], 720, land), lerp(HAND[1], 1222, land), 0.7, "pl1", rot=lerp(0.3, 0.0, land))
 
 
 def h03(c, t):
-    """她拿起纸飞机翻看，又望向线那头的窗。"""
+    """她拿起纸飞机翻看，又望向远处那扇窗。"""
     def her():
         look = 0.0 if t < 3.0 else 0.6
         girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=False, look=look,
              arms=[(-24, -78), (60, -110)], key="hb")
-    window_scene(c, t, far_ghost=1.0, girl=her, cup_in_hand=False)
+    window_scene(c, t, far_ghost=1.0, girl=her)
     turn = math.sin(t * 2.2) * 0.5 if t < 3.0 else 0.2
     pplane(c, 590, 1100, 0.75, "pl1", rot=turn)
 
 
 def h04(c, t):
-    """她也折了一只送回去；另一只从远处滑来，两只在线中间擦身而过。"""
-    send = ease_io(prog(t, 0.6, 2.6))
-    back = ease_io(prog(t, 0.9, 2.6))
-    window_scene(c, t, far_ghost=1.0, girl=lambda: _her_back(c, cup=True))
+    """她也折了一只飞回去；另一只从远处飞来，两只在半空擦身而过。"""
+    send = ease_io(prog(t, 0.6, 2.8))
+    back = ease_io(prog(t, 0.9, 2.8))
+    raise_ = math.sin(clamp(prog(t, 0.2, 0.8)) * math.pi)
+    window_scene(c, t, far_ghost=1.0, girl=lambda: _her_back(c, plane=send <= 0, arm_up=raise_))
     pplane(c, 720, 1222, 0.7, "pl1")                               # ta 的那只留在窗台上
-    if send < 1:
-        px, py = thread_pt(CUP_N, F_WIN, 20, send)
-        pplane(c, px, py - 6, lerp(0.7, 0.12, send), "pl2", rot=-0.2, col=hexc("dfe8f2"))
+    if 0 < send < 1:
+        x, y, sc, rot = fly_pt(send)
+        pplane(c, x, y, sc, "pl2", rot=rot, col=hexc("dfe8f2"))
     if 0 < back < 1:
-        px, py = thread_pt(CUP_N, F_WIN, 20, 1 - back)
-        pplane(c, px, py + 4, lerp(0.12, 0.6, back), "pl3", rot=math.pi + 0.2)
+        x, y, sc, rot = fly_pt(1 - back, lift=120)
+        pplane(c, x, y + 30, sc, "pl3", rot=rot + math.pi)
 
 
 # ================================================================ 2 陪伴不一定是同行
@@ -788,10 +754,8 @@ def h16(c, t):
     k = min(int(t / 3.0), 7)
     u = t - k * 3.0
     if k == 0:                                                     # 线松了；拿起纸杯，最后没出声
-        lift = math.sin(clamp(prog(u, 0.3, 2.4)) * math.pi)
-        window_scene(c, u, sag=140, girl=lambda: _her_back(c, cup=False, arm_up=0.0), cup_in_hand=False)
-        if lift > 0.05:
-            paper_cup(c, lerp(300, 500, lift), lerp(1214, 1040, lift), 1.0, "lcup")
+        lift = 0.55 * math.sin(clamp(prog(u, 0.3, 2.4)) * math.pi)
+        window_scene(c, u, girl=lambda: _her_back(c, plane=True, arm_up=lift))
     elif k == 1:                                                   # 什么都只有一份
         room(c, u)
         shape(c, rect(80, 1000, 380, 240), hexc("8a8098"), "bed1", lw=3)
@@ -895,45 +859,49 @@ def h16(c, t):
                         glow(c, hx + 6, wy + 120, 40, COOL, 0.6)
     else:                                                          # 天边一颗很亮的星；伸手，又慢慢放下
         reach = math.sin(clamp(prog(u, 0.3, 2.5)) * math.pi)
-        window_scene(c, u, sag=140, star_a=1.0, girl=lambda: _her_back(c, cup=False, arm_up=reach), cup_in_hand=False)
+        window_scene(c, u, star_a=1.0, girl=lambda: _her_back(c, arm_up=reach))
 
 
 # ================================================================ 第 17–19 句
 def h17(c, t):
-    if t < 3.3:                                                    # 时间过去：落叶，又积了雪
-        season = prog(t, 0.0, 3.3)
-        window_scene(c, t, sag=140, leaves=clamp(season * 2), snow_on=clamp(season * 2 - 1),
-                     snowfall=clamp(season * 2 - 1), girl=lambda: _her_back(c, cup=False), cup_in_hand=False,
-                     mode="night" if season < 0.5 else "snow")
+    if t < 3.3:                                                    # 时间过去，窗台上落了叶子、积了雪；远处那扇窗灭了
+        season = prog(t, 0.0, 2.2)
+        off = 1 - ease_io(prog(t, 2.3, 0.5))
+        window_scene(c, t, leaves=clamp(season * 2), snow_on=clamp(season * 2 - 1), snowfall=clamp(season * 2 - 1),
+                     girl=lambda: _her_back(c), far_on=off, mode="night" if season < 0.5 else "snow")
         return
-    if t < 6.4:                                                    # 一阵风，线断了
+    if t < 6.4:                                                    # 最后一只纸飞机从黑暗里飞来，落在窗台上
         lt = t - 3.3
-        gale = ease_io(prog(lt, 0.0, 1.0))
-        snap = prog(lt, 0.9, 1.6)
-        window_scene(c, t, sag=140 - 60 * gale, wob=10 * gale * (snap <= 0), snowfall=1.0, gale=gale, snow_on=1 - gale,
-                     broken=snap if snap > 0 else None, girl=lambda: _her_back(c, cup=False), cup_in_hand=False, mode="snow")
+        window_scene(c, t, snow_on=1.0, snowfall=1.0, girl=lambda: _her_back(c, plane=lt > 2.2), far_on=0.0, mode="snow")
+        fu = 1 - ease_out(prog(lt, 0.2, 1.8))
+        if lt < 2.0:
+            x, y, sc, rot = fly_pt(fu, lift=120)
+            pplane(c, x, y + 20, sc, "last", rot=rot + math.pi)
+        elif lt <= 2.2:
+            pplane(c, 720, 1222, 0.7, "last")
         return
-    lt = t - 6.4                                                   # 线头的小纸条被风吹走
-    window_scene(c, t, sag=0, snowfall=1.0, gale=0.6, broken=1.0, girl=lambda: _her_back(c, cup=False),
-                 cup_in_hand=False, mode="snow")
-    fly = ease_in(prog(lt, 0.3, 2.6))
-    x = lerp(540, 980, fly) + math.sin(lt * 5) * 30 * (1 - fly)
-    y = lerp(1215, 520, fly) - math.sin(fly * math.pi) * 180
-    s = lerp(1.0, 0.35, fly)
+    lt = t - 6.4                                                   # 打开来，是一张空白的纸；一阵风，纸被吹走了
+    window_scene(c, t, snow_on=1.0, snowfall=1.0, gale=0.6, girl=lambda: _her_back(c), far_on=0.0, mode="snow")
+    fly = ease_in(prog(lt, 0.9, 2.2))
+    x = lerp(560, 980, fly) + math.sin(lt * 5) * 30 * (1 - fly)
+    y = lerp(1080, 520, fly) - math.sin(fly * math.pi) * 160
+    sc = lerp(1.0, 0.35, fly)
     c.save()
     c.translate(x, y)
-    c.rotate(lt * 4)
-    c.scale(s, s)
+    c.rotate(lt * 3 * fly)
+    c.scale(sc, sc)
     with keep():
-        shape(c, rect(-26, -16, 52, 32), PAPER, "slip", lw=2)
+        shape(c, rect(-60, -44, 120, 88), PAPER, "slip", lw=2)
+        for j in range(3):
+            line(c, [(-60 + j * 40, -44), (-60 + j * 40, 44)], f"crease{j}", 1, hexc("d8d0c0"), alpha=0.6)
     c.restore()
 
 
 def h18(c, t):
     """风雪大起来，把远处屋顶的灯一盏盏吞掉，只剩她窗口一小块光。"""
     gone = ease_io(prog(t, 0.3, 3.4))
-    window_scene(c, t, sag=0, snowfall=1.0 + gone, gale=0.4 + gone, broken=1.0, lights=1.0 - gone,
-                 girl=lambda: _her_back(c, cup=False, tilt=0.06), cup_in_hand=False, mode="snow")
+    window_scene(c, t, snow_on=1.0, snowfall=1.0 + gone, gale=0.4 + gone, lights=1.0 - gone, far_on=0.0,
+                 girl=lambda: _her_back(c, tilt=0.06), mode="snow")
     veil(c, (0.04, 0.04, 0.08), 0.35 * gone)
 
 
@@ -967,7 +935,7 @@ def h20(c, t):
 
     def her():
         girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=True, arms=[(-24, -78), (60, -110)], key="hb")
-    window_scene(c, t, mode="morning", string=False, panes=panes, girl=her)
+    window_scene(c, t, mode="morning", panes=panes, girl=her)
     spring_branch(c, t)
     pplane(c, lerp(760, 590, pick), lerp(1222, 1100, pick), 0.7, "pl1", rot=0.15 * math.sin(t * 1.5) * pick)
 
@@ -991,7 +959,7 @@ def h22(c, t):
     def her():
         girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=True,
              arms=[(-24, -78), (lerp(34, 60, min(1, throw * 3)), lerp(-110, -200, min(1, throw * 3)))], key="hb")
-    window_scene(c, t, mode="morning", string=False, panes=1 - close, girl=her)
+    window_scene(c, t, mode="morning", panes=1 - close, girl=her)
     spring_branch(c, t)
     if t < 0.6:
         pplane(c, 590, 1100, 0.75, "pl1")
