@@ -469,70 +469,63 @@ def k09(c, t):
                 circle(c, 760 + math.cos(a) * ph * 200, 1220 - math.sin(a) * ph * 160, 6, (1, 1, 1), a=1 - ph / 0.4)
 
 
-def k10(c, t):
-    """海鸟掠过船边，夕阳正好碰到海面；她没有拿出手机，只是看着。"""
-    sea_bg(c, t, dusk=1.0, horizon=900)
-    sun_y = lerp(820, 900, ease_io(prog(t, 0.0, 6.0)))
-    with keep():
-        glow(c, 540, sun_y, 420, hexc("ffb070"), 0.6)
-        c.save()
-        c.rectangle(-100, -300, W + 200, 1200)
-        c.clip()
-        circle(c, 540, sun_y, 90, hexc("ffcf80"))
-        c.restore()
-        for j in range(5):                                         # 海面上的光
-            line(c, [(540 - 80 + j * 10, 930 + j * 40), (540 + 80 - j * 10, 930 + j * 40)], f"sg{j}", 4, hexc("ffd8a0"),
-                 alpha=0.6)
-    for k in range(6):
-        x = (t * 160 + k * 70) % 1500 - 300
-        seabird(c, x, 600 + (k % 3) * 50 + 20 * math.sin(t + k), 1.0, t + k, f"sb{k}")
-    sailboat(c, 760, 1240, 1.2, "sb10", sail=1.0, rock_=0.02 * math.sin(t * 1.5))
-    girl(c, 700, 1222, 1.3, outfit="sea_white", pack=False, sit=True, legs=False, look=-0.7, mouth="smile", key="p10")
-
-
-def k11(c, t):
-    """远处的雷雨云闪了一下，小船没有掉头，浪一下下拍着船头。"""
-    flash = 1.0 if (0.9 < t % 3.2 < 1.0) else 0.0
-    boat_close(c, t, storm=0.8, look=0.7, mouth="flat")
-    with keep():
-        for k in range(5):
-            cloud(c, 300 + k * 160, 320 + (k % 2) * 40, 2.2, f"st{k}", col=hexc("4a4e5a"), a=0.9)
-        if flash:
-            line(c, [(560, 420), (520, 560), (580, 600), (530, 760)], "bolt", 4, hexc("fff6c8"))
-            veil(c, (1, 1, 1), 0.25)
-        ph = (t * 1.33) % 1                                        # 拍在船头的浪
-        if ph < 0.4:
-            for j in range(8):
-                a = j / 8 * math.pi
-                circle(c, 760 + math.cos(a) * ph * 200, 1220 - math.sin(a) * ph * 160, 6, (1, 1, 1), a=1 - ph / 0.4)
-
-
 def k12(c, t):
     """风雨过去，她把帆拉紧，船往前冲，船尾的白浪很快被海抹平。"""
     boat_close(c, t, look=0.8, mouth="laugh", speed=1.0)
 
 
 def k13(c, t):
-    """黄昏，小船靠上鹅卵石滩。石头被浪磨得圆圆的，在浪里轻轻滚动。她捡起一颗，握在手心。"""
-    sea_bg(c, t, dusk=0.8, horizon=820)
-    shape(c, [(-40, 2000), (-40, 1080), (W + 40, 1040), (W + 40, 2000)], hexc("c8bca8"), "pbeach", lw=2.4)
-    wash = 0.5 + 0.5 * math.sin(t * 1.2)
+    """太阳落进海里，她把帆一点点放下来；天黑了，月亮升起来，海面平得像一面镜子，小船停在月光里。"""
+    if t < 6.25:
+        sea_bg(c, t, dusk=1.0, horizon=900)
+        sun_y = lerp(820, 905, ease_io(prog(t, 0.0, 6.25)))
+        with keep():
+            glow(c, 540, sun_y, 420, hexc("ffb070"), 0.6)
+            c.save()
+            c.rectangle(-100, -300, W + 200, 1200)
+            c.clip()
+            circle(c, 540, sun_y, 90, hexc("ffcf80"))
+            c.restore()
+            for j in range(5):                                     # 海面上的光
+                line(c, [(540 - 80 + j * 10, 930 + j * 40), (540 + 80 - j * 10, 930 + j * 40)], f"sg{j}", 4,
+                     hexc("ffd8a0"), alpha=0.6 * (1 - prog(t, 4.0, 2.25)))
+        for k in range(3):
+            x = (t * 120 + k * 90) % 1500 - 300
+            seabird(c, x, 560 + (k % 2) * 50 + 20 * math.sin(t + k), 0.9, t + k, f"sb{k}")
+        sail = lerp(1.0, 0.2, ease_io(prog(t, 1.5, 3.5)))       # 帆一点点放下来
+        rk = 0.02 * math.sin(t * 1.5) * (1 - 0.6 * prog(t, 1.5, 3.5))
+        sailboat(c, 760, 1240, 1.2, "sb13", sail=sail, rock_=rk)
+        girl(c, 700, 1222, 1.3, outfit="sea_white", pack=False, sit=True, legs=False, look=-0.7, mouth="smile",
+             eyes_closed=t > 4.2, key="p13")
+        return
+    u = t - 6.25
+    night = ease_io(prog(u, 0.0, 2.5))
+    top = mix(hexc("e8907a"), hexc("1c2448"), night)
+    bot = mix(hexc("ffd0a0"), hexc("4a5a8a"), night)
+    vgrad(c, -200, 900, [(0, top), (1, bot)], -300, W + 300)
+    r = random.Random(31)
     with keep():
-        shape(c, [(-40, 1060), (W + 40, 1030), (W + 40, 1060 + wash * 90), (-40, 1100 + wash * 90)], (0.96, 0.97, 0.98),
-              "foam", lw=1.4, alpha=0.6)
-    r = random.Random(13)
-    for k in range(34):
-        x = r.uniform(-20, W + 20)
-        y = r.uniform(1100, 1280)
-        roll = math.sin(t * 1.2 + k) * 6 * (1 if y < 1100 + wash * 120 else 0.2)
-        rock(c, x + roll, y, r.uniform(40, 80), r.uniform(22, 40), f"pb{k}",
-             col=hexc(r.choice(["b8b0a4", "a8a49a", "c8c0b4", "9a948a"])), sharp=False, rot=roll * 0.03)
-    sailboat(c, 860, 1110, 0.9, "sb13", sail=0.0, rock_=0.03)
-    pick = ease_io(prog(t, 3.6, 1.6))
-    girl(c, 440, 1220, 1.5, outfit="sea_white", pack=True, sit=True, crouch=True, look=0.4, head_down=8 - 10 * pick,
-         mouth="smile", key="p13")
-    px, py = lerp(520, 500, pick), lerp(1230, 1170, pick)
-    rock(c, px, py, 46, 30, "mypb", col=hexc("c8c0b4"), sharp=False)
+        for k in range(30):
+            star(c, r.uniform(0, W), r.uniform(60, 760), r.uniform(1.5, 2.6), night * (0.4 + 0.3 * math.sin(u * 2 + k)))
+    shape(c, rect(-300, 900, W + 600, 1400), mix(hexc("b07a7a"), hexc("26345a"), night), "sea13", lw=2)
+    my = lerp(860, 520, ease_io(prog(u, 0.4, 5.0)))               # 月亮慢慢升起来
+    with keep():
+        glow(c, 380, my, 300, hexc("fff4d8"), 0.35 * night)
+        c.save()
+        c.rectangle(-100, -300, W + 200, 1200)
+        c.clip()
+        circle(c, 380, my, 54, mix(hexc("ffd8a0"), hexc("fff6e0"), night))
+        c.restore()
+        for j in range(9):                                         # 平静的海面上一条月光
+            y = 930 + j * 34
+            hw = 30 + j * 12 + 6 * math.sin(u * 1.4 + j)
+            line(c, [(380 - hw, y), (380 + hw, y)], f"mp{j}", 3, hexc("fff0c8"), alpha=0.55 * night * (1 - j / 12))
+        for j in range(3):                                         # 几乎不动的浪
+            yy = 1120 + j * 160
+            line(c, [(-40, yy), (W + 40, yy + 4)], f"cw{j}", 1.6, (1, 1, 1), alpha=0.18)
+    sailboat(c, 640, 1200, 0.5, "sb13n", sail=0.2, rock_=0.01 * math.sin(u))
+    girl(c, 615, 1193, 0.54, outfit="sea_white", pack=False, sit=True, legs=False, look=-0.6, eyes_closed=True,
+         mouth="smile", key="p13n")
 
 
 # ================================================================ 14 退出纸外，一页页往回翻
@@ -563,7 +556,7 @@ def _imp(mod, fn):
 
 
 STILL_SPECS = {
-    "sea": (lambda: k13, 3.0), "plain": (lambda: k07, 2.0), "plateau": (lambda: k04, 8.0),
+    "sea": (lambda: k13, 2.0), "plain": (lambda: k07, 2.0), "plateau": (lambda: k04, 8.0),
     "ch7": (_imp("scenes07", "h03"), 1.0), "ch6": (_imp("scenes06", "g09"), 6.0), "ch5": (_imp("scenes05", "f06"), 6.0),
     "ch4": (_imp("scenes04", "e02"), 3.0), "ch3": (_imp("scenes03w", "kitchen_wide"), 2.0),
     "ch2": (_imp("scenes02", "c11_platform"), 2.0), "ch1": (_imp("scenes_v2", "s14_door"), 3.0),

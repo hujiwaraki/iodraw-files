@@ -1059,13 +1059,25 @@ def long_road(c, t, lamps_on):
 
 
 def g15(c, t):
-    """接着回家的路，镜头慢慢升高拉远：路变得很长，她变成路上一个小小的身影，不紧不慢地往前走，没有回头。"""
+    """接着回家的路，镜头慢慢升高拉远：路变得很长，她变成路上一个小小的身影，不紧不慢地往前走。
+    后来她停下来，一颗流星从头顶划过——就是这一个瞬间。"""
     rise = ease_io(prog(t, 1.2, 5.6))
     with cam(c, 540, 960, 1.0, ty=rise * 150):
         VY = long_road(c, t, t * 2.2)
         z = lerp(3.0, 7.0, prog(t, 0.0, 7.0))
         x, y, sc = 540 + 70 / z, VY + 1100 / z, 3.6 / z
-        girl(c, x, y, sc, view="back", hat=True, walk=t * 6, key="g15")
+        girl(c, x, y, sc, view="back", hat=True, walk=min(t, 7.6) * 6, key="g15")
+        mt = prog(t, 8.6, 1.1)                                     # 她停下来的那一刻，一颗流星划过
+        if 0 < mt < 1:
+            with keep():
+                hx, hy = lerp(1000, 360, mt), lerp(-120, 200, mt)
+                fade = math.sin(mt * math.pi)
+                for j in range(12):                                # 越往后越淡的尾巴
+                    f0, f1 = j / 12, (j + 1) / 12
+                    line(c, [(hx + 260 * f0, hy - 130 * f0), (hx + 260 * f1, hy - 130 * f1)], f"mt{j}",
+                         max(1.0, 7 * (1 - f0)), hexc("fff6d8"), alpha=(1 - f0) * fade)
+                circle(c, hx, hy, 6, hexc("fffaf0"), a=fade)
+                glow(c, hx, hy, 70, hexc("fff6d8"), 0.5 * math.sin(mt * math.pi))
         with keep():                                               # 一袋菜
             bx, by = x + 36 * sc, y - 72 * sc
             shape(c, [(bx - 16 * sc, by), (bx + 16 * sc, by), (bx + 20 * sc, by + 38 * sc), (bx - 20 * sc, by + 38 * sc)],
