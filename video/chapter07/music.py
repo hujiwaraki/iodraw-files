@@ -181,10 +181,11 @@ P(knock(), 147.4, 0.08)                                              # 推开窗
 for i, ch in enumerate(["F", "C"]):
     bar(147.75 + i * BAR, ch, 0.15)
 P(pad(CH["F"] + [72], 6.0, att=2.0, rel=2.0, bright=1.2), 147.5, 0.14)
-P(snap(), 154.5, 0.1)                                                # 碰杯
-P(music_box(103, 0.8), 154.5, 0.12)
-P(thump(), 158.25, 0.15)                                             # 拉上去
-P(hum(3.0, 0.05), 159.5, 1.0)
+for k, (t0, ms) in enumerate(((153.75, (88, 91, 96)), (156.75, (86, 89, 93)))):   # 一只只纸飞机飞进来又飞走
+    P(swish(0.8), t0 + 0.2, 0.12, -0.4 + k * 0.8)
+    for j, m in enumerate(ms):
+        P(music_box(m, 1.4), t0 + 0.375 + j * 0.375, 0.08, -0.3 + k * 0.6)
+P(music_box(84, 2.4), 160.125, 0.1)                                  # 她把 ta 那只举起来
 for i, ch in enumerate(["F", "Dm", "Bb"]):
     bar(153.75 + i * BAR, ch, 0.14)
 melody(162.75, THEME_MAJ, B * 0.75, "piano", 0.3, shift=-12)         # 送走纸飞机

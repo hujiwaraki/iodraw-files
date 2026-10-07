@@ -941,14 +941,35 @@ def h20(c, t):
 
 
 def h21(c, t):
+    """春天的窗口：几只淡淡颜色的纸飞机轻轻飞进来，绕着她转一圈，又飞走了；最后她把 ta 那只举起来对着天。"""
     k = min(int(t / 3.0), 2)
     u = t - k * 3.0
-    if k == 0:
-        bar_scene(c, u + 0.2)
-    elif k == 1:
-        plateau(c, u)
-    else:
-        cabin(c, u, ghost_a=0.0, mouth="smile")
+    hold = k == 2
+    lift = ease_io(prog(u, 0.2, 0.9)) if hold else 0.0
+
+    def her():
+        if hold:
+            _her_back(c, plane=True, arm_up=lift, hat=True)
+        else:
+            girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=True, look=0.6 * math.sin(u * 1.4),
+                 key="hb")
+    window_scene(c, t, mode="morning", panes=1.0, girl=her)
+    spring_branch(c, t)
+    if not hold:
+        f = prog(u, 0.1, 2.8)
+        if 0 < f < 1:
+            a = f * 2 * math.pi
+            if k == 0:                                             # 从左边飞进来，绕一圈，往右飞走
+                x = lerp(120, 1000, f) + math.sin(a) * 140
+                y = 820 - math.sin(f * math.pi) * 120 + math.cos(a) * 90
+                col = hexc("8cc4c4")
+            else:                                                  # 从右边飞进来，绕一圈，往上飞走
+                x = lerp(980, 420, f) - math.sin(a) * 140
+                y = lerp(1000, 380, f) + math.cos(a) * 80
+                col = hexc("e8a890")
+            dx = (lerp(120, 1000, f + 0.01) if k == 0 else lerp(980, 420, f + 0.01)) - (lerp(120, 1000, f) if k == 0 else lerp(980, 420, f))
+            rot = 0.0 if k == 0 else math.pi + 0.3
+            pplane(c, x, y, 1.0, f"vis{k}", rot=rot + 0.4 * math.sin(a), col=col)
 
 
 def h22(c, t):
