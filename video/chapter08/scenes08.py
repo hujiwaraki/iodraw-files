@@ -369,8 +369,8 @@ def sea_bg(c, t, dusk=0.0, storm=0.0, horizon=900):
 
 
 def k08(c, t):
-    k = min(int(t / 3.125), 3)
-    u = t - k * 3.125
+    k = min(int(t / 3.1), 4)
+    u = t - k * 3.1
     if k == 0:                                                     # 大河流进海里
         vgrad(c, 0, 900, [(0, hexc("8fc4ea")), (1, hexc("f2f0e4"))])
         shape(c, rect(-40, 880, W + 80, 1100), SEA_A, "sea8", lw=2)
@@ -403,7 +403,7 @@ def k08(c, t):
         with keep():
             line(c, [(520, 1190), (lerp(660, 600, untie), lerp(1250, 1300, untie))], "rope", 3, hexc("c8b088"))
         girl(c, 700, 1240, 1.4, outfit="sea_white", pack=True, look=-0.6, arms=[(-40, -60), (24, -78)], key="p8")
-    else:                                                          # 扬帆出海
+    elif k == 3:                                                   # 扬帆出海
         sea_bg(c, u)
         go = ease_in(prog(u, 0.0, 3.1))
         x = lerp(560, 760, go)
@@ -411,18 +411,27 @@ def k08(c, t):
         s = lerp(1.0, 0.5, go)
         sailboat(c, x, y, s, "sb", rock_=0.03 * math.sin(u * 2))
         girl(c, x - 40 * s, y - 14 * s, 1.3 * s, outfit="sea_white", pack=False, sit=True, legs=False, look=0.5, key="p8s")
+    else:                                                          # 一场未知而远大的冒险：一望无际的海，远处的云
+        sea_bg(c, u, horizon=980)
+        for j in range(4):
+            cloud(c, 120 + j * 280 + u * 20, 760 + (j % 2) * 60, 2.0, f"fc{j}", a=0.9)
+        with keep():
+            glow(c, 900, 900, 380, hexc("fff0c8"), 0.4)
+        go = prog(u, 0.0, 3.1)
+        x, y = lerp(420, 640, go), lerp(1180, 1060, go)
+        sailboat(c, x, y, lerp(0.55, 0.35, go), "sbfar", rock_=0.03 * math.sin(u * 2))
 
 
-def boat_close(c, t, dusk=0.0, storm=0.0, look=0.5, eyes=False, mouth="smile", speed=0.0, lean=0.0):
+def boat_close(c, t, dusk=0.0, storm=0.0, look=0.5, eyes=False, mouth="smile", speed=0.0, lean=0.0, balance=0.0):
     sea_bg(c, t, dusk=dusk, storm=storm, horizon=860)
-    rock_ = 0.04 * math.sin(t * 1.6) * (1 + storm)
+    rock_ = 0.04 * math.sin(t * 1.6) * (1 + 3 * storm)
     bx = 540
     sailboat(c, bx, 1240, 1.6, "bc", sail=1.0, rock_=rock_)
     c.save()
     c.translate(bx, 1240)
     c.rotate(rock_)
     girl(c, -90 + lean, -20, 1.5, outfit="sea_white", pack=False, sit=True, legs=False, look=look, eyes_closed=eyes,
-         mouth=mouth, tilt=0.12 if eyes else 0.0, key="bcg")
+         mouth=mouth, tilt=(0.12 if eyes else 0.0) - rock_ * balance, key="bcg")
     c.restore()
     if speed > 0:                                                  # 船尾拖出的白浪
         with keep():
@@ -433,10 +442,31 @@ def boat_close(c, t, dusk=0.0, storm=0.0, look=0.5, eyes=False, mouth="smile", s
 
 
 def k09(c, t):
-    """海上没有路。小船随浪轻轻摇，她靠在船舷上，闭着眼，脸被太阳晒得暖暖的。"""
+    """心安或许并不是一种生存状态（平静的海上，闭着眼）；而是在不断的动荡和摇摆中，保持自我的平衡（风雨里，船摇得很厉害，她稳稳地坐正）。"""
+    if t < 3.17:
+        with keep():
+            glow(c, 540, 400, 600, hexc("ffe8b0"), 0.3)
+        boat_close(c, t, eyes=True, mouth="smile", lean=-10)
+        return
+    lt = t - 3.17
+    storm = ease_io(prog(lt, 0.0, 0.8))
+    boat_close(c, t, storm=storm, look=0.7, mouth="flat", balance=1.0)
     with keep():
-        glow(c, 540, 400, 600, hexc("ffe8b0"), 0.3)
-    boat_close(c, t, eyes=True, mouth="smile", lean=-10)
+        for k in range(5):
+            cloud(c, 300 + k * 160, 320 + (k % 2) * 40, 2.2, f"st{k}", col=hexc("4a4e5a"), a=0.9 * storm)
+        if 1.2 < lt % 3.2 < 1.3:
+            line(c, [(560, 420), (520, 560), (580, 600), (530, 760)], "bolt", 4, hexc("fff6c8"))
+            veil(c, (1, 1, 1), 0.25)
+        rs = random.Random(9)
+        for k in range(50):                                        # 斜斜的雨
+            x = (rs.uniform(0, W + 300) - lt * 500) % (W + 300)
+            y = (rs.uniform(0, 1700) + lt * 1300) % 1700
+            line(c, [(x, y), (x - 12, y + 34)], f"rn{k}", 1.6, hexc("c8d4e0"), alpha=0.5 * storm)
+        ph = (lt * 1.33) % 1                                       # 拍在船头的浪
+        if ph < 0.4:
+            for k in range(8):
+                a = k / 8 * math.pi
+                circle(c, 760 + math.cos(a) * ph * 200, 1220 - math.sin(a) * ph * 160, 6, (1, 1, 1), a=1 - ph / 0.4)
 
 
 def k10(c, t):
