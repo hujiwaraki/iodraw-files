@@ -60,18 +60,56 @@ def breath(c, x, y, t, key, period=0.75):
         shape(c, ell(x + ph * 30, y - ph * 30, 10 + ph * 18, 8 + ph * 10, 10), (1, 1, 1), key, lw=0.8, alpha=0.75 * (1 - ph))
 
 
-def sailboat(c, x, y, s, key, sail=1.0, rock_=0.0):
+def sailboat(c, x, y, s, key, sail=1.0, rock_=0.0, rider=None, oar=False, wake=0.0, t=0.0):
+    """一条够大的帆船：木头船身、主帆和前帆。rider 是站在船尾的她（girl 的参数），oar 让她握着一支插进水里的船桨。"""
     c.save()
     c.translate(x, y)
     c.rotate(rock_)
     c.scale(s, s)
+    wood = hexc("b8683e")
     with keep():
+        if wake > 0:                                               # 船尾翻起的白色泡沫
+            for j in range(6):
+                ph = (t * 1.2 * wake + j / 6) % 1
+                ex = -330 - ph * 420
+                circle(c, ex, 30 + 14 * math.sin(j * 2.1), 26 * (1 - ph) + 8, (1, 1, 1), a=0.8 * (1 - ph))
+                circle(c, ex - 30, 46 + 10 * math.cos(j), 16 * (1 - ph) + 6, (1, 1, 1), a=0.6 * (1 - ph))
+            for j in range(4):
+                ph = (t * 2.0 + j / 4) % 1
+                circle(c, 330 + ph * 60, -20 - ph * 50 + ph * ph * 80, 10 * (1 - ph) + 3, (1, 1, 1), a=1 - ph)
         if sail > 0:
-            line(c, [(0, -10), (0, -260)], key + "m", 4, hexc("6a4a32"))
-            shape(c, [(4, -250), (4, -20), (4 + 150 * sail, -30)], (0.98, 0.97, 0.94), key + "s", lw=2.4)
-        shape(c, [(-130, -12), (140, -12), (100, 34), (-100, 34)], hexc("c96f4a"), key + "h", lw=2.6)
-        line(c, [(-124, 0), (134, 0)], key + "st", 2, hexc("f4e6d0"))
+            line(c, [(40, -40), (40, -640)], key + "m", 7, hexc("6a4a32"))
+            shape(c, [(52, -620), (52, -90), (52 + 260 * sail, -100)], (0.98, 0.97, 0.94), key + "s", lw=2.6)
+            shape(c, [(30, -580), (30 - 0 * sail, -110), (30 - 200 * sail, -110)], (0.95, 0.93, 0.88), key + "j", lw=2.4)
+            line(c, [(40, -640), (330, -70)], key + "fs", 1.6, hexc("6a4a32"))
+    if rider is not None:
+        rk = dict(rider)
+        gs = rk.pop("scale", 0.8)
+        if oar:                                                    # 两只手一上一下握着桨
+            rk.setdefault("arms", [(-30, -70), (10, -100)])
+        girl(c, -200, -40, gs, **rk)
+    shape(c, [(-330, -46), (300, -54), (350, -90), (300, 30), (-270, 44)], wood, key + "h", lw=3)
+    with keep():
+        for j, yy in enumerate((-20, 6)):                          # 船板
+            line(c, [(-310, yy - 2), (310, yy - 8)], key + f"pl{j}", 2, hexc("7a4426"), alpha=0.8)
+        line(c, [(-326, -44), (304, -52)], key + "rl", 5, hexc("f4e6d0"))
+    if rider is not None and oar:                                  # 船桨：握在手里，桨叶插进水里
+        h2 = (-200 + 10 * gs, -40 - 100 * gs)
+        dx, dy = -40.0, 30.0                                       # 沿着两只手的方向
+        k_ = (70 - h2[1]) / dy
+        bx, by = h2[0] + dx * k_, h2[1] + dy * k_
+        with keep():
+            line(c, [(h2[0] - dx * 0.9 * gs, h2[1] - dy * 0.9 * gs), (bx, by)], key + "oar", 7, hexc("8a5a32"))
+            c.save()
+            c.translate(bx, by)
+            c.rotate(math.atan2(dy, dx) - math.pi / 2)
+            shape(c, ell(0, 30, 18, 44, 14), hexc("8a5a32"), key + "blade", lw=2)
+            c.restore()
     c.restore()
+
+
+def ship_rider(look=0.5, eyes=False, mouth="smile", tilt=0.0, scale=0.8, key="rd"):
+    return dict(scale=scale, outfit="sea_white", pack=False, look=look, eyes_closed=eyes, mouth=mouth, tilt=tilt, key=key)
 
 
 def seabird(c, x, y, s, t, key):
@@ -242,31 +280,72 @@ def cairn(c, n, key="cn"):
         y -= h_ * 0.86
 
 
+def _flood_edge(x, t, base, amp):
+    return base + amp * math.sin(x * 0.012 - t * 3.0) + amp * 0.5 * math.sin(x * 0.031 - t * 5.0)
+
+
 def k04(c, t):
-    """把有棱有角的石头一块块垒起来；雪水冲下来，绕过石堆流走了，石堆一动不动。"""
+    """把有棱有角的石头一块块垒起来；山上的雪水汇成一股洪流，翻着白浪从左边冲过来，撞在石堆上溅起水花，
+    从两边分开流走了。石堆一动不动，她站在石堆后面那一小块干地上。"""
+    flood = ease_io(prog(t, 6.3, 1.2))
     plateau_sky(c, warm=0.2)
+    if flood > 0:
+        with keep():
+            for k in range(4):
+                cloud(c, 120 + k * 200, 300 + (k % 2) * 40, 2.0, f"fc4{k}", col=hexc("8a96a8"), a=0.7 * flood)
     mountain(c, 260, 1000, 700, 600, hexc("c8d4e4"), "pk4")
     shape(c, rect(-40, 990, W + 80, 1000), hexc("a89a88"), "pl4", lw=3)
-    flood = ease_io(prog(t, 6.3, 1.4))
-    if flood > 0:                                                  # 雪水汇成急流
+    if flood > 0:
+        xs = list(range(-60, W + 80, 40))
+        top = [(x, _flood_edge(x, t, lerp(1250, 1090, flood), 22 * flood)) for x in xs]
+        bot = [(x, _flood_edge(x, t + 1.3, lerp(1260, 1520, flood), 26 * flood)) for x in reversed(xs)]
+        shape(c, top + bot, hexc("5a8ab8"), "flood", lw=2.4, alpha=0.95)
         with keep():
-            pts_l = [(lerp(-40, 380, k / 10), lerp(1000, 1500, k / 10)) for k in range(11)]
-            band = [(x - 120 * flood, y) for x, y in pts_l] + [(x + 140 * flood, y) for x, y in reversed(pts_l)]
-            shape(c, band, hexc("8ab8d8"), "flood", lw=2, alpha=0.9)
-            for j in range(7):
-                ph = (t * 1.6 + j / 7) % 1
-                x, y = lerp(-40, 380, ph), lerp(1000, 1500, ph)
-                line(c, [(x - 40, y), (x, y + 10), (x + 40, y)], f"fl{j}", 2.4, (1, 1, 1), alpha=0.7 * flood)
-            for j in range(5):                                     # 水从石堆两边分开流过去
-                ph = (t * 1.3 + j / 5) % 1
-                line(c, [(560, 1180 + ph * 60), (600, 1240 + ph * 40)], f"sp{j}", 2, (1, 1, 1), alpha=0.6 * flood)
+            for j in range(10):                                    # 深色的水流
+                ph = (t * 0.9 + j * 0.13) % 1
+                y = lerp(1120, 1480, (j * 0.37) % 1)
+                x = lerp(-200, W + 200, ph)
+                line(c, [(x - 160, y + 8), (x, y), (x + 160, y + 10)], f"dk{j}", 5, hexc("3e6a98"), alpha=0.6 * flood)
+            dry = [(612, 1240), (748, 1240), (1000, 1300), (980, 1340), (700, 1330)]  # 石堆挡出来的一小块干地
+            shape(c, dry, hexc("a89a88"), "dry4", lw=2, alpha=flood)
+            for j in range(14):                                    # 翻滚的白浪
+                ph = (t * 0.55 + j / 14) % 1
+                y = lerp(1110, 1470, (j * 0.61) % 1)
+                x = lerp(-150, W + 150, ph)
+                if 560 < x < 1000 and 1230 < y < 1345:
+                    continue
+                r_ = 34 + 14 * ((j * 7) % 3)
+                c.set_source_rgba(1, 1, 1, 0.85 * flood)
+                c.set_line_width(4)
+                c.arc(x, y, r_, math.pi * 1.05, math.pi * 1.9)
+                c.stroke()
+                c.arc(x + r_ * 0.55, y - r_ * 0.5, r_ * 0.35, math.pi * 1.3, math.pi * 2.6)
+                c.stroke()
+            rs = random.Random(4)
+            for j in range(5):                                     # 被冲走的石块
+                ph = (t * 0.45 + j / 5) % 1
+                x = lerp(-120, W + 120, ph)
+                y = lerp(1150, 1450, rs.random()) + 10 * math.sin(t * 4 + j)
+                if 560 < x < 1000 and 1220 < y < 1350:
+                    continue
+                rock(c, x, y, 40, 26, f"fr{j}", col=hexc("8a8478"), sharp=True, rot=t * 2 + j)
     n = 1 + int(prog(t, 0.2, 5.2) * 7)
     cairn(c, n)
-    if t < 5.8:
+    if flood > 0:                                                  # 撞在石堆上溅起来的水花
+        with keep():
+            for j in range(16):
+                ph = (t * 1.6 + j / 16) % 1
+                a_ = math.pi * (0.55 + 0.6 * (j / 16))
+                d = ph * 170
+                circle(c, 600 + math.cos(a_) * d, 1210 - math.sin(a_) * d * 1.2 + ph * ph * 120, 7 * (1 - ph) + 2,
+                       (1, 1, 1), a=(1 - ph) * flood)
+    if t < 5.6:
         girl(c, 470, 1220, 1.5, outfit="snow", pack=True, sit=True, crouch=True, look=0.7, head_down=6, mouth="flat",
              key="p4")
     else:
-        girl(c, 440, 1250, 1.5, outfit="snow", pack=True, look=0.6, mouth="flat", key="p4")
+        go = ease_io(prog(t, 5.6, 0.9))
+        girl(c, lerp(470, 820, go), lerp(1250, 1300, go), 1.5, outfit="snow", pack=True, look=-0.6, mouth="flat",
+             walk=t * 6 if go < 1 else 0, key="p4")
 
 
 # ================================================================ 5–7 平原
@@ -449,7 +528,7 @@ def k08(c, t):
         sea_bg(c, u)
         shape(c, [(-40, 1700), (-40, 1100), (200, 1020), (520, 1000), (720, 1060), (900, 1180), (1120, 1220), (1120, 1700)],
               hexc("e8d8b0"), "isl", lw=2.4)
-        sailboat(c, 860, 1180, 0.8, "fb", sail=0.0)
+        sailboat(c, 830, 1170, 0.4, "fb", sail=0.0)
         for i, (x, col) in enumerate(((300, "4f8a8a"), (480, "c98d72"))):
             local(c, x, 1200, 1.3, f"isl{i}", hexc(col), hexc("2f2a28"), "short", look=0.6 - i, walk=u * 4 + i,
                   arms=[(-26, -150), (26, -150)])
@@ -463,19 +542,20 @@ def k08(c, t):
         for x in (60, 300, 520):
             line(c, [(x, 1240), (x, 1400)], f"pp{x}", 8, hexc("6a4a32"))
         sail = ease_io(prog(u, 1.2, 1.4))
-        sailboat(c, 780, 1260, 1.0, "sb", sail=sail, rock_=0.03 * math.sin(u * 2))
         untie = ease_io(prog(u, 0.2, 0.8))
-        with keep():
-            line(c, [(520, 1190), (lerp(660, 600, untie), lerp(1250, 1300, untie))], "rope", 3, hexc("c8b088"))
-        girl(c, 700, 1240, 1.4, outfit="sea_white", pack=True, look=-0.6, arms=[(-40, -60), (24, -78)], key="p8")
+        sailboat(c, 800, 1290, 0.85, "sb", sail=sail, rock_=0.02 * math.sin(u * 2),
+                 rider=ship_rider(look=-0.6, scale=0.85, key="p8r"))
+        with keep():                                               # 缆绳解开，落进水里
+            line(c, [(520, 1190), (lerp(530, 560, untie), lerp(1270, 1330, untie)), (lerp(530, 600, untie), lerp(1260, 1360, untie))],
+                 "rope", 3, hexc("c8b088"))
     elif k == 3:                                                   # 扬帆出海
         sea_bg(c, u)
         go = ease_in(prog(u, 0.0, 3.1))
         x = lerp(560, 760, go)
-        y = lerp(1240, 1000, go)
-        s = lerp(1.0, 0.5, go)
-        sailboat(c, x, y, s, "sb", rock_=0.03 * math.sin(u * 2))
-        girl(c, x - 40 * s, y - 14 * s, 1.3 * s, outfit="sea_white", pack=False, sit=True, legs=False, look=0.5, key="p8s")
+        y = lerp(1300, 1040, go)
+        s = lerp(0.95, 0.5, go)
+        sailboat(c, x, y, s, "sb", rock_=0.03 * math.sin(u * 2), rider=ship_rider(look=0.5, scale=0.85, key="p8s"),
+                 oar=True, wake=0.6, t=u)
     else:                                                          # 一场未知而远大的冒险：一望无际的海，远处的云
         sea_bg(c, u, horizon=980)
         for j in range(4):
@@ -484,26 +564,17 @@ def k08(c, t):
             glow(c, 900, 900, 380, hexc("fff0c8"), 0.4)
         go = prog(u, 0.0, 3.1)
         x, y = lerp(420, 640, go), lerp(1180, 1060, go)
-        sailboat(c, x, y, lerp(0.55, 0.35, go), "sbfar", rock_=0.03 * math.sin(u * 2))
+        sailboat(c, x, y, lerp(0.42, 0.28, go), "sbfar", rock_=0.03 * math.sin(u * 2), rider=ship_rider(scale=0.85, key="pfar"))
 
 
 def boat_close(c, t, dusk=0.0, storm=0.0, look=0.5, eyes=False, mouth="smile", speed=0.0, lean=0.0, balance=0.0):
+    """近一点看那条大船：她小小地站在船尾，握着船桨。"""
     sea_bg(c, t, dusk=dusk, storm=storm, horizon=860)
     rock_ = 0.04 * math.sin(t * 1.6) * (1 + 3 * storm)
-    bx = 540
-    sailboat(c, bx, 1240, 1.6, "bc", sail=1.0, rock_=rock_)
-    c.save()
-    c.translate(bx, 1240)
-    c.rotate(rock_)
-    girl(c, -90 + lean, -20, 1.5, outfit="sea_white", pack=False, sit=True, legs=False, look=look, eyes_closed=eyes,
-         mouth=mouth, tilt=(0.12 if eyes else 0.0) - rock_ * balance, key="bcg")
-    c.restore()
-    if speed > 0:                                                  # 船尾拖出的白浪
-        with keep():
-            for j in range(4):
-                xx = bx - 260 - j * 120 - (t * 400 * speed) % 120
-                line(c, [(xx, 1270 + j * 6), (xx - 120, 1262 + j * 10)], f"wk{j}", 4 - j * 0.6, (1, 1, 1),
-                     alpha=0.7 * (1 - j / 4))
+    tilt = (0.1 if eyes else 0.0) - rock_ * balance
+    sailboat(c, 620, 1190, 1.15, "bc", sail=1.0, rock_=rock_,
+             rider=ship_rider(look=look, eyes=eyes, mouth=mouth, tilt=tilt, scale=0.85, key="bcg"),
+             oar=True, wake=speed, t=t)
 
 
 def k09(c, t):
@@ -531,7 +602,7 @@ def k09(c, t):
         if ph < 0.4:
             for k in range(8):
                 a = k / 8 * math.pi
-                circle(c, 760 + math.cos(a) * ph * 200, 1220 - math.sin(a) * ph * 160, 6, (1, 1, 1), a=1 - ph / 0.4)
+                circle(c, 1010 + math.cos(a) * ph * 200, 1110 - math.sin(a) * ph * 160, 7, (1, 1, 1), a=1 - ph / 0.4)
 
 
 def k12(c, t):
@@ -588,9 +659,8 @@ def k13(c, t):
         for j in range(3):                                         # 几乎不动的浪
             yy = 1120 + j * 160
             line(c, [(-40, yy), (W + 40, yy + 4)], f"cw{j}", 1.6, (1, 1, 1), alpha=0.18)
-    sailboat(c, 640, 1200, 0.5, "sb13n", sail=0.2, rock_=0.01 * math.sin(u))
-    girl(c, 615, 1193, 0.54, outfit="sea_white", pack=False, sit=True, legs=False, look=-0.6, eyes_closed=True,
-         mouth="smile", key="p13n")
+    sailboat(c, 640, 1200, 0.42, "sb13n", sail=0.6, rock_=0.01 * math.sin(u),
+             rider=ship_rider(look=-0.6, eyes=True, scale=0.85, key="p13n"))
 
 
 
