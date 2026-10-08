@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, bass, cello, kick, knock, music_box, pad, piano, pluck, rumble, scratch, shaker, snap,  # noqa: E402
                    swell, swish, thump, tick, _t)
 
-DUR = 146.5
+DUR = 165.0
 M = Mix(DUR)
 B = 0.75
 BAR = 3.0
@@ -38,8 +38,22 @@ def warp2(t):
     return t if t < 44.0 else t + 2.5
 
 
+def warp3(t):
+    """第十九稿：平原加一屏（+3 秒），月光后面加“成长”那一段（再 +15.5 秒）。"""
+    if t < 73.0:
+        return t
+    if t < 115.5:
+        return t + 3.0
+    return t + 18.5
+
+
 def P(sig, t, vol=1.0, pan=0.0):
-    M.place(sig, warp2(warp(t) if WARP[0] else t), vol, pan)
+    M.place(sig, warp3(warp2(warp(t) if WARP[0] else t)), vol, pan)
+
+
+def Q(sig, t, vol=1.0, pan=0.0):
+    """直接按最终时间轴放。"""
+    M.place(sig, t, vol, pan)
 
 
 THEME_MAJ = [(0, 81, 1), (1, 84, .5), (1.5, 81, .5), (2, 79, 1), (3, 77, 1), (4, 76, 1.5), (5.5, 77, .5), (6, 79, 2)]
@@ -206,12 +220,29 @@ P(pad(CH["F"], 4.0, att=1.0, rel=2.0), 129.4, 0.35)
 for i, m in enumerate((65, 69, 72, 77)):
     P(music_box(m, 3.5), 132.8 + i * 0.07, 0.24, pan=-0.3 + i * 0.2)
 
+# ================================================================ 第十九稿新加的两段（最终时间轴）
+Q(pad(CH["F"] + [CH["F"][0] + 12], 3.0, att=1.0, rel=1.5, bright=1.1), 73.0, 0.16)   # 所谓人间，就是在人之间
+for j, k in enumerate((0, 1, 2, 1)):
+    Q(pluck(ARP["F"][k] + 12, length=1.4, bright=0.2), 73.0 + j * B, 0.1, 0.15)
+
+for i, ch in enumerate(["Dm", "Bb", "Dm", "C"]):                    # 爬坡：低沉、一下一下的
+    Q(cello(ROOT[ch] + 12, 3.0, att=0.6), 118.5 + i * 3.1, 0.3)
+    Q(pad(CH[ch], 3.1, att=1.0, rel=1.4, bright=0.8), 118.5 + i * 3.1, 0.1)
+for k in range(16):                                                  # 重锤：一下一下凿
+    Q(kick(0.5), 118.5 + k * 0.775, 0.1 if k % 2 == 0 else 0.05)
+for t0 in (120.8, 123.1, 127.1):                                     # 滑下来、摔一跤
+    Q(noise(0.8, 300, 2400, 0.12, 0.1), t0, 1.0, 0.2)
+Q(swell(2.0, 300, 6000), 129.3, 0.12)                                # 翻上坡顶
+for i, m in enumerate((65, 69, 72)):                                 # 又回到新手村：轻一点、带点笑
+    Q(music_box(m + 12, 1.6), 130.9 + i * 0.4, 0.1, -0.2 + i * 0.2)
+Q(pad(CH["F"] + [72], 3.4, att=1.2, rel=1.6, bright=1.2), 130.6, 0.14)
+
 # ---------------------------------------------------------------- 混音
-M.gain([(0, 0.9), (6, 1.4), (9, 1.7), (15.5, 1.6), (16, 1.1), (46.5, 1.1), (61.5, 1.2), (65.5, 1.6), (72.5, 1.5), (73.5, 1.0), (115.5, 1.1), (127.5, 1.1), (129.5, 1.6), (140, 1.4), (140.5, 0.75), (DUR + 1, 0.75)])
+M.gain([(0, 0.9), (6, 1.4), (9, 1.7), (15.5, 1.6), (16, 1.1), (46.5, 1.1), (61.5, 1.2), (65.5, 1.6), (72.5, 1.5), (76.5, 1.0), (134, 1.1), (146, 1.1), (148, 1.6), (158.5, 1.4), (159, 0.75), (DUR + 1, 0.75)])
 duck = [(0, 1), (DUR + 1, 1)]
 
 if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 140, 4)))
+                   for t in range(0, 160, 4)))

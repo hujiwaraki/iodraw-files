@@ -805,6 +805,58 @@ def k13a(c, t):
 def k13n(c, t):
     k13(c, t + 8.0)
 
+
+# ================================================================ 13c 成长是重锤凿出来的；下一座山前，又回到新手村
+CLIMB = [(0.0, 0.0), (1.6, 0.32), (2.3, 0.14), (3.9, 0.46), (4.6, 0.28), (6.2, 0.42), (8.0, 0.78), (8.6, 0.6),
+         (9.5, 0.6), (11.2, 1.0), (16.0, 1.0)]
+
+
+def _climb(t):
+    for (t0, u0), (t1, u1) in zip(CLIMB, CLIMB[1:]):
+        if t <= t1:
+            k = ease_io(prog(t, t0, t1 - t0))
+            return lerp(u0, u1, k), u1 < u0
+    return 1.0, False
+
+
+def _slope_pt(u):
+    return lerp(160, 700, u), lerp(1470, 910, u)
+
+
+def k13g(c, t):
+    """黄昏，她爬一段陡坡：滑下来，再爬，摔一跤，再爬，终于翻上坡顶，喘着气笑了。
+    最后一屏镜头拉远：坡顶后面是一整排更高、更远的山。她扶了扶草帽，又是新手。"""
+    out = ease_io(prog(t, 12.2, 2.4))
+    u, slip = _climb(t)
+    x, y = _slope_pt(u)
+    with cam(c, lerp(x + 60, 540, out), lerp(y - 160, 960, out), lerp(1.35, 1.0, out)):
+        vgrad(c, -400, 2400, [(0, hexc("e8a090")), (0.35, hexc("f6c8a0")), (1, hexc("fbe6c4"))], -500, W + 500)
+        with keep():
+            glow(c, 220, 820, 420, hexc("ffd8a0"), 0.5)
+        with group_alpha(c, out):                                  # 坡顶后面，一整排更高、更远的山
+            for k, (mx, mh, mw) in enumerate(((-120, 520, 520), (300, 600, 560), (700, 700, 600), (1080, 640, 560),
+                                              (1420, 560, 520))):
+                mountain(c, mx, 1000, mw, mh, mix(hexc("c8b4c4"), hexc("f6d4b4"), 0.3 + 0.2 * (k % 2)), f"far{k}")
+        shape(c, [(-400, 2400), (-400, 1520), (160, 1470), (700, 910), (760, 920), (1500, 1150), (1500, 2400)],
+              hexc("a88a70"), "slope", lw=3)
+        with keep():                                               # 坡上的碎石和草
+            for k in range(9):
+                px, py = _slope_pt(k / 9 + 0.04)
+                line(c, [(px - 14, py + 30), (px - 6, py + 12)], f"gr{k}", 2, hexc("6a7a50"), alpha=0.7)
+        if slip and u < 0.65 and t > 8.0:                          # 摔了一跤，坐在坡上
+            girl(c, x, y + 10, 1.2, hat=True, pack=True, sit=True, crouch=True, look=-0.4, mouth="flat", key="p13g")
+        else:
+            moving = 0.0 < t < 11.2
+            lean = 0.18 if moving and not slip else (-0.12 if slip else 0.0)
+            arms = None
+            if t > 13.0 and t < 14.4:                              # 扶了扶草帽
+                arms = [(-24, -78), (14, -168)]
+            girl(c, x, y, 1.2, hat=True, pack=True, look=0.6 if t < 11.2 else 0.2, tilt=lean,
+                 mouth="flat" if t < 11.2 else "laugh", walk=t * 6 if moving and not slip else 0, arms=arms,
+                 key="p13g")
+            if 11.0 < t < 13.5:
+                breath(c, x + 30, y - 190, t, "br13g")
+
 # ================================================================ 14 退出纸外，一页页往回翻
 _STILLS = {}
 
@@ -833,7 +885,7 @@ def _imp(mod, fn):
 
 
 STILL_SPECS = {
-    "sea": (lambda: k13, 11.0), "plain": (lambda: k07, 2.0), "plateau": (lambda: k04, 8.0),
+    "sea": (lambda: k13g, 15.4), "plain": (lambda: k07, 2.0), "plateau": (lambda: k04, 8.0),
     "ch7": (_imp("scenes07", "h03"), 1.0), "ch6": (_imp("scenes06", "g09"), 6.0), "ch5": (_imp("scenes05", "f06"), 6.0),
     "ch4": (_imp("scenes04", "e02"), 3.0), "ch3": (_imp("scenes03w", "kitchen_wide"), 2.0),
     "ch2": (_imp("scenes02", "c11_platform"), 2.0), "ch1": (_imp("scenes_v2", "s14_door"), 3.0),
