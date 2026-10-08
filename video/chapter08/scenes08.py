@@ -209,7 +209,13 @@ def k02(c, t):
 
 
 def k03(c, t):
-    """她在大风里喘着白气，仰望一座被朝阳照亮的雪峰。"""
+    """她在大风里喘着白气，仰望一座被朝阳照亮的雪峰；第三屏镜头推向雪峰锋利的山脊——高原是有棱有角的。"""
+    push = ease_io(prog(t, 6.3, 3.0))
+    with cam(c, lerp(540, 790, push), lerp(960, 560, push), lerp(1.0, 1.6, push)):
+        _k03(c, t)
+
+
+def _k03(c, t):
     plateau_sky(c, warm=0.4)
     with keep():
         glow(c, 820, 420, 360, hexc("ffd8a0"), 0.45)
@@ -314,6 +320,65 @@ def k05(c, t):
     local(c, 700, 1240, 1.4, "uncle", hexc("8a5a3a"), hexc("2f2a28"), "short", look=-0.7, mouth="smile",
           arms=[(-24, -78), (lerp(-24, -60, fix), lerp(-78, -220, fix))])
 
+
+
+def _channel(y, base, ph):
+    return base + 90 * math.sin(y * 0.004 + ph) + 36 * math.sin(y * 0.011 + ph * 2.3)
+
+
+CHANNELS = [(170, 0.0, 30), (540, 2.2, 38), (900, 4.4, 24), (360, 5.9, 12)]
+
+
+def k05m(c, t):
+    """俯瞰河口的冲积平原：泥色的土地上，水道弯弯绕绕、分了又合，乱得没有章法；
+    第二屏，水道之间一块块整整齐齐的田慢慢长出来，小房子沿着直直的田埂排开。"""
+    rise = ease_io(prog(t, 0.0, 6.0))
+    with cam(c, 540, 960, lerp(1.12, 1.0, rise)):
+        shape(c, rect(-200, -200, W + 400, H + 400), hexc("c8b08a"), "mud", lw=0, edge=False)
+        r = random.Random(55)
+        with keep():
+            for k in range(26):                                    # 深深浅浅的淤泥
+                shape(c, ell(r.uniform(-100, W + 100), r.uniform(-100, H + 100), r.uniform(60, 160), r.uniform(30, 80), 12),
+                      hexc(r.choice(["bfa47c", "d2bc96", "b89c74"])), f"md{k}", lw=0, edge=False, alpha=0.6)
+        grow = prog(t, 2.8, 2.6)                                   # 田一块块长出来
+        cells = []
+        for gy in range(-3, 22):
+            for gx in range(-2, 13):
+                x0, y0 = gx * 92 + 4, gy * 92 + 10
+                cx, cy = x0 + 42, y0 + 42
+                if any(min(abs(cx - _channel(yy, b, p)) for yy in (y0, cy, y0 + 84)) < w + 46 for b, p, w in CHANNELS):
+                    continue
+                cells.append((x0, y0, gx, gy))
+        cells.sort(key=lambda q: (q[1] - 960) ** 2 + (q[0] - 540) ** 2)
+        n = len(cells)
+        for i, (x0, y0, gx, gy) in enumerate(cells):
+            a = clamp(grow * (n + 6) / 1.0 - i * (n + 6) / n)       # 从中间往外，一块接一块
+            if a <= 0:
+                continue
+            col = hexc(["9ab86a", "c8b45a", "7aa860", "b8c070"][(gx * 3 + gy) % 4])
+            shape(c, rect(x0, y0, 84, 84), col, f"fd{gx}_{gy}", lw=1.8, alpha=a, amp=0.6)
+            with keep():
+                for j in range(3):                                 # 整齐的垄
+                    yy = y0 + 20 + j * 22
+                    line(c, [(x0 + 10, yy), (x0 + 74, yy)], f"fr{gx}_{gy}_{j}", 1.6, hexc("5a7a40"), alpha=0.5 * a)
+            if (gx * 5 + gy * 3) % 11 == 0 and a > 0.5:            # 田埂边的小房子
+                hx, hy = x0 + 70, y0 + 74
+                shape(c, rect(hx - 14, hy - 12, 28, 22), hexc("f2e6d0"), f"hs{gx}_{gy}", lw=1.6)
+                shape(c, [(hx - 18, hy - 12), (hx, hy - 28), (hx + 18, hy - 12)], hexc("b8584a"), f"hr{gx}_{gy}", lw=1.6)
+        for k, (b, p, w) in enumerate(CHANNELS):                   # 弯弯绕绕的水道
+            ys = [y for y in range(-300, H + 320, 40)]
+            left = [(_channel(y, b, p) - w, y) for y in ys]
+            right = [(_channel(y, b, p) + w, y) for y in reversed(ys)]
+            shape(c, left + right, hexc("7aaac8"), f"ch{k}", lw=2.2)
+            with keep():
+                for j in range(6):                                 # 水在流
+                    y = (t * 90 + j * 260 + k * 70) % (H + 400) - 200
+                    x = _channel(y, b, p)
+                    line(c, [(x - w * 0.4, y), (x + w * 0.2, y + 24)], f"fl{k}{j}", 2, (1, 1, 1), alpha=0.5)
+
+
+def k05h(c, t):
+    k05(c, t + 3.17)
 
 def k06(c, t):
     """河上一排村里人铺下的踏脚石，一个孩子先踩过去，回头伸手拉她，她踩着别人铺好的石头过了河。"""
