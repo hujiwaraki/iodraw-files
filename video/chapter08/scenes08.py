@@ -856,9 +856,10 @@ def k14(c, t):
             shape(c, rect(sx - bw - 14, by - 14, 2 * bw + 28, bh + 28), hexc("2f4a3c") + (1.0,), "kbk", lw=3)
             page_paper(c, sx - bw, by, bw, bh, "kpL")
             page_paper(c, sx, by, bw, bh, "kpR")
-    flips = prog(t, 3.1, 6.2) * (len(FLIP_ORDER) - 1)
-    idx = min(int(flips), len(FLIP_ORDER) - 1)
-    frac = flips - idx if idx < len(FLIP_ORDER) - 1 else 0.0
+    nsp = len(FLIP_ORDER) // 2                                     # 每一张对开：右页 P[2s]、左页 P[2s+1]，每个画面只出现一次
+    flips = prog(t, 3.1, 6.2) * (nsp - 1)
+    sp = min(int(flips), nsp - 1)
+    frac = flips - sp if sp < nsp - 1 else 0.0
     z = ease_io(prog(t, 0.0, 2.4))                                 # 镜头从纸里退出来
     pl = (sx - bw + 30, by + 40, bw - 60, bh - 80)
 
@@ -870,18 +871,19 @@ def k14(c, t):
             if z > 0.5:
                 _page_img(c, img(1), *pl)
             _page_img(c, _still("sea"), x, y, w_, h_)
-        else:                                                      # 一页一页往回翻：左页翻起来，落到右页上
-            _page_img(c, img(idx + 2) if frac > 0 else img(idx + 1), *pl)
-            _page_img(c, img(idx), *pr)
+        else:                                                      # 往回翻：左页那一张纸翻起来，落到右边，露出它背面的画
+            front, back = 2 * sp + 1, 2 * sp + 2
+            _page_img(c, img(2 * sp + 3) if frac > 0 else img(front), *pl)
+            _page_img(c, img(2 * sp), *pr)
             if frac > 0:
                 wv = math.cos(frac * math.pi)
                 with keep():
                     if wv > 0:
                         page_paper(c, sx - bw * wv, by, bw * wv, bh, "leafL")
-                        _page_img(c, img(idx + 1), sx - (bw - 30) * wv, by + 40, (bw - 60) * wv, bh - 80)
+                        _page_img(c, img(front), sx - (bw - 30) * wv, by + 40, (bw - 60) * wv, bh - 80)
                     else:
                         page_paper(c, sx, by, -bw * wv, bh, "leafR")
-                        _page_img(c, img(idx + 1), sx + 30 * -wv, by + 40, (bw - 60) * -wv, bh - 80)
+                        _page_img(c, img(back), sx + 30 * -wv, by + 40, (bw - 60) * -wv, bh - 80)
         with keep():
             line(c, [(sx, by), (sx, by + bh)], "kspine", 2, hexc("b7a888"))
     else:                                                          # 合上：正是每一章开头的那本墨绿色的书
