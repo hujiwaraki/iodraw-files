@@ -285,8 +285,8 @@ def _flood_edge(x, t, base, amp):
 
 
 def k04(c, t):
-    """把有棱有角的石头一块块垒起来；山上的雪水汇成一股洪流，翻着白浪从左边冲过来，撞在石堆上溅起水花，
-    从两边分开流走了。石堆一动不动，她站在石堆后面那一小块干地上。"""
+    """把有棱有角的石头一块块垒起来，垒完她走出画面；山上的雪水汇成一股洪流，翻着白浪从左边冲过来，
+    撞在石堆上溅起水花，从两边分开流走了。石堆一动不动。"""
     flood = ease_io(prog(t, 6.3, 1.2))
     plateau_sky(c, warm=0.2)
     if flood > 0:
@@ -342,10 +342,10 @@ def k04(c, t):
     if t < 5.6:
         girl(c, 470, 1220, 1.5, outfit="snow", pack=True, sit=True, crouch=True, look=0.7, head_down=6, mouth="flat",
              key="p4")
-    else:
-        go = ease_io(prog(t, 5.6, 0.9))
-        girl(c, lerp(470, 820, go), lerp(1250, 1300, go), 1.5, outfit="snow", pack=True, look=-0.6, mouth="flat",
-             walk=t * 6 if go < 1 else 0, key="p4")
+    elif t < 6.6:                                                  # 垒完了，她走出画面，只留下石堆
+        go = prog(t, 5.6, 1.0)
+        girl(c, lerp(470, 1220, go), lerp(1250, 1290, go), 1.5, outfit="snow", pack=True, look=0.9, mouth="flat",
+             walk=t * 6, key="p4")
 
 
 # ================================================================ 5–7 平原
@@ -652,13 +652,9 @@ def k13(c, t):
         c.clip()
         circle(c, 380, my, 54, mix(hexc("ffd8a0"), hexc("fff6e0"), night))
         c.restore()
-        for j in range(9):                                         # 平静的海面上一条月光
-            y = 930 + j * 34
-            hw = 30 + j * 12 + 6 * math.sin(u * 1.4 + j)
-            line(c, [(380 - hw, y), (380 + hw, y)], f"mp{j}", 3, hexc("fff0c8"), alpha=0.55 * night * (1 - j / 12))
-        for j in range(3):                                         # 几乎不动的浪
-            yy = 1120 + j * 160
-            line(c, [(-40, yy), (W + 40, yy + 4)], f"cw{j}", 1.6, (1, 1, 1), alpha=0.18)
+        for j in range(7):                                         # 平静的海面上一片柔柔的月光
+            y = 960 + j * 50
+            glow(c, 380 + 8 * math.sin(u * 1.2 + j), y, 70 + j * 14, hexc("fff0c8"), 0.22 * night * (1 - j / 9))
     sailboat(c, 640, 1200, 0.42, "sb13n", sail=0.6, rock_=0.01 * math.sin(u),
              rider=ship_rider(look=-0.6, eyes=True, scale=0.85, key="p13n"))
 
