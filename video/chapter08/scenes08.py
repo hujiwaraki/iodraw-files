@@ -885,7 +885,7 @@ def _imp(mod, fn):
 
 
 STILL_SPECS = {
-    "sea": (lambda: k13g, 15.4), "plain": (lambda: k07, 2.0), "plateau": (lambda: k04, 8.0),
+    "sea": (lambda: k13, 11.0), "plain": (lambda: k07, 2.0), "plateau": (lambda: k04, 8.0),
     "ch7": (_imp("scenes07", "h03"), 1.0), "ch6": (_imp("scenes06", "g09"), 6.0), "ch5": (_imp("scenes05", "f06"), 6.0),
     "ch4": (_imp("scenes04", "e02"), 3.0), "ch3": (_imp("scenes03w", "kitchen_wide"), 2.0),
     "ch2": (_imp("scenes02", "c11_platform"), 2.0), "ch1": (_imp("scenes_v2", "s14_door"), 3.0),

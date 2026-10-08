@@ -15,12 +15,22 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, bass, cello, chug, jingle, kick, knock, music_box, pad, pluck, rain, rumble,  # noqa: E402
                    scratch, shaker, snap, swell, swish, thump, tick, _t)
 
-DUR = 166.0
+DUR = 210.0
 M = Mix(DUR)
 B = 0.5                                   # 一拍（全章同一个速度：每拍 0.5 秒，一小节 4 拍 = 2 秒）
 
 
+def warp(t):
+    """第八稿在 60 秒处插进“重锤”一节（44 秒），之后的声音整体往后挪。"""
+    return t if t < 60.0 else t + 44.0
+
+
 def P(sig, t, vol=1.0, pan=0.0):
+    M.place(sig, warp(t), vol, pan)
+
+
+def Q(sig, t, vol=1.0, pan=0.0):
+    """直接按最终时间轴放。"""
     M.place(sig, t, vol, pan)
 
 
@@ -168,6 +178,38 @@ for k in range(10):
 P(pluck(64, length=2.4, bright=0.16), 57.6, 0.25)                  # 想不起来是哪里
 P(pluck(62, length=2.4, bright=0.16), 58.6, 0.2)
 
+# ================================================================ 重锤 60–104（第八稿新加，最终时间轴）
+Q(rain(18.0) * 0.5, 60.0, 1.0)                                       # 夜雨
+Q(noise(9.0, 50, 220, 0.18, 1.0), 60.0, 1.0)                        # 出租车低低的引擎声
+for i, (m_, d) in enumerate(((50, 4.5), (46, 4.5))):                 # 低低的大提琴
+    Q(cello(m_, d, att=1.0), 60.5 + i * 4.5, 0.32)
+Q(pad([38, 45, 50], 9.0, att=2.0, rel=2.0, bright=0.5), 69.0, 0.16)  # 乌云下：几乎只剩一个长音
+for j in range(3):                                                   # 路灯一盏盏熄灭
+    Q(tick(), 72.0 + j * 1.6, 0.05, -0.3 + j * 0.3)
+Q(swell(3.6, 300, 4000), 78.2, 0.1)                                  # 乌云散开，天亮了
+for j, mm in enumerate((88, 91, 88, 93)):                            # 早起的鸟
+    Q(music_box(mm, 0.6), 79.6 + j * 0.35 + (j // 2) * 0.6, 0.05, 0.4)
+for i, ch in enumerate(["Dm", "Bb", "Dm", "C"]):                     # 一路走：重锤一样的低鼓和大提琴
+    Q(cello(ROOT[ch] + 12, 2.8, att=0.4), 82.0 + i * 3.0, 0.3)
+for k in range(11):
+    Q(kick(0.5), 82.0 + k * 1.0, 0.12 if k % 2 == 0 else 0.07)
+Q(thump(), 86.05, 0.25)                                              # 被石头绊倒
+Q(noise(0.6, 300, 2400, 0.12, 0.08), 86.05, 1.0)
+for t0 in (89.15, 95.15):                                            # 踩进水坑
+    Q(noise(0.5, 800, 5000, 0.14, 0.05), t0, 1.0, 0.2)
+Q(swell(0.8, 400, 5000), 92.3, 0.12)                                 # 跳过那道沟
+for j, mm in enumerate((77, 81, 84, 89)):                            # 乌云“噗”地散掉
+    Q(music_box(mm, 1.2), 93.0 + j * 0.12, 0.08, -0.3 + j * 0.2)
+for i, ch in enumerate(["F", "C", "F"]):                             # 晴了：吉他轻快起来
+    for j, k in enumerate((0, 1, 2, 3, 2, 1, 2, 3)):
+        Q(pluck(ARP[ch][k] + 12, length=1.0, bright=0.24), 94.0 + i * 2.0 + j * 0.25, 0.11, 0.15)
+Q(swish(0.5), 97.6, 0.1)                                             # 撑开伞
+for i, ch in enumerate(["F", "C"]):
+    Q(pad(CH[ch], 2.0, att=0.6, rel=1.0, bright=1.1), 96.0 + i * 2.0, 0.16)
+Q(pad(CH["F"] + [72], 4.0, att=1.0, rel=1.5, bright=1.2), 100.0, 0.2)   # 新手村：带点自嘲的笑
+for j, mm in enumerate((72, 76, 79)):
+    Q(music_box(mm, 1.4), 101.6 + j * 0.3, 0.08, 0.2)
+
 # ================================================================ 三、变自信 60–74：同一段旋律，转成大调
 P(swell(2.4, 300, 6000), 59.6, 0.45)
 P(pad(CH["F"] + [72], 7.5, att=2.0, rel=2.0, bright=1.6), 60.0, 0.32)
@@ -292,7 +334,7 @@ for i, m in enumerate((65, 69, 72, 77)):
     P(music_box(m, 3.5), 163.8 + i * 0.07, 0.42, pan=-0.3 + i * 0.2)
 
 # ---------------------------------------------------------------- 混音
-M.gain([(0, 0.85), (6, 1.0), (41, 0.95), (60, 0.88), (67, 1.0), (106, 0.85), (150, 1.0), (160, 0.5), (DUR + 1, 0.5)])
+M.gain([(0, 0.85), (6, 1.0), (41, 0.95), (60, 0.95), (104, 0.88), (111, 1.0), (150, 0.85), (194, 1.0), (204, 0.5), (DUR + 1, 0.5)])
 M.muffle([(0, 0), (DUR + 1, 0)])
 duck = [(0, 1), (DUR + 1, 1)]
 
@@ -300,4 +342,4 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 166, 4)))
+                   for t in range(0, 210, 4)))
