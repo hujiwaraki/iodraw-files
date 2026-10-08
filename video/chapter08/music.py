@@ -164,11 +164,15 @@ for i, ch in enumerate(["F", "C"]):                                  # 永不回
 melody(86.5, THEME_MAJ, 0.5625, "cello", 0.5, shift=-12)
 for k in range(6):
     P(kick(0.5), 86.5 + k * 0.75, 0.1)
-for i, ch in enumerate(["F", "Dm", "Bb", "F"]):                      # 日落、放下帆、月亮升起来：安静下来
+for i, ch in enumerate(["F", "Dm", "Bb", "F"]):                      # 地图、月亮升起来：安静下来
     P(pad(CH[ch], 3.2, att=1.2, rel=1.6, bright=1.0), 91.5 + i * 3.125, 0.14)
-P(swish(1.2), 93.2, 0.06)                                            # 放下帆
+WARP[0] = False                                                      # 一张缩影（新时间轴 100.5–109.9）
+P(scratch(1.8), 100.7, 0.1)                                          # 铅笔画出地图
+for k in range(18):                                                  # 红线一步步走过去
+    P(tick(k % 2 == 1), 102.7 + k * 0.375, 0.025, -0.4 + (k % 5) * 0.2)
 for k, mm in enumerate((72, 76, 79, 84)):                            # 月亮升起来
-    P(music_box(mm, 2.0), 98.2 + k * 0.75, 0.07, -0.3 + k * 0.2)
+    P(music_box(mm, 2.0), 110.2 + k * 0.6, 0.07, -0.3 + k * 0.2)
+WARP[0] = True
 
 # ================================================================ 翻书 104–116.5：八音盒完整奏一遍主旋律
 melody(104.5, THEME_MAJ, B, "box", 0.28, pan=0.1)

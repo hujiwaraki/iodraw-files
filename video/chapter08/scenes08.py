@@ -593,6 +593,142 @@ def k13(c, t):
          mouth="smile", key="p13n")
 
 
+
+# ================================================================ 13a 一张缩影：从高原到海洋的地图
+KRAFT = hexc("e2ad66")
+
+
+def _river_x(y):
+    return 470 + 150 * math.sin((y - 560) * 0.0065) + 40 * math.sin(y * 0.017)
+
+
+def _coast_y(x):
+    return 1350 + 46 * math.sin(x * 0.011) + 20 * math.sin(x * 0.031 + 1)
+
+
+def _journey():
+    """她走过的路：从山口出发，绕着湖、在村子里来回、在田里打转，最后到海边上船。乱七八糟的。"""
+    way = [(250, 330), (330, 420), (240, 520), (300, 640), (420, 600), (470, 700), (700, 760), (820, 690),
+           (760, 860), (600, 900), (380, 860), (300, 980), (520, 1060), (760, 1040), (700, 1150), (420, 1120),
+           (330, 1230), (520, 1290), (600, 1240), (560, 1350), (640, 1450), (720, 1540)]
+    pts = []
+    for i in range(len(way) - 1):
+        (x0, y0), (x1, y1) = way[i], way[i + 1]
+        for k in range(12):
+            u = k / 12
+            w = math.sin((i * 12 + k) * 0.9) * 10 + math.sin((i * 12 + k) * 0.37) * 14
+            pts.append((lerp(x0, x1, u) + w, lerp(y0, y1, u) - w * 0.6))
+    pts.append(way[-1])
+    return pts
+
+
+JOURNEY = _journey()
+
+
+def map_card(c, t, draw=1.0, path=1.0):
+    """竖着的牛皮纸卡片：上面是有棱有角的山和湖，一条河弯弯地流过平原，一边挤满小房子、一边是纵横的田，最下面是海和小帆船。"""
+    table_bg(c, t)
+    x0, y0, w, h = 70, 90, W - 140, H - 300
+    with keep():
+        shape(c, rect(x0 + 10, y0 + 14, w, h), (0, 0, 0), "mshadow", lw=0, edge=False, alpha=0.25)
+    shape(c, rect(x0, y0, w, h), KRAFT, "mcard", lw=2.4, amp=0.6)
+    with keep():
+        for k in range(6):                                         # 活页孔
+            circle(c, x0 + 40, y0 + 160 + k * 260, 16, hexc("6a4a32"))
+    c.save()
+    c.rectangle(x0 + 70, y0 + 20, w - 90, h - 40)
+    c.clip()
+    r = random.Random(81)
+    ink = hexc("2e2420")
+    pencil = hexc("7a5a3a")
+    a_m, a_r, a_p, a_o = [clamp((draw - d) / 0.3) for d in (0.0, 0.2, 0.4, 0.6)]
+    with keep():
+        if a_m > 0:                                                # 有棱有角的山
+            for k in range(16):
+                mx, my = 150 + (k % 6) * 140 + r.uniform(-30, 30), 210 + (k // 6) * 130 + r.uniform(-20, 20)
+                if abs(mx - 300) < 90 and abs(my - 520) < 70:
+                    continue
+                s_ = r.uniform(0.8, 1.2)
+                line(c, [(mx - 60 * s_, my + 50 * s_), (mx, my - 50 * s_), (mx + 60 * s_, my + 50 * s_)], f"mt{k}", 4, ink,
+                     alpha=a_m)
+                line(c, [(mx, my - 50 * s_), (mx - 8, my + 30 * s_)], f"mtr{k}", 2.4, ink, alpha=a_m)
+            shape(c, ell(300, 525, 95, 62, 20), hexc("e8bc78"), "lake", lw=3.4, alpha=a_m)
+            for j in range(3):
+                line(c, [(270, 505 + j * 18), (330, 505 + j * 18)], f"lk{j}", 2.4, ink, alpha=a_m)
+        if a_r > 0:                                                # 河
+            ys = list(range(560, 1390, 30))
+            for side in (-1, 1):
+                line(c, [(_river_x(y) + side * (8 + (y - 560) * 0.02), y) for y in ys], f"rv{side}", 3.4, ink, alpha=a_r)
+        if a_p > 0:                                                # 河一边挤满了小房子
+            for k in range(70):
+                hy = r.uniform(640, 1000)
+                hx = _river_x(hy) + r.uniform(50, 360)
+                if hx > W - 110:
+                    continue
+                aa = a_p * clamp((a_p * 70 - k) / 4 + 1)
+                c.set_source_rgba(*pencil[:3], 0.9 * aa)
+                c.set_line_width(1.8)
+                c.rectangle(hx - 12, hy - 8, 24, 18)
+                c.move_to(hx - 14, hy - 8)
+                c.line_to(hx, hy - 22)
+                c.line_to(hx + 14, hy - 8)
+                c.stroke()
+            for k in range(26):                                    # 另一边纵横的田和小路
+                fy = r.uniform(1000, 1300)
+                fx = r.uniform(120, _river_x(fy) - 30)
+                ang = r.uniform(-0.9, 0.9)
+                ln = r.uniform(80, 220)
+                c.set_source_rgba(*pencil[:3], 0.7 * a_p)
+                c.set_line_width(1.6)
+                c.move_to(fx, fy)
+                c.line_to(fx + ln * math.cos(ang), fy + ln * math.sin(ang))
+                c.stroke()
+        if a_o > 0:                                                # 海岸线、海浪、小帆船
+            xs = list(range(60, W - 40, 30))
+            line(c, [(x, _coast_y(x)) for x in xs], "coast", 4.4, ink, alpha=a_o)
+            for k in range(9):
+                wx, wy = r.uniform(140, W - 160), r.uniform(1440, 1640)
+                line(c, [(wx, wy), (wx + 30, wy - 14), (wx + 60, wy), (wx + 90, wy - 12)], f"ow{k}", 3, ink, alpha=0.8 * a_o)
+            for k, (bx, by, bs) in enumerate(((300, 1470, 1.0), (520, 1600, 0.8), (860, 1460, 0.9), (720, 1540, 1.4),
+                                              (920, 1620, 0.7))):
+                c.set_source_rgba(*ink[:3], a_o)
+                c.set_line_width(2.4)
+                c.move_to(bx - 16 * bs, by)
+                c.line_to(bx + 16 * bs, by)
+                c.line_to(bx + 10 * bs, by + 10 * bs)
+                c.line_to(bx - 10 * bs, by + 10 * bs)
+                c.close_path()
+                c.move_to(bx, by)
+                c.line_to(bx, by - 34 * bs)
+                c.line_to(bx + 18 * bs, by - 8 * bs)
+                c.stroke()
+    if path > 0:                                                   # 她走过的那条乱七八糟的路
+        n = max(2, int(len(JOURNEY) * path))
+        c.set_source_rgba(*hexc("c0443a")[:3], 0.9)
+        c.set_line_width(5)
+        c.set_line_cap(cairo.LINE_CAP_ROUND)
+        c.set_dash([14, 12])
+        c.move_to(*JOURNEY[0])
+        for p in JOURNEY[1:n]:
+            c.line_to(*p)
+        c.stroke()
+        c.set_dash([])
+        hx, hy = JOURNEY[n - 1]
+        with keep():
+            glow(c, hx, hy, 40, hexc("ffe08a"), 0.6)
+            circle(c, hx, hy, 11, hexc("f2c230"))
+    c.restore()
+
+
+def k13a(c, t):
+    """一张缩影：牛皮纸上的地图画出来，一条红色虚线是她走过的路，兜兜转转，最后到了海边。"""
+    with cam(c, 540, 960, lerp(1.08, 1.0, ease_io(prog(t, 0.0, 9.4)))):
+        map_card(c, t, draw=prog(t, 0.2, 2.2), path=ease_io(prog(t, 2.2, 6.6)))
+
+
+def k13n(c, t):
+    k13(c, t + 8.0)
+
 # ================================================================ 14 退出纸外，一页页往回翻
 _STILLS = {}
 
@@ -621,7 +757,7 @@ def _imp(mod, fn):
 
 
 STILL_SPECS = {
-    "sea": (lambda: k13, 2.0), "plain": (lambda: k07, 2.0), "plateau": (lambda: k04, 8.0),
+    "sea": (lambda: k13, 11.0), "plain": (lambda: k07, 2.0), "plateau": (lambda: k04, 8.0),
     "ch7": (_imp("scenes07", "h03"), 1.0), "ch6": (_imp("scenes06", "g09"), 6.0), "ch5": (_imp("scenes05", "f06"), 6.0),
     "ch4": (_imp("scenes04", "e02"), 3.0), "ch3": (_imp("scenes03w", "kitchen_wide"), 2.0),
     "ch2": (_imp("scenes02", "c11_platform"), 2.0), "ch1": (_imp("scenes_v2", "s14_door"), 3.0),
