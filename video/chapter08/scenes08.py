@@ -2,8 +2,8 @@
 
 她回到房间，照片越拍越多，心情却留不住了；唯有创造才能永恒。笔尖落在空白的书页上，
 镜头钻进纸里：高原（垒石头、建立秩序）→ 平原（踏脚石、身边的一小撮人）→ 海洋（出海、心安、永不回头）
-→ 被浪磨圆的鹅卵石 → 退出纸外，一页页往回翻，原来就是每一章开头那本墨绿色的书。
-贯穿的小线索是石头：有棱有角 → 别人铺好的踏脚石 → 被浪磨圆的鹅卵石。画面里不写字（封面书名除外）。
+→ 一张地图缩影、月光下的海 → 退出纸外，一页页往回翻，原来就是每一章开头那本墨绿色的书。
+画面里不写字（封面书名除外）。
 """
 import math
 import os
@@ -27,10 +27,12 @@ SEA_A, SEA_B = hexc("4f86b8"), hexc("2f5f90")
 
 # ================================================================ 小物件
 def pebble_illus(c, cx, cy):
-    """章节页小插画：一颗圆圆的鹅卵石。"""
+    """章节页小插画：一座有棱有角的小山，一条河弯弯地流下来，流到一条小帆船旁边。"""
     with keep():
-        shape(c, ell(cx, cy + 30, 52, 34, 26), hexc("b8b0a4"), "ill", lw=3, amp=0.5)
-        shape(c, ell(cx - 14, cy + 20, 14, 7, 12), (1, 1, 1), "illh", lw=0, edge=False, alpha=0.5)
+        line(c, [(cx - 90, cy + 20), (cx - 55, cy - 40), (cx - 20, cy + 20)], "illm", 3.4, INK)
+        line(c, [(cx - 55, cy + 24), (cx - 30, cy + 40), (cx, cy + 32), (cx + 30, cy + 46)], "illr", 3, hexc("5a8ab8"))
+        line(c, [(cx + 40, cy + 30), (cx + 92, cy + 30)], "illb", 3, INK)
+        line(c, [(cx + 64, cy + 30), (cx + 64, cy - 22), (cx + 88, cy + 22)], "ills", 2.6, INK)
 
 
 def intro(c, t):
@@ -478,13 +480,16 @@ def k06(c, t):
 
 
 def k07(c, t):
-    """黄昏，河边一张小木桌，拉她过河的孩子、递碗的老奶奶、帮她扣正草帽的大叔，碗一只只传过来。"""
+    """黄昏，河边一张小木桌，拉她过河的孩子、老奶奶、帮她扣正草帽的大叔，中间一锅冒着热气的饭，每人一只碗。"""
     plain_bg(c, t, dusk=1.0)
     river(c, t, 1000, 1080, col=hexc("c88a7a"))
-    with keep():
-        glow(c, 540, 1000, 360, WARM, 0.45)
-        line(c, [(540, 760), (540, 900)], "lmp", 3, hexc("3a3a3a"))
-        circle(c, 540, 905, 12, hexc("fff0b8"))
+    with keep():                                                   # 落到河那边的太阳
+        glow(c, 760, 880, 360, WARM, 0.5)
+        c.save()
+        c.rectangle(-100, 0, W + 200, 870)
+        c.clip()
+        circle(c, 760, 880, 60, hexc("ffcf80"))
+        c.restore()
     shape(c, rect(250, 1150, 580, 18), hexc("8c5a3c"), "tbl", lw=2.4)
     for x in (280, 800):
         line(c, [(x, 1168), (x, 1250)], f"tl{x}", 6, hexc("6a4a32"))
@@ -493,13 +498,16 @@ def k07(c, t):
           mouth="smile")
     girl(c, 640, 1150, 1.45, outfit="folk", hat=False, pack=False, sit=True, legs=False, look=-0.3, mouth="laugh", key="p7")
     local(c, 780, 1150, 1.4, "uncle7", hexc("8a5a3a"), hexc("2f2a28"), "short", sit=True, legs=False, look=-0.5, mouth="smile")
-    with keep():                                                   # 碗一只只传过去
-        for j in range(2):
-            u = ((t * 0.5 + j * 0.5) % 1)
-            bx = lerp(330, 760, u)
-            shape(c, ell(bx, 1146, 30, 10, 14, 0, math.pi), (0.97, 0.96, 0.93), f"bw{j}", lw=2)
-        for k, x in enumerate((360, 480, 600, 720)):
-            shape(c, ell(x, 1146, 26, 8, 14, 0, math.pi), (0.97, 0.96, 0.93), f"bs{k}", lw=1.6)
+    with keep():                                                   # 桌子中间一锅热饭，每人面前一只碗
+        shape(c, [(492, 1150), (588, 1150), (600, 1098), (480, 1098)], hexc("5a4a40"), "pot", lw=2.4)
+        shape(c, ell(540, 1098, 62, 12, 18), hexc("7a6a5a"), "potl", lw=2)
+        for j in range(3):                                         # 热气
+            ph = (t * 0.5 + j / 3) % 1
+            x0 = 515 + j * 25
+            line(c, [(x0, 1080 - ph * 120), (x0 + 10 * math.sin(ph * 6 + j), 1050 - ph * 120),
+                     (x0 - 6, 1020 - ph * 120)], f"stm{j}", 3, (1, 1, 1), alpha=0.6 * (1 - ph))
+        for k, x in enumerate((330, 440, 650, 770)):
+            shape(c, ell(x, 1146, 28, 10, 14, 0, math.pi), (0.97, 0.96, 0.93), f"bs{k}", lw=1.6)
 
 
 # ================================================================ 8–12 海洋
@@ -515,13 +523,15 @@ def sea_bg(c, t, dusk=0.0, storm=0.0, horizon=900):
 def k08(c, t):
     k = min(int(t / 3.1), 4)
     u = t - k * 3.1
-    if k == 0:                                                     # 大河流进海里
+    if k == 0:                                                     # 走到海边
         vgrad(c, 0, 900, [(0, hexc("8fc4ea")), (1, hexc("f2f0e4"))])
         shape(c, rect(-40, 880, W + 80, 1100), SEA_A, "sea8", lw=2)
         shape(c, [(-40, 1700), (-40, 1150), (300, 1080), (700, 1040), (1120, 1000), (1120, 1700)], hexc("e8d8b0"), "sand8",
               lw=2.4)
-        shape(c, [(-40, 1500), (-40, 1380), (400, 1180), (600, 1060), (720, 1050), (560, 1200), (200, 1500)],
-              hexc("6aa0c8"), "riv8", lw=2)
+        wash = 0.5 + 0.5 * math.sin(u * 1.4)                        # 浪一下一下漫上沙滩
+        with keep():
+            shape(c, [(-40, 1150), (300, 1080), (700, 1040), (1120, 1000), (1120, 1000 + 40 * wash), (700, 1060 + 50 * wash),
+                      (300, 1100 + 50 * wash), (-40, 1170 + 50 * wash)], (0.96, 0.97, 0.98), "foam8", lw=1.4, alpha=0.7)
         waves(c, u, 920, 1020, "w8", n=3)
         girl(c, lerp(760, 880, prog(u, 0, 3.1)), 1240, 1.4, outfit="sea_white", pack=True, look=0.6, walk=u * 6, key="p8")
     elif k == 1:                                                   # 小岛：岛民把不多的鱼和水果分着搬上岸
@@ -933,7 +943,6 @@ def k15(c, t):
         room15(c, t)
         closed_book(c, 570, 1050, 1.0, "cb")
         place = ease_io(prog(t, 0.3, 1.0))
-        rock(c, lerp(560, 590, place), lerp(1080, 1024, place), 44, 28, "mypb15", col=hexc("c8c0b4"), sharp=False)
         with keep():                                               # 门
             shape(c, rect(820, 520, 220, 720), hexc("8c6a4a"), "door", lw=3)
             op = ease_io(prog(t, 4.0, 1.2))
@@ -954,11 +963,10 @@ def k15(c, t):
             with group_alpha(c, a):
                 girl(c, 930, 1240, 1.5, view="back", hat=True, pack=True, walk=u * 6, key="p15")
         return
-    push = ease_io(prog(u, 0.0, 3.1))                              # 镜头留在书和石头上
+    push = ease_io(prog(u, 0.0, 3.1))                              # 镜头留在桌上那本书上
     with cam(c, lerp(560, 575, push), lerp(980, 1030, push), lerp(1.0, 2.6, push)):
         room15(c, t)
         closed_book(c, 570, 1050, 1.0, "cb")
-        rock(c, 590, 1024, 44, 28, "mypb15", col=hexc("c8c0b4"), sharp=False)
         with keep():
             px = lerp(420, 700, push)
             shape(c, [(px, 1000), (px + 120, 1000), (px + 160, 1050), (px + 40, 1050)], hexc("fff0c8"), "sunp", lw=0,
