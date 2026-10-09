@@ -345,15 +345,15 @@ def cabin(c, t, her_look=-0.9, ghost_a=1.0, ghost_x=730, ghost_walk=None, sky="d
     for k, x in enumerate((390, 730)):
         shape(c, rrect(x - 150, 700, 300, 520, 40), seat, f"sb{k}", lw=3)
         shape(c, rrect(x - 110, 700, 220, 90, 20), (0.95, 0.95, 0.93), f"hr{k}", lw=2)
-    girl(c, 390 + lean, 1165, 1.6, sit=True, legs=False, hat=False, look=her_look, mouth=mouth, key="cab")
+    for k, x in enumerate((390, 730)):                             # 坐垫先画，人坐在上面，脚落到地上
+        shape(c, rrect(x - 160, 1150, 320, 50, 18), darker(seat, 0.92) + (1.0,), f"sc{k}", lw=3)
+    girl(c, 390 + lean, 1165, 1.6, sit=True, legs=True, hat=False, look=her_look, mouth=mouth, key="cab")
     hat_item(c, 400, 1150, 0.8, "cabhat")
     if ghost_a > 0:
         if ghost_walk is None:
-            ghost(c, ghost_x, 1165, 1.6, "cg", sit=True, legs=False, a=ghost_a, col=hexc("e4e8ef"))
+            ghost(c, ghost_x, 1165, 1.6, "cg", sit=True, legs=True, a=ghost_a, col=hexc("e4e8ef"))
         else:
             ghost(c, ghost_x, 1250, 1.6, "cg", walk=ghost_walk, a=ghost_a, col=hexc("e4e8ef"))
-    for k, x in enumerate((390, 730)):
-        shape(c, rrect(x - 160, 1150, 320, 50, 18), darker(seat, 0.92) + (1.0,), f"sc{k}", lw=3)
     shape(c, rrect(552, 1080, 16, 140, 6), hexc("4a5670"), "arm", lw=2)
 
 
@@ -968,16 +968,9 @@ def h16(c, t):
                     silhouette(c, hx, wy + 210, 0.75, f"op{row}{col}{i}", col=hexc("5a5a6a"), a=0.9)
                     with keep():
                         glow(c, hx + 6, wy + 120, 40, COOL, 0.6)
-    else:                                                          # 天边一颗很亮的星；看了很久，低下头，把窗帘拉上一半
-        pull_ = ease_io(prog(u, 1.4, 1.3))
+    else:                                                          # 天边一颗很亮的星；看了很久，慢慢低下头
 
         def her():
-            with keep():
-                cw = 380 * pull_
-                shape(c, rect(920 - cw, 360, cw, 880), hexc("8a7a9a"), "curt", lw=2.4)
-                for j in range(4):
-                    fx = 920 - cw + (j + 0.5) * cw / 4
-                    line(c, [(fx, 380), (fx + 6, 1220)], f"cf{j}", 1.6, hexc("6a5a7a"), alpha=0.6 * pull_)
             girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=False,
                  head_down=14 * ease_io(prog(u, 1.0, 0.8)), key="hb")
         window_scene(c, u, star_a=1.0, girl=her)
