@@ -565,7 +565,7 @@ def lookout(c, t, crowd=True):
                 fl = (t * 1.7 + k * 0.37) % 1
                 if leave == 0 and fl < 0.12:
                     glow(c, x + 25, 1230 - 240, 90, (1, 1, 1), 0.8)
-    girl(c, 170, 1180, 1.4, view="back", sit=True, legs=False, hat=True, pack=True, key="lk")
+    girl(c, 190, 1232, 1.4, view="back", hat=True, pack=True, key="lk")
 
 
 def h09(c, t):
@@ -620,12 +620,54 @@ def moor(c, t, girl_on=True, tiny=False):
             girl(c, 560, 1180, 1.5, sit=True, crouch=True, hat=True, pack=True, look=0.5, mouth="flat", key="mo")
 
 
+def old_tree(c, t):
+    """一棵很老很大的树：她坐在树下的石头上，仰头看了很久；叶影在她身上慢慢移过去，几片叶子落下来。"""
+    sun = prog(t, 0.0, 3.2)
+    vgrad(c, 0, 1100, [(0, hexc("a8d0e8")), (1, hexc("f2f0dc"))])
+    with keep():
+        glow(c, lerp(200, 900, sun), 260, 300, hexc("fff0c0"), 0.5)
+    shape(c, hill_pts(1080, 20, 0.004, 0.7), hexc("b8c890"), "th", lw=2.4)
+    shape(c, rect(-20, 1160, W + 40, 900), hexc("a8b878"), "tg", lw=2.4)
+    shape(c, [(470, 1180), (500, 700), (460, 560), (560, 640), (640, 520), (620, 720), (660, 1180)], hexc("7a5a3e"),
+          "trunk", lw=3)                                           # 粗粗的树干
+    for k, (dx, dy, r_) in enumerate(((-260, -40, 210), (-60, -150, 260), (200, -60, 230), (330, 80, 170),
+                                      (-330, 110, 160), (40, 40, 220))):
+        shape(c, ell(560 + dx, 470 + dy, r_, r_ * 0.8, 24), mix(hexc("5f8a4a"), hexc("7aa860"), (k % 3) / 2),
+              f"crown{k}", lw=2.4, amp=0.8)
+    with keep():                                                   # 叶影慢慢移过去
+        r = random.Random(12)
+        for k in range(14):
+            x = r.uniform(-100, W + 100) + lerp(-160, 160, sun)
+            y = r.uniform(1170, 1600)
+            shape(c, ell(x, y, r.uniform(30, 70), r.uniform(10, 18), 14), hexc("4a6a3a"), f"lsh{k}", lw=0, edge=False,
+                  alpha=0.25)
+        for k in range(4):                                         # 落下来的叶子
+            ph = (t * 0.35 + k * 0.27) % 1
+            lx = 300 + k * 160 + 40 * math.sin(ph * 6 + k)
+            ly = lerp(560, 1180, ph)
+            shape(c, ell(lx, ly, 12, 6, 10), hexc("c8a040"), f"leaf{k}", lw=1.2, alpha=1 - ph * 0.5)
+    shape(c, ell(300, 1196, 90, 26, 16), hexc("9a948a"), "tstone", lw=2.4)
+    girl(c, 300, 1180, 1.45, sit=True, hat=True, pack=True, look=0.6, look_up=0.8, mouth="o", key="tree")
+
+
+def museum_out(c, t):
+    """海洋博物馆的外面：一整面波浪形的屋顶，她在台阶下面，只是小小的一点。"""
+    vgrad(c, 0, 1200, [(0, hexc("8fc4ea")), (1, hexc("f0f2ea"))])
+    pts = [(60, 640)] + [(60 + i * 32, 600 - 60 * math.sin(i * 0.35)) for i in range(31)] + [(1020, 640)]
+    shape(c, pts + [(1020, 700), (60, 700)], hexc("e8eef0"), "mroof", lw=3)
+    shape(c, rect(100, 700, 880, 440), hexc("dfe6e8"), "mbody", lw=3)
+    for k in range(7):
+        shape(c, rect(150 + k * 120, 760, 60, 380), hexc("bcd8e4"), f"mwin{k}", lw=2)
+    shape(c, rect(-20, 1140, W + 40, 40), hexc("c8c8c0"), "mstep1", lw=2)
+    shape(c, rect(-20, 1180, W + 40, 900), hexc("d8d4c8"), "mplaza", lw=2.4)
+    girl(c, 540, 1240, 0.5, view="back", hat=True, pack=True, key="mo2")
+
+
 def h10(c, t):
     k = min(int(t / 3.17), 2)
     u = t - k * 3.17
     if k == 0:
-        hall(c, t, beam=0.6, patch=prog(u, 0.0, 3.17))
-        girl(c, 540, 1240, 1.35, view="back", hat=True, pack=True, key="mu")
+        old_tree(c, u)
     elif k == 1:
         old_street(c, u)
     else:
@@ -675,9 +717,7 @@ def h11(c, t):
         elif k == 1:
             moor(c, t, tiny=True)
         elif k == 2:
-            with cam(c, 540, 700, 0.42):
-                hall(c, t)
-                girl(c, 540, 1240, 1.0, view="back", hat=True, pack=True, key="mu")
+            museum_out(c, t)
         else:
             seaside(c, t, tiny=True)
         return
@@ -899,7 +939,7 @@ def h16(c, t):
                     ph = (u * 0.8 + j / 3) % 1
                     line(c, [(cxp - 8 + j * 8, 1240 - 140 * 1.6 - ph * 60), (cxp - 4 + j * 8, 1240 - 156 * 1.6 - ph * 60)],
                          f"hst{j}", 2, (1, 1, 1), alpha=0.7 * (1 - ph))
-    elif k == 5:                                                   # 她指着星空；ta 转身朝酒店的灯走去
+    elif k == 5:                                                   # 她停下来仰头看星空；ta 转身朝酒店的灯走去
         with grade(warm=0.25):
             vgrad(c, -100, 1250, [(0, hexc("0e1430")), (1, hexc("2a3060"))])
             r = random.Random(21)
@@ -910,9 +950,9 @@ def h16(c, t):
             with keep():
                 shape(c, rect(900, 700, 220, 540), WARM, "hotel", lw=2, alpha=0.85)
                 glow(c, 1000, 980, 380, WARM, 0.45)
-            point = ease_io(prog(u, 0.2, 0.6))
-            girl(c, 360, 1240, 1.6, hat=True, pack=True, look=-0.5, look_up=0.9, mouth="laugh",
-                 arms=[(-24, -78), (lerp(24, -10, point), lerp(-78, -250, point))], key="pt")
+            up = ease_io(prog(u, 0.2, 0.8))                        # 她停下来，仰头看满天的星星
+            girl(c, 360, 1240, 1.6, hat=True, pack=True, look=-0.3, look_up=0.9 * up, mouth="laugh" if up > 0.5 else "o",
+                 key="pt")
             walk = ease_in(prog(u, 0.4, 2.6))
             ghost(c, lerp(620, 860, walk), 1240, 1.6, "pgh2", walk=u * 5 if walk > 0 else None, a=0.9 - 0.3 * walk)
     elif k == 6:                                                   # 对面楼：每扇窗里两个人各自低头看手机
@@ -928,9 +968,19 @@ def h16(c, t):
                     silhouette(c, hx, wy + 210, 0.75, f"op{row}{col}{i}", col=hexc("5a5a6a"), a=0.9)
                     with keep():
                         glow(c, hx + 6, wy + 120, 40, COOL, 0.6)
-    else:                                                          # 天边一颗很亮的星；伸手，又慢慢放下
-        reach = math.sin(clamp(prog(u, 0.3, 2.5)) * math.pi)
-        window_scene(c, u, star_a=1.0, girl=lambda: _her_back(c, arm_up=reach))
+    else:                                                          # 天边一颗很亮的星；看了很久，低下头，把窗帘拉上一半
+        pull_ = ease_io(prog(u, 1.4, 1.3))
+
+        def her():
+            with keep():
+                cw = 380 * pull_
+                shape(c, rect(920 - cw, 360, cw, 880), hexc("8a7a9a"), "curt", lw=2.4)
+                for j in range(4):
+                    fx = 920 - cw + (j + 0.5) * cw / 4
+                    line(c, [(fx, 380), (fx + 6, 1220)], f"cf{j}", 1.6, hexc("6a5a7a"), alpha=0.6 * pull_)
+            girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=False,
+                 head_down=14 * ease_io(prog(u, 1.0, 0.8)), key="hb")
+        window_scene(c, u, star_a=1.0, girl=her)
 
 
 # ================================================================ 第 17–19 句
