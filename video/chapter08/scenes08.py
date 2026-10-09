@@ -904,70 +904,75 @@ def _page_img(c, surf, x, y, w, h):
     c.restore()
 
 
-def k14(c, t):
+def _spread_imgs(sp):
+    """第 sp 张对开：右页 P[2sp]、左页 P[2sp+1]；sp=None 是最后那一页空白。"""
+    if sp is None:
+        return None, None
+    return _still(FLIP_ORDER[2 * sp + 1]), _still(FLIP_ORDER[2 * sp])
+
+
+def open_book(c, key="kb"):
     bw, bh = BOOK_W, BOOK_H
     sx, by = W / 2, H * 0.42 - bh / 2
-    pr = (sx + 30, by + 40, bw - 60, bh - 80)
-    table_bg(c, t)
-    close = ease_io(prog(t, 9.6, 1.6))
     with keep():
-        if close < 1:
-            c.rectangle(sx - bw + 16, by + 22, 2 * bw, bh)
-            c.set_source_rgba(0, 0, 0, 0.3)
-            c.fill()
-            shape(c, rect(sx - bw - 14, by - 14, 2 * bw + 28, bh + 28), hexc("2f4a3c") + (1.0,), "kbk", lw=3)
-            page_paper(c, sx - bw, by, bw, bh, "kpL")
-            page_paper(c, sx, by, bw, bh, "kpR")
+        c.rectangle(sx - bw + 16, by + 22, 2 * bw, bh)
+        c.set_source_rgba(0, 0, 0, 0.3)
+        c.fill()
+        shape(c, rect(sx - bw - 14, by - 14, 2 * bw + 28, bh + 28), hexc("2f4a3c") + (1.0,), key, lw=3)
+        page_paper(c, sx - bw, by, bw, bh, key + "L")
+        page_paper(c, sx, by, bw, bh, key + "R")
+    return bw, bh, sx, by
+
+
+def sunlight(c, t0, amt):
+    """晨光：一块斜斜的暖光慢慢爬过桌面和书页。"""
+    if amt <= 0:
+        return
+    with keep():
+        px = lerp(-300, 520, t0)
+        shape(c, [(px, 0), (px + 420, 0), (px + 760, H), (px + 340, H)], hexc("fff0c8"), "sunb", lw=0, edge=False,
+              alpha=0.28 * amt)
+        glow(c, 140, 120, 700, hexc("ffe0a8"), 0.35 * amt)
+
+
+def k14(c, t):
+    """退出纸外，一页页往回翻：海、平原、高原，再往前是前几章。翻回第一章以后不合上，书就这样摊开在桌上，晨光爬上书页。"""
+    table_bg(c, t)
+    bw, bh, sx, by = open_book(c, "kbk")
+    pr = (sx + 30, by + 40, bw - 60, bh - 80)
+    pl = (sx - bw + 30, by + 40, bw - 60, bh - 80)
     nsp = len(FLIP_ORDER) // 2                                     # 每一张对开：右页 P[2s]、左页 P[2s+1]，每个画面只出现一次
     flips = prog(t, 3.1, 6.2) * (nsp - 1)
     sp = min(int(flips), nsp - 1)
     frac = flips - sp if sp < nsp - 1 else 0.0
     z = ease_io(prog(t, 0.0, 2.4))                                 # 镜头从纸里退出来
-    pl = (sx - bw + 30, by + 40, bw - 60, bh - 80)
 
     def img(i):
         return _still(FLIP_ORDER[min(i, len(FLIP_ORDER) - 1)])
-    if close <= 0:
-        if t < 3.1:
-            x, y, w_, h_ = (lerp(0, pr[0], z), lerp(0, pr[1], z), lerp(W, pr[2], z), lerp(H, pr[3], z))
-            if z > 0.5:
-                _page_img(c, img(1), *pl)
-            _page_img(c, _still("sea"), x, y, w_, h_)
-        else:                                                      # 往回翻：左页那一张纸翻起来，落到右边，露出它背面的画
-            front, back = 2 * sp + 1, 2 * sp + 2
-            _page_img(c, img(2 * sp + 3) if frac > 0 else img(front), *pl)
-            _page_img(c, img(2 * sp), *pr)
-            if frac > 0:
-                wv = math.cos(frac * math.pi)
-                with keep():
-                    if wv > 0:
-                        page_paper(c, sx - bw * wv, by, bw * wv, bh, "leafL")
-                        _page_img(c, img(front), sx - (bw - 30) * wv, by + 40, (bw - 60) * wv, bh - 80)
-                    else:
-                        page_paper(c, sx, by, -bw * wv, bh, "leafR")
-                        _page_img(c, img(back), sx + 30 * -wv, by + 40, (bw - 60) * -wv, bh - 80)
-        with keep():
-            line(c, [(sx, by), (sx, by + bh)], "kspine", 2, hexc("b7a888"))
-    else:                                                          # 合上：正是每一章开头的那本墨绿色的书
-        wv = math.cos(close * math.pi / 2)
-        with keep():
-            if close < 1:
-                shape(c, rect(sx - bw - 14 + (bw + 14) * (1 - wv), by - 14, (bw + 14) * wv + bw + 14, bh + 28),
-                      hexc("2f4a3c") + (1.0,), "kbk2", lw=3)
-            if wv > 0.05:
-                page_paper(c, sx, by, bw, bh, "kpR2")
-                page_paper(c, sx - bw * wv, by, bw * wv, bh, "kpL2")
-        if close >= 1:                                             # 合好的书挪到桌子中间，和每章开头一样
-            slide = ease_io(prog(t, 11.2, 0.9))
-            cx0 = lerp(sx, W / 2 - (bw + 14) / 2, slide)
+    if t < 3.1:
+        x, y, w_, h_ = (lerp(0, pr[0], z), lerp(0, pr[1], z), lerp(W, pr[2], z), lerp(H, pr[3], z))
+        if z > 0.5:
+            _page_img(c, img(1), *pl)
+        _page_img(c, _still("sea"), x, y, w_, h_)
+    else:                                                          # 往回翻：左页那一张纸翻起来，落到右边，露出它背面的画
+        front, back = 2 * sp + 1, 2 * sp + 2
+        _page_img(c, img(2 * sp + 3) if frac > 0 else img(front), *pl)
+        _page_img(c, img(2 * sp), *pr)
+        if frac > 0:
+            wv = math.cos(frac * math.pi)
             with keep():
-                c.rectangle(cx0 + 16, by + 8, bw + 14, bh + 28)
-                c.set_source_rgba(0, 0, 0, 0.3)
-                c.fill()
-            cover_face(c, cx0, by - 14, bw + 14, bh + 28, key="kcv")
+                if wv > 0:
+                    page_paper(c, sx - bw * wv, by, bw * wv, bh, "leafL")
+                    _page_img(c, img(front), sx - (bw - 30) * wv, by + 40, (bw - 60) * wv, bh - 80)
+                else:
+                    page_paper(c, sx, by, -bw * wv, bh, "leafR")
+                    _page_img(c, img(back), sx + 30 * -wv, by + 40, (bw - 60) * -wv, bh - 80)
+    with keep():
+        line(c, [(sx, by), (sx, by + bh)], "kspine", 2, hexc("b7a888"))
+    sunlight(c, prog(t, 9.0, 4.0), ease_io(prog(t, 9.2, 2.4)))    # 翻回第一章，不合上；天一点点亮起来
 
 
-# ================================================================ 15 合上书，推门出去
+# ================================================================ 15 书摊开在桌上；她出门，风把书页往前吹，停在一页空白上
 def room15(c, t):
     fill_all(c, hexc("e8dcc4"))
     with keep():                                                   # 晨光从窗户照进来
@@ -981,48 +986,106 @@ def room15(c, t):
         line(c, [(x, 1070), (x, 1240)], f"rdl{x}", 6, hexc("6a4a32"))
 
 
-def closed_book(c, x, y, s, key):
+def open_book_side(c, x, y, s, key, flutter=0.0):
+    """桌上摊开的书（侧面看）：墨绿色的封皮，两边微微拱起的书页。"""
     with keep():
-        shape(c, [(x - 110 * s, y), (x + 110 * s, y), (x + 100 * s, y - 26 * s), (x - 100 * s, y - 26 * s)],
-              hexc("2f4a3c") + (1.0,), key, lw=2.4)
-        line(c, [(x - 96 * s, y - 13 * s), (x + 96 * s, y - 13 * s)], key + "g", 1.6, hexc("c8a860"))
+        shape(c, [(x - 130 * s, y), (x + 130 * s, y), (x + 126 * s, y - 8 * s), (x - 126 * s, y - 8 * s)],
+              hexc("2f4a3c") + (1.0,), key, lw=2.2)
+        for sg in (-1, 1):
+            lift = 10 * s * flutter * (0.5 + 0.5 * math.sin(sg * 3 + flutter * 20))
+            shape(c, [(x, y - 8 * s), (x + sg * 120 * s, y - 8 * s), (x + sg * 110 * s, y - 22 * s - lift),
+                      (x + sg * 40 * s, y - 30 * s - lift), (x, y - 20 * s)], hexc("f6f0e2"), f"{key}p{sg}", lw=2)
+
+
+def riffle(c, t, f, line_u=0.0, sun=0.0):
+    """俯拍桌上的书：风把书页往前吹。f 是已经翻过去的页数（0 → 5），最后停在一页空白上。"""
+    table_bg(c, t)
+    bw, bh, sx, by = open_book(c, "kbr")
+    pr = (sx + 30, by + 40, bw - 60, bh - 80)
+    pl = (sx - bw + 30, by + 40, bw - 60, bh - 80)
+    order = [4, 3, 2, 1, 0, None]
+    i = min(int(f), len(order) - 1)
+    frac = f - i if i < len(order) - 1 else 0.0
+    la, ra = _spread_imgs(order[i])
+    if frac <= 0:
+        if la is not None:
+            _page_img(c, la, *pl)
+            _page_img(c, ra, *pr)
+    else:                                                          # 往前翻：右页翻起来，落到左边
+        lb, rb = _spread_imgs(order[i + 1])
+        wv = math.cos(frac * math.pi)
+        if wv > 0:
+            if la is not None:
+                _page_img(c, la, *pl)
+            if rb is not None:
+                _page_img(c, rb, *pr)
+            with keep():
+                page_paper(c, sx, by, bw * wv, bh, "rlR")
+                _page_img(c, ra, sx + 30 * wv, by + 40, (bw - 60) * wv, bh - 80)
+        else:
+            if la is not None:
+                _page_img(c, la, *pl)
+            if rb is not None:
+                _page_img(c, rb, *pr)
+            with keep():
+                page_paper(c, sx + bw * wv, by, -bw * wv, bh, "rlL")
+                if lb is not None:
+                    _page_img(c, lb, sx + (bw - 30) * wv, by + 40, (bw - 60) * -wv, bh - 80)
+    with keep():
+        line(c, [(sx, by), (sx, by + bh)], "kspine2", 2, hexc("b7a888"))
+    if line_u > 0:                                                 # 空白页上自己慢慢画出一条地平线
+        x0, x1 = sx + 70, sx + bw - 70
+        yh = by + bh * 0.62
+        pts = [(lerp(x0, x1, k / 20), yh + 6 * math.sin(k * 0.9)) for k in range(21)]
+        n = max(2, int(21 * line_u))
+        with keep():
+            line(c, pts[:n], "horizon", 3, INK)
+            if line_u >= 1:
+                a = ease_io(sun)
+                shape(c, ell(sx + bw * 0.68, yh - 90, 26, 26, 18), None, "tinysun", lw=2.6, alpha=a)
+    return sx, by, bw, bh
 
 
 def k15(c, t):
     k = min(int(t / 3.125), 3)
     u = t - k * 3.125
-    if k < 3:
+    if k < 2:                                                      # 早晨的房间，书摊开在桌上；戴上草帽，背起包，回头看一眼，推门出去
         room15(c, t)
-        closed_book(c, 570, 1050, 1.0, "cb")
-        place = ease_io(prog(t, 0.3, 1.0))
+        open_book_side(c, 570, 1050, 1.0, "obs")
         with keep():                                               # 门
             shape(c, rect(820, 520, 220, 720), hexc("8c6a4a"), "door", lw=3)
-            op = ease_io(prog(t, 4.0, 1.2))
+            op = ease_io(prog(t, 4.6, 1.0))
             if op > 0:
                 shape(c, rect(820, 520, 220 * op, 720), hexc("fff3d0"), "dlight", lw=1)
                 glow(c, 930, 900, 400, hexc("fff0c8"), 0.5 * op)
         if k == 0:
-            hat = u > 1.8
-            girl(c, 480, 1240, 1.6, hat=hat, pack=u > 2.4, look=0.6, mouth="smile",
-                 arms=[(-24, -78), (lerp(50, 24, place), lerp(-110, -78, place))] if u < 1.4 else None, key="p15")
+            hat = u > 1.6
+            girl(c, 470, 1240, 1.6, hat=hat, pack=u > 2.3, look=0.4, mouth="smile", key="p15")
             if not hat:
-                hat_item(c, 520, 1040, 0.8, "h15")
-        elif k == 1:
-            x = lerp(480, 880, ease_io(prog(u, 0.3, 2.6)))
-            girl(c, x, 1240, 1.6, hat=True, pack=True, look=0.8, mouth="smile", walk=u * 6, key="p15")
+                hat_item(c, 680, 1040, 0.8, "h15")
         else:
-            a = 1 - ease_io(prog(u, 0.2, 1.6))
-            with group_alpha(c, a):
-                girl(c, 930, 1240, 1.5, view="back", hat=True, pack=True, walk=u * 6, key="p15")
+            go = ease_io(prog(u, 0.2, 1.4))
+            back = 1.4 < u < 2.2                                   # 走到门口，回头看了一眼那本书
+            out = ease_io(prog(u, 2.2, 0.9))
+            x = lerp(470, 900, go)
+            with group_alpha(c, 1 - out):
+                girl(c, x, 1240, 1.6 if out <= 0 else 1.5, view="back" if out > 0 else "front", hat=True, pack=True,
+                     look=-0.8 if back else 0.8, mouth="smile", walk=u * 6 if (go < 1 or out > 0) and not back else None,
+                     key="p15")
         return
-    push = ease_io(prog(u, 0.0, 3.1))                              # 镜头留在桌上那本书上
-    with cam(c, lerp(560, 575, push), lerp(980, 1030, push), lerp(1.0, 2.6, push)):
-        room15(c, t)
-        closed_book(c, 570, 1050, 1.0, "cb")
-        with keep():
-            px = lerp(420, 700, push)
-            shape(c, [(px, 1000), (px + 120, 1000), (px + 160, 1050), (px + 40, 1050)], hexc("fff0c8"), "sunp", lw=0,
-                  edge=False, alpha=0.35)
+    if k == 2:                                                     # 门一开，风把书页往前吹：第一章、第二章……一直吹到最后
+        f = ease_io(prog(u, 0.2, 2.6)) * 5
+        sx, by, bw, bh = riffle(c, t, f)
+        with keep():                                               # 风
+            for j in range(6):
+                ph = (u * 1.4 + j / 6) % 1
+                y = 300 + j * 230
+                x = lerp(-200, W + 200, ph)
+                line(c, [(x - 160, y), (x, y - 20), (x + 140, y + 6)], f"wind{j}", 3, (1, 1, 1), alpha=0.5 * (1 - ph))
+        sunlight(c, 0.7 + 0.1 * prog(u, 0, 3.1), 1.0)
+        return
+    riffle(c, t, 5.0, line_u=ease_io(prog(u, 0.6, 1.6)), sun=prog(u, 2.3, 0.6))   # 停在一页空白上，地平线自己长出来
+    sunlight(c, 0.8 + 0.1 * prog(u, 0, 3.1), 1.0)
 
 
 # ================================================================ 片尾

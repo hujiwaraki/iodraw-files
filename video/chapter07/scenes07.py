@@ -388,35 +388,106 @@ def h06(c, t):
     path_scene(c, t)
 
 
+def whale_bones(c, x, y, s, key, sway=0.0):
+    """吊在展厅半空的一副鲸鱼骨架：宽宽的头骨和下颌、一节节的脊椎、弯弯的肋骨、胸鳍的骨头、尾巴。"""
+    bone = hexc("f2ead8")
+    edge = hexc("8a7f6a")
+    c.save()
+    c.translate(x, y + sway)
+    c.scale(s, s)
+
+    def bone_line(pts, k, w):
+        line(c, pts, f"{key}{k}o", w + 3, edge)
+        line(c, pts, f"{key}{k}i", w, bone)
+    with keep():
+        for k, hx in enumerate((-300, 60, 360)):                   # 吊着它的细线
+            line(c, [(hx, -400), (hx, -20)], f"{key}w{k}", 1.4, hexc("8a8a8a"), alpha=0.6)
+        n = 22
+        spine = []
+        for i in range(n):
+            u = i / (n - 1)
+            spine.append((lerp(-240, 520, u), -14 * math.sin(u * math.pi) + 40 * u * u))
+        for i in range(2, 14):                                     # 肋骨
+            px, py = spine[i]
+            ln = 150 * math.sin(lerp(0.5, 2.9, (i - 2) / 11))
+            bone_line([(px, py + 10), (px - 18, py + ln * 0.6), (px - 6, py + ln)], f"r{i}", 4)
+        bone_line([(-170, 30), (-130, 120), (-60, 150), (-20, 140)], "fin", 7)       # 胸鳍
+        for i, (px, py) in enumerate(spine):                       # 脊椎
+            w_ = lerp(26, 10, i / n)
+            shape(c, rect(px - w_ / 2, py - w_ * 0.6, w_, w_ * 1.2), bone, f"{key}v{i}", lw=1.6, amp=0.3)
+        shape(c, [(-520, -10), (-380, -50), (-250, -40), (-230, 20), (-360, 40), (-520, 20)], bone, key + "sk",
+              lw=2.6)                                              # 宽宽的头骨
+        bone_line([(-520, 30), (-380, 70), (-250, 40)], "jaw", 9)  # 下颌
+        shape(c, [(520, 40), (620, -40), (590, 40), (620, 120)], bone, key + "tl", lw=2.4)
+    c.restore()
+
+
 def hall(c, t, beam=1.0, patch=None):
-    """高高的展厅：天窗的光落在一幅很大的、画着海的画上。世界坐标，长椅在 x≈1400。"""
-    shape(c, rect(-600, -200, 2800, 1500), hexc("e6e0d4"), "hw", lw=0, edge=False)
+    """海洋博物馆高高的展厅：半空吊着一副鲸鱼骨架，正面是一整面蓝色的大水槽，
+    水里有慢慢游过的鱼和一只蝠鲼；水光一圈圈晃在墙上和地上。世界坐标，长椅在 x≈1400。"""
+    shape(c, rect(-600, -200, 2800, 1500), hexc("d8e4e8"), "hw", lw=0, edge=False)
     for k in range(6):
-        line(c, [(-200 + k * 420, 0), (-200 + k * 420, 1250)], f"hcol{k}", 2, hexc("d0c8b8"))
-    shape(c, rect(-600, 1250, 2800, 900), hexc("b8a890"), "hf", lw=3)
+        line(c, [(-200 + k * 420, 0), (-200 + k * 420, 1250)], f"hcol{k}", 2, hexc("bccdd4"))
+    shape(c, rect(-600, 1250, 2800, 900), hexc("9fb4bc"), "hf", lw=3)
     for k in range(10):
-        line(c, [(-600, 1290 + k * k * 8), (2200, 1290 + k * k * 8)], f"hfl{k}", 1.2, hexc("a89880"), alpha=0.5)
-    with keep():                                                   # 那幅海
-        shape(c, rect(230, 400, 620, 460), hexc("b89a5a"), "pfr", lw=3)
-        c.save()
-        c.rectangle(256, 426, 568, 408)
-        c.clip()
-        vgrad(c, 426, 834, [(0, hexc("f2d8b8")), (0.45, hexc("e8b8a0")), (0.5, hexc("4a7aa8")), (1, hexc("2a4a78"))], 250, 830)
-        circle(c, 640, 600, 46, hexc("ffe6b0"))
-        for j in range(9):
-            y = 650 + j * 22
-            line(c, [(260 + (j * 37) % 60 + i * 80, y + 6 * math.sin(i + j)) for i in range(8)], f"pw{j}", 2.4,
-                 hexc("dfeaf2"), alpha=0.6)
-        c.restore()
+        line(c, [(-600, 1290 + k * k * 8), (2200, 1290 + k * k * 8)], f"hfl{k}", 1.2, hexc("8ea2aa"), alpha=0.5)
+    tx0, ty0, tw, th = 110, 330, 860, 900                          # 一整面大水槽
+    shape(c, rect(tx0 - 26, ty0 - 26, tw + 52, th + 26), hexc("5a6a74"), "tfr", lw=3)
+    c.save()
+    c.rectangle(tx0, ty0, tw, th)
+    c.clip()
+    vgrad(c, ty0, ty0 + th, [(0, hexc("5fb0d8")), (0.5, hexc("2f78b0")), (1, hexc("163e70"))], tx0, tx0 + tw)
+    with keep():
+        for j in range(5):                                         # 从水面照下来的光
+            x = tx0 + 120 + j * 170 + 30 * math.sin(t * 0.6 + j)
+            shape(c, [(x - 30, ty0), (x + 30, ty0), (x + 120, ty0 + th), (x - 20, ty0 + th)], hexc("dff4ff"),
+                  f"tray{j}", lw=0, edge=False, alpha=0.12)
+        mx = tx0 + 260 + ((t * 45) % (tw + 400)) - 200             # 一只蝠鲼慢慢滑过去
+        my = ty0 + 380 + 40 * math.sin(t * 0.5)
+        flap = 30 * math.sin(t * 1.6)
+        shape(c, [(mx - 150, my + flap), (mx, my - 50), (mx + 60, my - 10), (mx, my + 40), (mx - 150, my - flap)],
+              hexc("1d3a5c"), "manta", lw=0, edge=False, alpha=0.85)
+        line(c, [(mx - 20, my), (mx - 200, my + 30)], "mtail", 3, hexc("1d3a5c"), alpha=0.85)
+        r = random.Random(7)
+        for k in range(14):                                        # 一群小鱼
+            fx = tx0 + ((r.uniform(0, tw) - t * r.uniform(30, 70)) % (tw + 100)) - 50
+            fy = ty0 + r.uniform(120, th - 120) + 8 * math.sin(t * 2 + k)
+            shape(c, [(fx - 18, fy), (fx, fy - 7), (fx + 14, fy), (fx, fy + 7)], hexc("e8f2f8"), f"fs{k}", lw=0,
+                  edge=False, alpha=0.7)
+            shape(c, [(fx + 14, fy), (fx + 24, fy - 7), (fx + 24, fy + 7)], hexc("e8f2f8"), f"ft{k}", lw=0, edge=False,
+                  alpha=0.7)
+        for k in range(12):                                        # 气泡
+            bx = tx0 + 60 + (k * 73) % (tw - 120)
+            by = ty0 + th - ((t * 90 + k * 140) % th)
+            circle(c, bx + 6 * math.sin(t * 3 + k), by, 4 + (k % 3) * 2, hexc("e8f6ff"), a=0.5)
+        for k in range(9):                                         # 水底轻轻摆的海草
+            bx = tx0 + 50 + k * 100
+            pts = [(bx + 18 * math.sin(t * 1.2 + k + j * 0.6) * j / 6, ty0 + th - j * 34) for j in range(7)]
+            line(c, pts, f"sea{k}", 6, hexc("4f9a7a"), alpha=0.8)
+        for k in range(4):                                         # 分叉的珊瑚
+            bx = tx0 + 120 + k * 220
+            by = ty0 + th
+            col = hexc(["f08a7a", "f2b07a", "e88ab0", "f08a7a"][k])
+            line(c, [(bx, by), (bx, by - 90)], f"cr{k}", 9, col)
+            line(c, [(bx, by - 50), (bx - 40, by - 110)], f"cra{k}", 7, col)
+            line(c, [(bx, by - 70), (bx + 36, by - 130)], f"crb{k}", 7, col)
+            line(c, [(bx - 40, by - 110), (bx - 50, by - 140)], f"crc{k}", 5, col)
+    c.restore()
+    with keep():                                                   # 水光一圈圈晃在墙上和地上
+        for k in range(10):
+            wx = 60 + k * 110 + 30 * math.sin(t * 0.9 + k * 1.7)
+            wy = 1300 + (k % 3) * 60 + 10 * math.cos(t * 1.1 + k)
+            shape(c, ell(wx, wy, 70, 14, 16), hexc("dff4ff"), f"cau{k}", lw=0, edge=False, alpha=0.35)
+    whale_bones(c, 680, 150, 1.1, "wb", sway=4 * math.sin(t * 0.4))
     if beam > 0:
         with keep():
             shape(c, [(400, -200), (680, -200), (900, 1260), (180, 1260)], hexc("fff6dc"), "beam", lw=0, edge=False,
-                  alpha=0.22 * beam)
+                  alpha=0.18 * beam)
     if patch is not None:                                          # 地上的光斑慢慢移过去
         with keep():
             px = lerp(-200, 900, patch)
-            shape(c, [(px, 940), (px + 200, 940), (px + 260, 1240), (px + 60, 1240)], hexc("fff3d0"), "patch", lw=0,
-                  edge=False, alpha=0.5)
+            shape(c, [(px, 940), (px + 200, 940), (px + 260, 1240), (px + 60, 1240)], hexc("dff4ff"), "patch", lw=0,
+                  edge=False, alpha=0.4)
     shape(c, rect(1240, 1150, 320, 26), WOOD, "bench", lw=2.4)
     for x in (1270, 1530):
         line(c, [(x, 1176), (x, 1250)], f"bnl{x}", 5, hexc("5a3a2a"))
