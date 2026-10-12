@@ -4,11 +4,11 @@
 # 第 1 项：从 Telegram 的 @BotFather 拿到的机器人令牌
 TELEGRAM_TOKEN=填这里
 
-# 第 2 项：从 https://platform.openai.com/api-keys 创建的 API Key（sk- 开头）
+# 第 2 项：Gemini 的 API Key（从 https://aistudio.google.com 获取，AIza 开头）
 OPENAI_API_KEY=填这里
 
-# 用哪个模型（默认即可）
-OPENAI_MODEL=gpt-5-mini
+# 用哪个模型（默认即可；如果报模型不存在，到 AI Studio 换一个最新的 flash 模型名）
+OPENAI_MODEL=gemini-2.5-flash
 
 # 记住最近多少轮对话
 HISTORY_TURNS=20
@@ -21,5 +21,6 @@ ALLOWED_USERS=
 # 海外网络留空即可
 PROXY=
 
-# 高级：如果用中转/兼容 OpenAI 的服务，改这里（一般不用动）
-OPENAI_BASE_URL=https://api.openai.com/v1
+# 接口地址（当前为 Gemini，不用动）
+# 想换回 OpenAI 付费版：改成 https://api.openai.com/v1，模型改成 gpt-5-mini，Key 换成 sk- 开头的
+OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
