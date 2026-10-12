@@ -1,0 +1,25 @@
+# ===== 只需要改这个文件 =====
+# 以 # 开头的行是说明，不用管
+
+# 第 1 项：从 Telegram 的 @BotFather 拿到的机器人令牌
+TELEGRAM_TOKEN=填这里
+
+# 第 2 项：从 https://platform.openai.com/api-keys 创建的 API Key（sk- 开头）
+OPENAI_API_KEY=填这里
+
+# 用哪个模型（默认即可）
+OPENAI_MODEL=gpt-5-mini
+
+# 记住最近多少轮对话
+HISTORY_TURNS=20
+
+# 只允许这些用户聊天（填你的用户 ID，多个用英文逗号隔开）
+# 不填 = 任何人都能用，会花你的钱！ID 可以给机器人发 /myid 获取
+ALLOWED_USERS=
+
+# 国内网络需要填代理地址，例如 Clash 默认是 http://127.0.0.1:7890
+# 海外网络留空即可
+PROXY=
+
+# 高级：如果用中转/兼容 OpenAI 的服务，改这里（一般不用动）
+OPENAI_BASE_URL=https://api.openai.com/v1
