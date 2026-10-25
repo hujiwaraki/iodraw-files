@@ -60,60 +60,66 @@ P(pad(CH["F"], 4.5, att=1.5), 0.6, 0.3)
 for t0 in (2.1, 2.55, 3.0):
     P(swish(), t0, 0.5)
 
+# 每一段只留一两样乐器，换段时上一段先收掉，再进下一段（不叠在一起）。
+def strum(t0, t1, vol=0.09, beat=1.0, shake=0.0):
+    """t0–t1 之间的分解和弦（可选轻轻的沙锤），最后一小节自动收轻。"""
+    bar = BAR * beat
+    n = max(1, int((t1 - t0) / bar))
+    for i in range(n):
+        v = vol * (0.6 if i == n - 1 else 1.0)
+        ch = PROG[i % 4]
+        for j, k in enumerate((0, 1, 2, 3, 2, 1, 2, 3)):
+            P(pluck(ARP[ch][k] + 12, length=1.0, bright=0.26), t0 + i * bar + j * bar / 8, v, 0.15)
+        P(bass(ROOT[ch] + 12, bar * 0.9), t0 + i * bar, v * 1.2)
+        if shake:
+            for j in range(4):
+                P(shaker(), t0 + i * bar + j * bar / 4 + bar / 8, shake * (0.6 if i == n - 1 else 1.0), 0.3)
+
+
 # ================================================================ 一向喜新厌旧：往前赶的拨弦
-t0 = T["m01"]
-for i in range(int(LEN["m01"] / (BAR * 0.75))):
-    guitar(t0 + i * BAR * 0.75, PROG[i % 4], 0.08)
-    for j in range(4):
-        P(shaker(), t0 + i * BAR * 0.75 + j * B * 0.75 + B * 0.375, 0.035, 0.3)
+strum(T["m01"], T["m02"], 0.12, beat=0.75, shake=0.03)
 for f in (2.0, 4.3):                                                 # 翻页
-    P(swish(), t0 + f, 0.3)
+    P(swish(), T["m01"] + f, 0.25)
 # 停在山城：停一拍，一个长音
-P(pad(CH["F"] + [72], LEN["m02"], att=0.6, rel=1.6, bright=1.0), T["m02"] + 0.2, 0.18)
-melody(T["m02"] + 0.6, THEME[:4], 0.6, "box", 0.18)
+P(pad(CH["F"] + [72], LEN["m02"], att=0.6, rel=1.6, bright=1.0), T["m02"] + 0.2, 0.16)
+melody(T["m02"] + 0.6, THEME[:4], 0.6, "box", 0.16)
 
 # ================================================================ 前两次的火锅：单薄一点
 t0 = T["m03"]
 for i, ch in enumerate(["Dm", "Bb", "Dm", "C"]):
-    P(pluck(ARP[ch][0] + 12, length=1.8, bright=0.18), t0 + i * 1.7, 0.14)
-    P(pad(CH[ch], 1.7, att=0.5, rel=1.0, bright=0.8), t0 + i * 1.7, 0.08)
-    P(pluck(ARP[ch][2] + 12, length=1.2, bright=0.18), t0 + i * 1.7 + 0.85, 0.09)
-P(swish(), T["m03"] + 3.4, 0.25)                                    # 画面一闪
+    P(pluck(ARP[ch][0] + 12, length=1.8, bright=0.18), t0 + i * 1.7, 0.2)
+    P(pluck(ARP[ch][2] + 12, length=1.2, bright=0.18), t0 + i * 1.7 + 0.85, 0.12)
+P(swish(), T["m03"] + 3.4, 0.2)                                     # 画面一闪
 
-# ================================================================ 跟她一起去 → 小时候：拨弦、轻轻的手鼓、八音盒
-t0 = T["m04"]
-for i in range(int((T["m05b"] - t0) / BAR)):
-    guitar(t0 + i * BAR, PROG[i % 4], 0.09)
-    for j in range(4):
-        P(shaker(), t0 + i * BAR + j * B + B / 2, 0.035, 0.3)
-        P(kick(0.4), t0 + i * BAR + j * B, 0.05 if j % 2 else 0.08)
-melody(T["m04"] + 0.6, THEME, B, "pluck", 0.18, shift=-12)
-for k in range(10):                                                  # 梯坎：一级一级的脚步
-    P(tick(k % 2 == 1), T["m04"] + 0.3 + k * 0.62, 0.04, -0.2)
-melody(T["m05"] + 1.0, THEME, 0.5, "box", 0.2, pan=-0.1)
+# ================================================================ 跟她一起去：拨弦 + 梯坎上的脚步；小时候：八音盒（拨弦让出来）
+strum(T["m04"], T["m05"], 0.13, shake=0.025)
+for k in range(8):
+    P(tick(k % 2 == 1), T["m04"] + 0.4 + k * 0.7, 0.03, -0.2)
+P(pad(CH["F"] + [CH["F"][0] + 12], LEN["m05"], att=0.6, rel=1.4, bright=1.0), T["m05"], 0.12)
+melody(T["m05"] + 0.6, THEME, 0.5, "box", 0.2, pan=-0.1)
 
-# ================================================================ 老城：低低的大提琴 → 防空洞里的火锅：热闹的拨弦一点点回来
+# ================================================================ 老城：低低的大提琴 → 防空洞里的火锅：拨弦一点点回来
 t0 = T["m05b"]
-for i, (m, d) in enumerate(((38, 1.7), (41, 1.7))):
-    P(cello(m, d), t0 + 0.1 + i * 1.7, 0.16, -0.1)
-P(pad(CH["Dm"], 3.4, att=1.0, rel=1.2, bright=0.8), t0, 0.1)
-for i in range(3):
-    guitar(t0 + 3.4 + i * BAR, PROG[i % 4], 0.05 + 0.025 * i)
-    for j in range(4):
-        P(shaker(), t0 + 3.4 + i * BAR + j * B + B / 2, 0.015 + 0.012 * i, 0.3)
-P(pad(CH["F"], 6.8, att=1.5, rel=1.4, bright=1.0), t0 + 3.4, 0.1)
-melody(t0 + 5.0, THEME[:6], B, "pluck", 0.14)
+for i, m in enumerate((38, 41)):
+    P(cello(m, 1.7), t0 + 0.1 + i * 1.7, 0.24, -0.1)
+P(pad(CH["Dm"], 3.2, att=1.0, rel=1.0, bright=0.8), t0, 0.08)
+strum(t0 + 3.4, T["m06"], 0.09, shake=0.015)
+melody(t0 + 5.0, THEME[:6], B, "pluck", 0.12)
 
-# ================================================================ 小摊：热闹一点
-t0 = T["m06"]
-for i in range(int((T["m08"] - t0) / BAR) + 1):
-    guitar(t0 + i * BAR, PROG[i % 4], 0.11)
-    for j in range(4):
-        P(shaker(), t0 + i * BAR + j * B + B / 2, 0.045, 0.3)
-        P(knock(), t0 + i * BAR + j * B, 0.025, -0.3)
-melody(T["m06"] + 0.3, THEME, B, "pluck", 0.22)
+# ================================================================ 小摊：热闹一点，只用拨弦 + 沙锤
+strum(T["m06"], T["m08b"], 0.1, shake=0.04)
 for i, m in enumerate((72, 69, 65, 60)):                             # 肠子不太服气：咕噜往下掉
     P(pluck(m, length=0.5, bright=0.3), T["m07"] + 3.6 + i * 0.16, 0.12, 0.2)
+
+# ================================================================ 又见到另一个朋友：雪天的回忆用八音盒，回到现在时暖暖的和弦
+t0 = T["m08b"]
+P(pad(CH["C"], 3.0, att=0.8, rel=1.2, bright=0.9), t0, 0.1)
+for i, ch in enumerate(["F", "Am", "Bb", "C"]):                      # 下雪的城市：只有八音盒和很轻的长音
+    P(pad(CH[ch] + [CH[ch][0] + 24], 1.65, att=0.6, rel=1.2, bright=1.3), t0 + 3.2 + i * 1.65, 0.08)
+melody(t0 + 3.4, THEME, 0.75, "box", 0.2, shift=12, pan=0.1)
+P(pad(CH["F"] + [65, 69, 72], 9.0, att=2.0, rel=2.5, bright=1.1), t0 + 10.2, 0.16)   # 回到现在
+for i, m in enumerate((65, 69, 72, 77)):                             # 好像，是可以的
+    P(music_box(m, 3.0), t0 + 16.3 + i * 0.12, 0.12, -0.3 + i * 0.2)
 
 # ================================================================ 夜里聊天：只剩很轻的钢琴
 t0 = T["m08"]
@@ -122,21 +128,19 @@ for i, ch in enumerate(["F", "Dm", "Bb", "C"]):
     for j, k in enumerate((0, 1, 2, 1)):
         P(piano(CH[ch][k] + 12, B * 0.9), t0 + i * 1.95 + j * 0.49, 0.06, 0.1)
 for k in range(6):                                                   # 窗外的灯一格一格熄掉
-    P(music_box(84 - (k % 3) * 3, 1.2), t0 + 2.8 + k * 0.8, 0.06, 0.3)
+    P(music_box(84 - (k % 3) * 3, 1.2), t0 + 2.8 + k * 0.8, 0.05, 0.3)
 
 # ================================================================ 心和心的距离：一个长长的和弦
-P(pad(CH["F"] + [65, 69, 72], LEN["m09"], att=2.0, rel=2.5, bright=1.2), T["m09"], 0.2)
+P(pad(CH["F"] + [65, 69, 72], LEN["m09"], att=2.0, rel=2.5, bright=1.2), T["m09"], 0.18)
 melody(T["m09"] + 3.6, THEME, 0.7, "piano", 0.12)
 
 # ================================================================ 长椅上睡着：慢下来
 for i, ch in enumerate(["F", "C", "Bb"]):
-    P(pad(CH[ch], 2.4, att=0.8, rel=1.4, bright=0.9), T["m10"] + i * 2.27, 0.22)
-    P(pluck(ARP[ch][0] + 12, length=1.6, bright=0.2), T["m10"] + i * 2.27, 0.13)
+    P(pad(CH[ch], 2.4, att=0.8, rel=1.4, bright=0.9), T["m10"] + i * 2.27, 0.2)
+    P(pluck(ARP[ch][0] + 12, length=1.6, bright=0.2), T["m10"] + i * 2.27, 0.12)
 
 # ================================================================ 一起走下梯坎：旋律慢慢收回系列的主题
 P(music_box(77, 2.0), T["m11"] + 0.6, 0.12)                          # 醒过来
-for i in range(3):
-    guitar(T["m11"] + 3.4 + i * BAR, PROG[i % 4], 0.07)
 melody(T["m11"] + 3.6, THEME_END, 0.8, "box", 0.24, pan=0.1)
 P(pad(CH["F"] + [72], 6.8, att=1.5, rel=2.0, bright=1.2), T["m11"] + 3.4, 0.16)
 

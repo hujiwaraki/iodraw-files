@@ -121,27 +121,53 @@ def city(c, t, night=0.0, rail=None, warm=0.0, lit=0.3):
 
 
 
-def stairs_bg(c, t, rain=0.0, crayon=False):
-    """长长的梯坎：从左下一直爬到右上，两边是老房子的墙和花盆。"""
-    sky = mix(hexc("c8d8e4"), hexc("a8b0bc"), rain)
-    vgrad(c, -200, 1200, [(0, sky), (1, hexc("efe8dc"))], -300, W + 300)
-    shape(c, [(-40, 0), (360, 0), (360, 2000), (-40, 2000)], hexc("d8c8b0") if not crayon else hexc("e8c8a0"), "wallL",
-          lw=3)
-    shape(c, [(760, 0), (1120, 0), (1120, 2000), (760, 2000)], hexc("cbb89c") if not crayon else hexc("e0b890"), "wallR",
-          lw=3)
-    for k in range(3):
-        shape(c, rect(60, 300 + k * 420, 160, 200), hexc("8a6a4a"), f"wwL{k}", lw=2)
-        shape(c, rect(860, 200 + k * 420, 160, 200), hexc("8a6a4a"), f"wwR{k}", lw=2)
-    for k in range(22):                                            # 一级一级往上的台阶
-        y = 1900 - k * 72
-        shape(c, rect(360, y, 400, 72), mix(hexc("b8b0a0"), hexc("d8d0c0"), (k % 2) * 0.4), f"st{k}", lw=1.8, amp=0.5)
-    with keep():
-        for k in range(4):                                         # 墙边的花盆
-            y = 1700 - k * 380
-            shape(c, [(330, y), (370, y), (364, y + 34), (336, y + 34)], hexc("c8784a"), f"pot{k}", lw=1.6)
-            for j in range(3):
-                shape(c, ell(342 + j * 10, y - 12, 10, 16, 10), hexc("6fa860"), f"lf{k}{j}", lw=1.2)
+def _sp(u):
+    """梯坎上位置 u（0 最下面 → 1 最上面）在画面里的高度和远近缩放。"""
+    p = 1 - (1 - u) ** 1.3
+    return lerp(1960, 420, p), lerp(1.0, 0.28, p)
 
+
+def stair_pos(u):
+    """站在梯坎 u 处的人：脚底 y 和人物缩放。"""
+    y, sc = _sp(u)
+    return y - 40 * sc, 1.5 * sc
+
+
+def stairs_bg(c, t):
+    """长长的梯坎，一级一级往远处爬上去，两边的老墙跟着往里收（有透视，看得出台阶面和立面）。"""
+    vgrad(c, -200, 900, [(0, hexc("c8d8e4")), (1, hexc("efe8dc"))], -300, W + 300)
+    N = 18
+    us = [i / 60 for i in range(61)]
+    for side, col, key in ((-1, hexc("d8c8b0"), "wallL"), (1, hexc("cbb89c"), "wallR")):
+        edge = [(540 + side * (_sp(u)[1] * 400 + 10), _sp(u)[0] + 10) for u in us]
+        top = edge[-1]
+        pts = [(540 + side * 700, 2000)] + edge + [(top[0], -100), (540 + side * 700, -100)]
+        shape(c, pts, col, key, lw=3)
+        for k, ua in enumerate((0.04, 0.3, 0.56, 0.78)):           # 墙上的窗，也跟着透视变小
+            ub = ua + 0.1
+            (ya, sa), (yb, sb) = _sp(ua), _sp(ub)
+            xa, xb = 540 + side * (sa * 400 + 10), 540 + side * (sb * 400 + 10)
+            q = [(xa + side * 60 * sa, ya - 640 * sa), (xb + side * 60 * sb, yb - 640 * sb),
+                 (xb + side * 60 * sb, yb - 360 * sb), (xa + side * 60 * sa, ya - 360 * sa)]
+            shape(c, q, hexc("8a6a4a"), f"{key}win{k}", lw=2)
+    for k in range(N - 1, -1, -1):                                 # 一级一级的台阶：立面深一点，台阶面浅一点
+        y0, s0 = _sp(k / N)
+        y1, s1 = _sp((k + 1) / N)
+        r0 = 70 * s0
+        hw0, hw1 = 400 * s0, 400 * s1
+        shape(c, [(540 - hw0, y0), (540 + hw0, y0), (540 + hw0, y0 - r0), (540 - hw0, y0 - r0)], hexc("a8a090"),
+              f"sr{k}", lw=1.6, amp=0.4)
+        shape(c, [(540 - hw0, y0 - r0), (540 + hw0, y0 - r0), (540 + hw1, y1), (540 - hw1, y1)],
+              mix(hexc("cfc8b8"), hexc("ddd6c6"), (k % 2) * 0.5), f"stp{k}", lw=1.6, amp=0.4)
+    with keep():
+        for k, u in enumerate((0.08, 0.3, 0.52, 0.7)):             # 墙脚的花盆
+            y, sc = _sp(u)
+            x = 540 - (400 * sc + 10) + 26 * sc
+            shape(c, [(x - 20 * sc, y - 70 * sc), (x + 20 * sc, y - 70 * sc), (x + 14 * sc, y - 36 * sc),
+                      (x - 14 * sc, y - 36 * sc)], hexc("c8784a"), f"pot{k}", lw=1.6)
+            for j in range(3):
+                shape(c, ell(x - 10 * sc + j * 10 * sc, y - 84 * sc, 10 * sc, 16 * sc, 10), hexc("6fa860"),
+                      f"lf{k}{j}", lw=1.2)
 
 
 def old_street(c, t):
@@ -323,18 +349,21 @@ def m04(c, t):
     """颜色暖起来。长长的梯坎，她爬得直喘气；好朋友一步两级往上跳，停下来回头，笑着等她。"""
     stairs_bg(c, t)
     with keep():
-        glow(c, 700, 300, 520, WARM, 0.3)
-    cy = lerp(1840, 1560, ease_io(prog(t, 0.0, 6.8)))
-    girl(c, 520, cy, 1.4, hat=True, pack=True, look=0.3, look_up=0.5, mouth="o", walk=t * 4, key="me2",
-         head_down=6)
+        glow(c, 600, 300, 520, WARM, 0.3)
+    fu = lerp(0.14, 0.34, ease_io(prog(t, 0.0, 3.0)))               # 好朋友跳在前面，停下来转身等她
+    fy, fs = stair_pos(fu)
+    hop = abs(math.sin(t * 3.2)) * 24 * fs if t < 3.0 else 0
+    if t < 3.0:
+        friend(c, 580, fy - hop, fs, key="fr2", view="back", walk=t * 7)
+    else:
+        friend(c, 580, fy, fs, key="fr2", look=-0.3, mouth="laugh")
+    gu = lerp(0.04, 0.14, ease_io(prog(t, 0.0, 6.8)))
+    gy, gs = stair_pos(gu)
+    girl(c, 480, gy, gs, view="back", hat=True, pack=True, walk=t * 4, key="me2")
     breath_ph = (t / 0.6) % 1
     with keep():                                                   # 喘气
-        shape(c, ell(560 + breath_ph * 30, cy - 260 - breath_ph * 30, 10 + breath_ph * 14, 8 + breath_ph * 8, 10),
-              (1, 1, 1), "pant", lw=0.8, alpha=0.6 * (1 - breath_ph))
-    hop = abs(math.sin(t * 3.2)) * 30
-    fy = lerp(1300, 1000, ease_io(prog(t, 0.0, 3.0))) - hop
-    wait = t > 3.0                                                 # 停下来回头，笑着等她
-    friend(c, 620, fy + (hop if wait else 0), 1.25, key="fr2", look=-0.8, mouth="laugh", walk=None if wait else t * 7)
+        shape(c, ell(520 + breath_ph * 30, gy - 250 * gs - breath_ph * 30, (10 + breath_ph * 14) * gs / 1.4,
+                     (8 + breath_ph * 8) * gs / 1.4, 10), (1, 1, 1), "pant", lw=0.8, alpha=0.6 * (1 - breath_ph))
 
 
 # ================================================================ 5 一路上，她都在讲小时候的事
@@ -557,7 +586,93 @@ def m07(c, t):
             line(c, pts, f"gr{j}", 2.4, hexc("8a7a6a"), alpha=0.8 * (1 - ph))
 
 
-# ================================================================ 8–9 夜里挤在一张床上
+# ================================================================ 9 又见到了另一个朋友：两年前的下雪天
+TA = hexc("c8584a")                       # 雪天那位朋友：暖红色外套
+TA_SCARF = hexc("f2e2c8")
+TA_HAT = hexc("6a7aa8")
+
+
+def ta(c, x, y, s, key="ta", **kw):
+    """两年前下雪天去找ta玩的那位朋友：暖红外套、厚围巾、毛线帽。"""
+    kw.setdefault("look", -0.4)
+    local(c, x, y, s, key, TA, hexc("3a2a24"), "short", **kw)
+    with keep():
+        lk = kw.get("look", 0.0) * 2.5 * s
+        shape(c, rrect(x - 28 * s, y - 128 * s, 56 * s, 15 * s, 7 * s), TA_SCARF, key + "sc", lw=2)   # 围巾
+        shape(c, [(x + 10 * s, y - 116 * s), (x + 24 * s, y - 116 * s), (x + 26 * s, y - 86 * s),
+                  (x + 12 * s, y - 86 * s)], TA_SCARF, key + "sc2", lw=1.8)
+        shape(c, ell(x + lk, y - 166 * s, 38 * s, 30 * s, 18, math.pi, 2 * math.pi), TA_HAT, key + "bn", lw=2.2)
+        shape(c, rrect(x + lk - 40 * s, y - 170 * s, 80 * s, 11 * s, 5 * s), darker(TA_HAT, 0.85), key + "bnb", lw=1.8)
+        circle(c, x + lk, y - 198 * s, 7 * s, TA_SCARF)
+
+
+def lantern_corner(c, t):
+    vgrad(c, -200, 1300, [(0, hexc("7a6a98")), (0.55, hexc("e8a888")), (1, hexc("f6d8b8"))], -300, W + 300)
+    for k, (x0, w_, h_, col) in enumerate(((-40, 340, 1000, "b8a090"), (760, 380, 1100, "a89488"))):
+        shape(c, rect(x0, 1300 - h_, w_, h_ + 20), hexc(col), f"lc{k}", lw=3)
+        for j in range(4):
+            shape(c, rect(x0 + 60, 1300 - h_ + 80 + j * 230, w_ - 140, 110), hexc("ffd98a"), f"lcw{k}{j}", lw=2,
+                  alpha=0.85)
+    shape(c, rect(-20, 1300, W + 40, 700), hexc("b8a48c"), "lcg", lw=3)
+    pts = [(x, 520 + 120 * math.sin(math.pi * (x + 20) / (W + 40))) for x in range(-20, W + 40, 60)]
+    line(c, pts, "lcwire", 2.4, INK)
+    with keep():                                                   # 檐下一串红灯笼
+        for k in range(7):
+            x = 80 + k * 155
+            y = 520 + 120 * math.sin(math.pi * (x + 20) / (W + 40)) + 40
+            glow(c, x, y, 120, WARM, 0.35)
+            shape(c, ell(x, y, 34, 40, 16), hexc("d8483a"), f"lcl{k}", lw=2)
+
+
+def snow_city(c, t):
+    """另一座下着雪的城市：屋顶积着白雪，冷白色，却暖暖的。"""
+    vgrad(c, -200, 1300, [(0, hexc("c8d4e4")), (1, hexc("eef0f2"))], -300, W + 300)
+    for k, (x, w_, h_) in enumerate(((-40, 260, 300), (240, 220, 380), (480, 300, 320), (800, 300, 360))):
+        house(c, x, 1300, w_, h_, hexc(["d8c8b8", "c8b8a8", "dcccbc", "ccbcac"][k]), hexc("8a6a5a"), f"sh{k}",
+              win=hexc("ffe0a0"))
+        shape(c, [(x - 16, 1300 - h_ + 4), (x + w_ / 2, 1300 - h_ - w_ * 0.55 - 6), (x + w_ + 16, 1300 - h_ + 4),
+                  (x + w_ / 2, 1300 - h_ - w_ * 0.42)], hexc("fafcfe"), f"shs{k}", lw=2.2)   # 屋顶的积雪
+    shape(c, rect(-20, 1300, W + 40, 700), hexc("f4f6f8"), "sng", lw=3)
+    snowfall(c, t, 1.0)
+
+
+def snowfall(c, t, a, warm=0.0, n=60):
+    r = random.Random(77)
+    with keep():
+        for k in range(n):
+            x = (r.uniform(0, W) + 30 * math.sin(t * 0.8 + k)) % W
+            y = (r.uniform(0, 1900) + t * r.uniform(60, 120)) % 1900
+            col = mix((1, 1, 1), hexc("ffd98a"), warm)
+            if warm > 0:
+                glow(c, x, y, 18, col, 0.3 * a * warm)
+            circle(c, x, y, r.uniform(4, 8), col, a=a * 0.9)
+
+
+def m08b(c, t):
+    """傍晚的街角，灯笼下，ta从对面走过来，她认出来了；叠出两年前那座下雪的城市；雪花飘回现在，变成灯笼下暖暖的光点。"""
+    mem = ease_io(prog(t, 3.0, 1.2)) * (1 - ease_io(prog(t, 9.6, 1.4)))
+    if mem < 1:
+        lantern_corner(c, t)
+        come = ease_io(prog(t, 0.2, 2.6))
+        tx = lerp(1020, 740, come)
+        meet = t > 2.4
+        friend(c, 200, 1330, 1.6, key="fr8b", look=0.6, mouth="smile")
+        girl(c, 450, 1330, 1.6, hat=True, pack=True, look=0.7, mouth="o" if 1.6 < t < 3.0 else "laugh" if meet else "smile",
+             key="me8b")
+        ta(c, tx, 1330, 1.6, key="ta8b", look=-0.7, mouth="laugh" if meet else "smile",
+           walk=t * 5 if come < 1 else None)
+        if t > 10.2:                                               # 雪花飘回现在，变成灯笼下暖暖的光点
+            snowfall(c, t, ease_io(prog(t, 10.2, 1.0)) * (1 - 0.4 * prog(t, 14.0, 4.0)), warm=1.0, n=40)
+    if mem > 0:
+        with group_alpha(c, mem):
+            snow_city(c, t)
+            walk = t * 4
+            sx = lerp(200, 460, prog(t, 3.0, 7.0))
+            girl(c, sx, 1370, 1.5, hat=True, pack=True, look=0.6, mouth="laugh", walk=walk, key="me8s")
+            ta(c, sx + 200, 1370, 1.5, key="ta8s", look=-0.6, mouth="laugh", walk=walk)
+
+
+# ================================================================ 10–11 夜里挤在一张床上
 def bubble_icon(c, k, x, y, a):
     with group_alpha(c, a), keep():
         shape(c, ell(x, y, 64, 56, 20), (1, 1, 1), f"bb{k}", lw=2.2)
@@ -620,10 +735,14 @@ def m09(c, t):
 def bench_street(c, t):
     vgrad(c, -200, 1150, [(0, hexc("f2d8b0")), (1, hexc("fbf0e0"))], -300, W + 300)
     shape(c, rect(560, 300, 560, 900), hexc("d8c4a4"), "bwall", lw=3)      # 后面的老墙和往上走的梯坎
-    for k in range(9):
+    for k in range(9):                                             # 台阶面浅、立面深，右端露出侧面
         y = 1150 - k * 64
-        shape(c, rect(-20 + k * 50, y, 600 - k * 50, 64), mix(hexc("c8bca8"), hexc("d8d0c0"), (k % 2) * 0.4),
-              f"bst{k}", lw=1.8, amp=0.5)
+        xr = 580 - k * 0
+        x0 = -20 + k * 50
+        shape(c, [(xr, y), (xr + 30, y - 18), (xr + 30, y + 46), (xr, y + 64)], hexc("a89c8a"), f"bsd{k}", lw=1.4)
+        shape(c, rect(x0, y + 16, xr - x0, 48), hexc("b4a896"), f"bsr{k}", lw=1.6, amp=0.5)
+        shape(c, [(x0, y + 16), (xr, y + 16), (xr + 30, y - 2), (x0 + 30, y - 2)], hexc("dcd4c4"), f"bst{k}", lw=1.4,
+              amp=0.5)
     with keep():
         for k in range(2):                                         # 楼梯上慢慢走过的路人
             p = ((t * 0.08 + k * 0.5) % 1)
@@ -679,11 +798,9 @@ def m11(c, t):
         stairs_bg(c, u)
         with keep():
             glow(c, 540, 500, 520, WARM, 0.35)
-        down = ease_io(prog(u, 0.0, 3.4))
-        y = lerp(1100, 1760, down)
-        s = lerp(0.95, 1.35, down)
-        friend(c, 480, y, s, key="fr11b", look=0.4, mouth="laugh", walk=u * 6)
-        girl(c, 640, y, s, hat=True, pack=True, look=-0.4, mouth="smile", walk=u * 6, key="me11b")
+        y, s = stair_pos(lerp(0.4, 0.04, ease_io(prog(u, 0.0, 3.4))))
+        friend(c, 540 - 70 * s, y, s, key="fr11b", look=0.4, mouth="laugh", walk=u * 6)
+        girl(c, 540 + 70 * s, y, s, hat=True, pack=True, look=-0.4, mouth="smile", walk=u * 6, key="me11b")
         return
     u = t - 6.8
     z = lerp(1.0, 0.85, ease_io(prog(u, 0.0, 3.4)))
