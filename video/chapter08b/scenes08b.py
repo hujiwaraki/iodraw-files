@@ -354,8 +354,125 @@ def m05(c, t):
     memory(c, ease_io(prog(t, 1.0, 1.0)), kid)
 
 
-# ================================================================ 6–7 她从小吃到大的小摊
-def snack_stall(c, t):
+# ================================================================ 6 老城的一砖一瓦 → 防空洞里的火锅
+def old_wall(c, t):
+    vgrad(c, -200, 1400, [(0, hexc("e8a878")), (0.6, hexc("f2c89a")), (1, hexc("f6dcc0"))], -300, W + 300)
+    with keep():
+        glow(c, 900, 520, 420, hexc("ffd8a0"), 0.5)
+    shape(c, rect(-20, 520, W + 40, 900), hexc("a89482"), "ow", lw=3)            # 一段很旧的石墙
+    r = random.Random(21)
+    with keep():
+        for row in range(14):
+            y = 540 + row * 62
+            x = -40 + (row % 2) * 60
+            while x < W + 40:
+                w_ = r.uniform(90, 140)
+                patch = 620 < x < 980 and 600 < y < 900                      # 补过的一块：砖小一点、颜色浅一点
+                if patch:
+                    w_ *= 0.6
+                col = mix(hexc("8a7666"), hexc("c8b8a4"), r.uniform(0, 1) * (0.5 if not patch else 1.0) +
+                          (0.4 if patch else 0))
+                shape(c, rect(x + 4, y + 4, w_ - 8, 54), col, f"br{row}_{int(x)}", lw=1.4, amp=0.6)
+                x += w_
+    # 墙脚下的旧石拱洞口，里面透出暖暖的光
+    pts = [(380, 1420), (380, 1120)] + [(540 + 160 * math.cos(a), 1120 - 160 * math.sin(a))
+                                        for a in [math.pi * (1 - i / 16) for i in range(17)]] + [(700, 1420)]
+    shape(c, [(p[0] + (p[0] - 540) * 0.18, p[1] + (20 if p[1] < 1400 else 0)) for p in pts], hexc("6a5a4c"),
+          "archst", lw=3)
+    shape(c, pts, hexc("2a2220"), "arch", lw=3)
+    with keep():
+        glow(c, 540, 1300, 220, WARM, 0.7 + 0.25 * prog(t, 1.0, 2.0))
+        glow(c, 540, 1380, 120, hexc("ffc070"), 0.6)
+    shape(c, rect(-20, 1420, W + 40, 600), hexc("b8a08a"), "owg", lw=3)
+
+
+def shelter(c, t):
+    """防空洞里：长长的拱形石洞，又凉又旧；一张张小桌子摆着火锅，头顶一盏盏暖灯。"""
+    fill_all(c, hexc("2e2824"))
+    vx, vy = 540, 760                                              # 洞往里延伸的消失点
+    shape(c, [(-200, 2000), (vx - 90, vy + 150), (vx + 90, vy + 150), (W + 200, 2000)], hexc("4a4038"), "sfl",
+          lw=2.4)
+    with keep():
+        r = random.Random(31)
+        for k in range(70):                                        # 老石壁上一块块又凉又旧的石头
+            side = -1 if k % 2 else 1
+            d = r.uniform(0, 1)
+            x = vx + side * lerp(560, 110, d ** 0.6)
+            y = lerp(r.uniform(100, 1500), vy + r.uniform(-120, 120), d ** 0.6)
+            sz = lerp(1.0, 0.25, d ** 0.6)
+            shape(c, rect(x - 50 * sz, y, 100 * sz, 46 * sz), hexc("4e443c"), f"stn{k}", lw=1.2 * sz + 0.4, amp=0.5)
+    for k in range(7, -1, -1):                                     # 一道一道的石拱，越往里越小
+        u = (k / 7) ** 0.6
+        hw = lerp(620, 90, u)
+        top = lerp(40, vy - 100, u)
+        fl = lerp(1990, vy + 150, u)
+        pts = [(vx - hw, fl), (vx - hw, top + hw)] + [(vx + hw * math.cos(a), top + hw - hw * math.sin(a))
+                                                      for a in [math.pi * (1 - i / 18) for i in range(19)]] + \
+              [(vx + hw, fl)]
+        line(c, pts, f"rib{k}", lerp(14, 3, u), mix(hexc("8a7a6a"), hexc("5a4e44"), u))
+    with keep():                                                   # 头顶一盏盏暖灯
+        for k in range(8):
+            u = k / 8
+            ly = lerp(140, vy - 60, u ** 0.8)
+            sz = lerp(22, 6, u)
+            glow(c, vx, ly, sz * 7, WARM, 0.4)
+            circle(c, vx, ly, sz, hexc("ffe0a0"))
+        for k, (x, y, s_) in enumerate(((250, 1120, 0.75), (830, 1100, 0.75), (380, 960, 0.5), (700, 950, 0.5),
+                                        (470, 880, 0.35), (610, 875, 0.35))):
+            glow(c, x, y - 90 * s_, 160 * s_, WARM, 0.35)
+            silhouette(c, x - 50 * s_, y, s_, f"sh{k}a", col=hexc("5a5450"), a=0.8)       # 后面几桌在吃火锅的人
+            silhouette(c, x + 50 * s_, y, s_, f"sh{k}b", col=hexc("5a5450"), a=0.8)
+            shape(c, ell(x, y - 60 * s_, 70 * s_, 16 * s_, 14), CHILI, f"sp{k}", lw=1.2)
+            ph = (t * 0.6 + k * 0.3) % 1
+            line(c, [(x, y - 80 * s_ - ph * 120 * s_), (x + 6, y - 120 * s_ - ph * 120 * s_)], f"sps{k}", 2.4,
+                 (1, 1, 1), alpha=0.5 * (1 - ph))
+    # 最前面的一桌：两张小凳子，中间一锅红汤
+    shape(c, rect(380, 1290, 320, 26), WOOD, "slt", lw=2.6)
+    for x in (400, 680):
+        line(c, [(x, 1316), (x, 1402)], f"sltl{x}", 7, darker(WOOD, 0.85))
+    for sx_, k in ((280, "L"), (800, "R")):
+        shape(c, rect(sx_ - 56, 1330, 112, 18), WOOD, f"sst{k}", lw=2)
+        for sg in (-1, 1):
+            line(c, [(sx_ + sg * 42, 1348), (sx_ + sg * 42, 1402)], f"sstl{k}{sg}", 6, darker(WOOD, 0.85))
+    shape(c, ell(540, 1282, 110, 30, 22), hexc("4a4040"), "spot", lw=2.6)
+    shape(c, ell(540, 1274, 92, 20, 20), CHILI, "spots", lw=1.4)
+    with keep():
+        for j in range(7):
+            ph = (t * 1.8 + j / 7) % 1
+            circle(c, 470 + j * 23, 1272 - ph * 8, 6 * (1 - ph) + 2, hexc("f2805a"), a=1 - ph)
+        for j in range(4):
+            ph = (t * 0.6 + j / 4) % 1
+            line(c, [(490 + j * 34, 1240 - ph * 220), (498 + j * 34, 1200 - ph * 220)], f"spst{j}", 3, (1, 1, 1),
+                 alpha=0.55 * (1 - ph))
+
+
+def m05b(c, t):
+    """傍晚老城的旧石墙，补过的痕迹，斜阳把影子拉得很长；两人走进墙脚的旧石拱，里面是防空洞里的火锅。"""
+    if t < 3.4:
+        old_wall(c, t)
+        go = ease_io(prog(t, 0.0, 3.4))
+        x = lerp(80, 300, go)
+        with keep():                                               # 斜阳拉长的影子
+            for dx in (0, 150):
+                shape(c, [(x + dx - 14, 1560), (x + dx + 14, 1560), (x + dx - 320, 1620), (x + dx - 380, 1610)],
+                      hexc("5a4a40"), f"shd{dx}", lw=0, edge=False, alpha=0.35)
+        friend(c, x + 150, 1560, 1.3, key="fr5b", look=-0.5, mouth="smile", walk=t * 5)
+        girl(c, x, 1560, 1.3, hat=True, pack=True, look=0.6, look_up=0.4, mouth="smile", walk=t * 5, key="me5b")
+        return
+    u = t - 3.4
+    shelter(c, u)
+    talk = math.sin(u * 7) > 0
+    friend(c, 280, 1330, 1.45, key="fr5c", sit=True, look=0.6, mouth="laugh" if talk else "o")
+    look_wall = 1.0 < u < 3.6                                      # 主角看看石壁，又看看她
+    girl(c, 800, 1330, 1.45, sit=True, hat=True, pack=False, look=0.7 if look_wall else -0.6,
+         look_up=0.5 if look_wall else 0.0, mouth="smile", key="me5c")
+    fade = 1 - prog(u, 0.0, 0.5)
+    if fade > 0:
+        veil(c, hexc("2a2220"), fade)
+
+
+# ================================================================ 7–8 她从小吃到大的小摊
+def snack_stall(c, t, bx=(440, 540, 640)):
     vgrad(c, -200, 1100, [(0, hexc("f2c8a0")), (1, hexc("fbeede"))], -300, W + 300)
     shape(c, rect(-20, 300, W + 40, 120), hexc("c8584a"), "awn", lw=2.4)
     for k in range(9):
@@ -383,18 +500,22 @@ def snack_stall(c, t):
         shape(c, rect(sx_ - 56, 1180, 112, 18), WOOD, f"stool{k}", lw=2)
         for sg in (-1, 1):
             line(c, [(sx_ + sg * 42, 1198), (sx_ + sg * 42, 1250)], f"stl{k}{sg}", 6, darker(WOOD, 0.85))
-    # 一碗红红的小面、一碗抄手、一碗冰冰凉凉的甜点
-    for k, x in enumerate((440, 540, 640)):
+    bowls(c, t, bx)
+
+
+def bowls(c, t, bx):
+    """矮桌上的三碗：bx = (小面, 抄手, 甜点) 的 x。"""
+    for k, x in enumerate(bx):
         shape(c, ell(x, 1132, 46, 16, 16), hexc("f6f2ea"), f"bw{k}", lw=2.2)
         shape(c, ell(x, 1124, 38, 10, 14), (CHILI, hexc("d8583a"), hexc("ece4cc"))[k], f"bs{k}", lw=1.4)
     with keep():
         for j in range(4):
-            line(c, [(416 + j * 14, 1124), (420 + j * 14, 1108)], f"nd{j}", 2.2, hexc("f2d27a"))
+            line(c, [(bx[0] - 24 + j * 14, 1124), (bx[0] - 20 + j * 14, 1108)], f"nd{j}", 2.2, hexc("f2d27a"))
         for j in range(3):
-            shape(c, ell(522 + j * 18, 1120, 9, 6, 10), hexc("f8f2e8"), f"ws{j}", lw=1.2)
+            shape(c, ell(bx[1] - 18 + j * 18, 1120, 9, 6, 10), hexc("f8f2e8"), f"ws{j}", lw=1.2)
         for j in range(4):
-            circle(c, 622 + j * 12, 1122, 3.4, hexc("8a5a3a"))
-        for k, x in enumerate((440, 540)):
+            circle(c, bx[2] - 18 + j * 12, 1122, 3.4, hexc("8a5a3a"))
+        for k, x in enumerate(bx[:2]):
             ph = (t * 0.7 + k * 0.5) % 1
             line(c, [(x - 6, 1100 - ph * 80), (x + 2, 1070 - ph * 80)], f"bst{k}", 2.4, (1, 1, 1), alpha=0.6 * (1 - ph))
 
@@ -409,8 +530,9 @@ def m06(c, t):
 
 
 def m07(c, t):
-    """她吃得很香，一点不怕辣；下一刻捂着肚子皱起脸，好朋友在旁边笑出声。"""
-    snack_stall(c, t + 4.0)
+    """她吃得很香，一点不怕辣；下一刻捂着肚子皱起脸。好朋友转过头看看她，把那碗冰冰凉凉的甜点推到她面前。"""
+    slide = ease_io(prog(t, 4.0, 1.2))
+    snack_stall(c, t + 4.0, bx=(540, 640, lerp(420, 690, slide)))
     if t < 3.4:
         friend(c, 260, 1180, 1.4, key="fr7", sit=True, look=0.7, mouth="smile")
         girl(c, 820, 1180, 1.4, sit=True, hat=True, pack=False, look=-0.6, mouth="laugh", key="me7",
@@ -422,8 +544,8 @@ def m07(c, t):
                       hexc("f2805a"), f"hot{j}", lw=0, edge=False, alpha=0.8 * (1 - ph))
         return
     u = t - 3.4
-    laugh = abs(math.sin(u * 7)) * 6
-    friend(c, 260, 1180 - laugh, 1.4, key="fr7b", sit=True, look=0.8, mouth="laugh")
+    friend(c, 260, 1180, 1.4, key="fr7b", sit=True, look=0.8, mouth="o" if u < 1.2 else "smile",
+           arms=[(-24, -78), (lerp(24, 70, ease_io(prog(u, 0.6, 0.8))), -84)])
     girl(c, 820, 1180, 1.4, sit=True, hat=True, pack=False, look=-0.3, mouth="o", head_down=10, key="me7b",
          eyes_closed=True, arms=[(-4, -96), (12, -92)])
     with keep():                                                   # 肚子里咕噜咕噜
