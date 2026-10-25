@@ -1,11 +1,11 @@
-"""第八章 · 她的小时候 —— 时间轴、字幕、调色。字幕每屏最多两行、每行不超过 15 字。"""
-from scenes08b import intro, n01, n02, n03, n04, n05, n06, n07, n08, n09, n10, n11, outro
+"""第八章 · 同路人 —— 时间轴、字幕、调色。字幕每屏最多两行、每行不超过 15 字。"""
+from scenes08b import intro, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11, outro
 
-NAME = "chapter08_她的小时候"
+NAME = "chapter08_同路人"
 S = 3.4                                   # 一屏字幕的长度
 
-_seq = [(intro, 6.0), (n01, 2 * S), (n02, 2 * S), (n03, 2 * S), (n04, 2 * S), (n05, 2 * S), (n06, 2 * S), (n07, S),
-        (n08, 3 * S), (n09, 2 * S), (n10, 2 * S), (n11, 2 * S), (outro, 6.0)]
+_seq = [(intro, 6.0), (m01, 2 * S), (m02, S), (m03, 2 * S), (m04, 2 * S), (m05, 1.4 * S), (m06, 1.3 * S),
+        (m07, 2 * S), (m08, 2.3 * S), (m09, 3 * S), (m10, 2 * S), (m11, 3 * S), (outro, 6.0)]
 SCENES = []
 _t = 0.0
 for _fn, _d in _seq:
@@ -13,36 +13,41 @@ for _fn, _d in _seq:
     _t += _d
 DUR = round(_t, 2)
 START = {fn.__name__: a for a, b, fn in SCENES}
+LEN = {fn.__name__: b - a for a, b, fn in SCENES}
 
 TRANSITIONS = [(a, "fade") for a, b, fn in SCENES[1:]]
 
 
-def _screens(t0, items, gap=0.3):
+def _screens(name, items, gap=0.3):
+    """一个镜头里的几屏字幕，平分这个镜头的时长。"""
+    step = LEN[name] / len(items)
+    t = START[name]
     out = []
-    t = t0
     for s, st in items:
-        out.append((t + 0.3, t + S - gap, s, st))
-        t += S
+        out.append((t + 0.3, t + step - gap, s, st))
+        t += step
     return out
 
 
 SUBS = (
-    _screens(START["n01"], [("这一次，不是一个人出发。", "dark"), ("她说：\n带你去看看我长大的地方。", "dark")]) +
-    _screens(START["n02"], [("那是一座长在山上的城，", "dark"), ("路总是一会儿上坡，\n一会儿下坡。", "dark")]) +
-    _screens(START["n03"], [("一路上，她都在讲小时候。", "dark"), ("讲得最多的，是外婆。", "dark")]) +
-    _screens(START["n04"], [("她说，外婆是个很善良的人。", "dark"), ("对她好，\n对身边每一个人都好。", "dark")]) +
-    _screens(START["n05"], [("后来见到了外婆。", "dark"), ("外婆拉着我的手，\n像早就认识我一样。", "dark")]) +
-    _screens(START["n06"], [("外婆做了一大桌菜，", "dark"), ("她又拉着我，\n把街上的小吃一家家吃过去。", "dark")]) +
-    _screens(START["n07"], [("辣得直冒汗，\n还是一口接一口。", "dark")]) +
-    _screens(START["n08"], [("晚上挤在一张床上，", "light"), ("聊她，聊我，\n聊小时候，也聊以后，", "light"),
-                            ("不知不觉，\n就聊到了很晚很晚。", "light")]) +
-    _screens(START["n09"], [("原来人和人之间，", "light"), ("心和心的距离，\n居然可以这么近。", "light")]) +
-    _screens(START["n10"], [("两个人一起，也可以很轻松。", "dark"), ("不用迁就，\n也不用刻意找话题。", "dark")]) +
-    _screens(START["n11"], [("那是她的家乡，不是我的。", "dark"), ("可从那以后，那座山城，\n也有一小块，是我的了。", "dark")])
+    _screens("m01", [("一向喜新厌旧，", "dark"), ("去过的地方，\n基本不会想再去第二次。", "dark")]) +
+    _screens("m02", [("可这座城，去了三次。", "dark")]) +
+    _screens("m03", [("前两次去，也没怎么玩，", "light"), ("就吃了两顿火锅。", "light")]) +
+    _screens("m04", [("这次不一样，是跟她一起去的。", "dark"), ("她说：\n你想去，我可以和你一起回去。", "dark")]) +
+    _screens("m05", [("一路上，她都在讲小时候的事。", "dark")]) +
+    _screens("m06", [("吃了好多她从小吃到大的东西。", "dark")]) +
+    _screens("m07", [("明明挺能吃辣，", "dark"), ("吃完，肠子还是不太服气。", "dark")]) +
+    _screens("m08", [("晚上两个人挤在一张床上，", "light"), ("都凌晨了，\n她还在说哪家好吃、哪里好玩。", "light")]) +
+    _screens("m09", [("那时候突然觉得，", "light"), ("人和人之间，心和心的距离，", "light"), ("居然可以这么近。", "light")]) +
+    _screens("m10", [("两个人待在一起很舒服，", "dark"), ("不用迁就谁，\n也不用硬找话题。", "dark")]) +
+    _screens("m11", [("说不清为什么，\n好像变得包容了许多。", "dark"), ("可和她在一起，\n其实也没什么需要包容的。", "dark"),
+                     ("人和人之间的和谐，\n或许就在于匹配吧。", "dark")])
 )
 
 
 def grade_at(t):
     if t < 6.0 or t >= START["outro"]:
         return dict(sat=1.0, dark=0.0, warm=0.0)
+    if START["m01"] <= t < START["m04"]:                          # 前两次：偏灰、偏冷一点
+        return dict(sat=0.8, dark=0.0, warm=0.0)
     return dict(sat=1.0, dark=0.0, warm=0.06)
