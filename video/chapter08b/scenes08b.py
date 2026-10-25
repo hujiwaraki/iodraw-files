@@ -701,7 +701,7 @@ def m10(c, t):
 
 def m11(c, t):
     """她醒过来，两人相视一笑；起身并肩走下那段梯坎。轻轨开过山城，楼一层层退远。"""
-    if t < 3.4:
+    if t < 4.0:
         bench_street(c, t + 6.8)
         wake = ease_io(prog(t, 0.4, 0.8))
         friend(c, 400, 1196, 1.45, key="fr11", sit=True, look=0.6, mouth="laugh" if t > 1.4 else "smile")
@@ -710,19 +710,19 @@ def m11(c, t):
         hat_item(c, 696, 1196 + 30, 0.8, "lap11")
         bench_light(c, t + 6.8)
         return
-    if t < 6.8:
-        u = t - 3.4
+    if t < 10.0:
+        u = t - 4.0
         stairs_bg(c, u)
         with keep():
             glow(c, 540, 500, 520, WARM, 0.35)
-        y, s = stair_pos(lerp(0.4, 0.04, ease_io(prog(u, 0.0, 3.4))))
+        y, s = stair_pos(lerp(0.55, 0.04, ease_io(prog(u, 0.0, 6.0))))
         friend(c, 540 - 70 * s, y, s, key="fr11b", look=0.4, mouth="laugh", walk=u * 6)
         girl(c, 540 + 70 * s, y, s, hat=True, pack=True, look=-0.4, mouth="smile", walk=u * 6, key="me11b")
         return
-    u = t - 6.8
-    z = lerp(1.0, 0.85, ease_io(prog(u, 0.0, 3.4)))
+    u = t - 10.0
+    z = lerp(1.0, 0.82, ease_io(prog(u, 0.0, 8.4)))
     with cam(c, 540, 960, z):
-        city(c, t, rail=prog(u, 0.0, 3.4), warm=0.6)
+        city(c, t, rail=prog(u, 0.4, 5.0), warm=0.6)
 
 
 # ================================================================ 片尾
