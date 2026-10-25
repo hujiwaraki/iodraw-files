@@ -720,7 +720,7 @@ def m11(c, t):
         girl(c, 540 + 70 * s, y, s, hat=True, pack=True, look=-0.4, mouth="smile", walk=u * 6, key="me11b")
         return
     u = t - 10.0
-    z = lerp(1.0, 0.8, ease_io(prog(u, 0.0, 13.8)))
+    z = lerp(1.0, 0.86, ease_io(prog(u, 0.0, 13.8)))
     with cam(c, 540, 960, z):
         city(c, t, rail=prog(u, 0.4, 5.0), warm=0.6)
 
