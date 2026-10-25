@@ -449,12 +449,15 @@ def shelter(c, t):
         for k, (x, y, s_) in enumerate(((250, 1120, 0.75), (830, 1100, 0.75), (380, 960, 0.5), (700, 950, 0.5),
                                         (470, 880, 0.35), (610, 875, 0.35))):
             glow(c, x, y - 90 * s_, 160 * s_, WARM, 0.35)
-            silhouette(c, x - 50 * s_, y, s_, f"sh{k}a", col=hexc("5a5450"), a=0.8)       # 后面几桌在吃火锅的人
-            silhouette(c, x + 50 * s_, y, s_, f"sh{k}b", col=hexc("5a5450"), a=0.8)
-            shape(c, ell(x, y - 60 * s_, 70 * s_, 16 * s_, 14), CHILI, f"sp{k}", lw=1.2)
+            for sg in (-1, 1):                                     # 后面几桌：两个人坐在桌子两边
+                silhouette(c, x + sg * 95 * s_, y + 40 * s_, s_, f"sh{k}{sg}", col=hexc("5a5450"), a=0.8)
+            shape(c, rect(x - 80 * s_, y - 70 * s_, 160 * s_, 14 * s_), WOOD, f"stb{k}", lw=1.6)   # 小桌子
+            shape(c, rect(x - 74 * s_, y - 56 * s_, 148 * s_, 56 * s_), darker(WOOD, 0.8), f"stf{k}", lw=1.4)
+            shape(c, ell(x, y - 74 * s_, 44 * s_, 13 * s_, 14), hexc("3a3434"), f"spr{k}", lw=1.4)  # 锅
+            shape(c, ell(x, y - 78 * s_, 36 * s_, 8 * s_, 12), CHILI, f"sp{k}", lw=1)
             ph = (t * 0.6 + k * 0.3) % 1
-            line(c, [(x, y - 80 * s_ - ph * 120 * s_), (x + 6, y - 120 * s_ - ph * 120 * s_)], f"sps{k}", 2.4,
-                 (1, 1, 1), alpha=0.5 * (1 - ph))
+            line(c, [(x, y - 90 * s_ - ph * 120 * s_), (x + 6 * s_, y - 130 * s_ - ph * 120 * s_)], f"sps{k}",
+                 2.4, (1, 1, 1), alpha=0.5 * (1 - ph))
     # 最前面的一桌：两张小凳子，中间一锅红汤
     shape(c, rect(380, 1290, 320, 26), WOOD, "slt", lw=2.6)
     for x in (400, 680):
@@ -586,93 +589,7 @@ def m07(c, t):
             line(c, pts, f"gr{j}", 2.4, hexc("8a7a6a"), alpha=0.8 * (1 - ph))
 
 
-# ================================================================ 9 又见到了另一个朋友：两年前的下雪天
-TA = hexc("c8584a")                       # 雪天那位朋友：暖红色外套
-TA_SCARF = hexc("f2e2c8")
-TA_HAT = hexc("6a7aa8")
-
-
-def ta(c, x, y, s, key="ta", **kw):
-    """两年前下雪天去找ta玩的那位朋友：暖红外套、厚围巾、毛线帽。"""
-    kw.setdefault("look", -0.4)
-    local(c, x, y, s, key, TA, hexc("3a2a24"), "short", **kw)
-    with keep():
-        lk = kw.get("look", 0.0) * 2.5 * s
-        shape(c, rrect(x - 28 * s, y - 128 * s, 56 * s, 15 * s, 7 * s), TA_SCARF, key + "sc", lw=2)   # 围巾
-        shape(c, [(x + 10 * s, y - 116 * s), (x + 24 * s, y - 116 * s), (x + 26 * s, y - 86 * s),
-                  (x + 12 * s, y - 86 * s)], TA_SCARF, key + "sc2", lw=1.8)
-        shape(c, ell(x + lk, y - 166 * s, 38 * s, 30 * s, 18, math.pi, 2 * math.pi), TA_HAT, key + "bn", lw=2.2)
-        shape(c, rrect(x + lk - 40 * s, y - 170 * s, 80 * s, 11 * s, 5 * s), darker(TA_HAT, 0.85), key + "bnb", lw=1.8)
-        circle(c, x + lk, y - 198 * s, 7 * s, TA_SCARF)
-
-
-def lantern_corner(c, t):
-    vgrad(c, -200, 1300, [(0, hexc("7a6a98")), (0.55, hexc("e8a888")), (1, hexc("f6d8b8"))], -300, W + 300)
-    for k, (x0, w_, h_, col) in enumerate(((-40, 340, 1000, "b8a090"), (760, 380, 1100, "a89488"))):
-        shape(c, rect(x0, 1300 - h_, w_, h_ + 20), hexc(col), f"lc{k}", lw=3)
-        for j in range(4):
-            shape(c, rect(x0 + 60, 1300 - h_ + 80 + j * 230, w_ - 140, 110), hexc("ffd98a"), f"lcw{k}{j}", lw=2,
-                  alpha=0.85)
-    shape(c, rect(-20, 1300, W + 40, 700), hexc("b8a48c"), "lcg", lw=3)
-    pts = [(x, 520 + 120 * math.sin(math.pi * (x + 20) / (W + 40))) for x in range(-20, W + 40, 60)]
-    line(c, pts, "lcwire", 2.4, INK)
-    with keep():                                                   # 檐下一串红灯笼
-        for k in range(7):
-            x = 80 + k * 155
-            y = 520 + 120 * math.sin(math.pi * (x + 20) / (W + 40)) + 40
-            glow(c, x, y, 120, WARM, 0.35)
-            shape(c, ell(x, y, 34, 40, 16), hexc("d8483a"), f"lcl{k}", lw=2)
-
-
-def snow_city(c, t):
-    """另一座下着雪的城市：屋顶积着白雪，冷白色，却暖暖的。"""
-    vgrad(c, -200, 1300, [(0, hexc("c8d4e4")), (1, hexc("eef0f2"))], -300, W + 300)
-    for k, (x, w_, h_) in enumerate(((-40, 260, 300), (240, 220, 380), (480, 300, 320), (800, 300, 360))):
-        house(c, x, 1300, w_, h_, hexc(["d8c8b8", "c8b8a8", "dcccbc", "ccbcac"][k]), hexc("8a6a5a"), f"sh{k}",
-              win=hexc("ffe0a0"))
-        shape(c, [(x - 16, 1300 - h_ + 4), (x + w_ / 2, 1300 - h_ - w_ * 0.55 - 6), (x + w_ + 16, 1300 - h_ + 4),
-                  (x + w_ / 2, 1300 - h_ - w_ * 0.42)], hexc("fafcfe"), f"shs{k}", lw=2.2)   # 屋顶的积雪
-    shape(c, rect(-20, 1300, W + 40, 700), hexc("f4f6f8"), "sng", lw=3)
-    snowfall(c, t, 1.0)
-
-
-def snowfall(c, t, a, warm=0.0, n=60):
-    r = random.Random(77)
-    with keep():
-        for k in range(n):
-            x = (r.uniform(0, W) + 30 * math.sin(t * 0.8 + k)) % W
-            y = (r.uniform(0, 1900) + t * r.uniform(60, 120)) % 1900
-            col = mix((1, 1, 1), hexc("ffd98a"), warm)
-            if warm > 0:
-                glow(c, x, y, 18, col, 0.3 * a * warm)
-            circle(c, x, y, r.uniform(4, 8), col, a=a * 0.9)
-
-
-def m08b(c, t):
-    """傍晚的街角，灯笼下，ta从对面走过来，她认出来了；叠出两年前那座下雪的城市；雪花飘回现在，变成灯笼下暖暖的光点。"""
-    mem = ease_io(prog(t, 3.0, 1.2)) * (1 - ease_io(prog(t, 9.6, 1.4)))
-    if mem < 1:
-        lantern_corner(c, t)
-        come = ease_io(prog(t, 0.2, 2.6))
-        tx = lerp(1020, 740, come)
-        meet = t > 2.4
-        friend(c, 200, 1330, 1.6, key="fr8b", look=0.6, mouth="smile")
-        girl(c, 450, 1330, 1.6, hat=True, pack=True, look=0.7, mouth="o" if 1.6 < t < 3.0 else "laugh" if meet else "smile",
-             key="me8b")
-        ta(c, tx, 1330, 1.6, key="ta8b", look=-0.7, mouth="laugh" if meet else "smile",
-           walk=t * 5 if come < 1 else None)
-        if t > 10.2:                                               # 雪花飘回现在，变成灯笼下暖暖的光点
-            snowfall(c, t, ease_io(prog(t, 10.2, 1.0)) * (1 - 0.4 * prog(t, 14.0, 4.0)), warm=1.0, n=40)
-    if mem > 0:
-        with group_alpha(c, mem):
-            snow_city(c, t)
-            walk = t * 4
-            sx = lerp(200, 460, prog(t, 3.0, 7.0))
-            girl(c, sx, 1370, 1.5, hat=True, pack=True, look=0.6, mouth="laugh", walk=walk, key="me8s")
-            ta(c, sx + 200, 1370, 1.5, key="ta8s", look=-0.6, mouth="laugh", walk=walk)
-
-
-# ================================================================ 10–11 夜里挤在一张床上
+# ================================================================ 9–10 夜里挤在一张床上
 def bubble_icon(c, k, x, y, a):
     with group_alpha(c, a), keep():
         shape(c, ell(x, y, 64, 56, 20), (1, 1, 1), f"bb{k}", lw=2.2)
