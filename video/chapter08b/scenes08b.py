@@ -1,4 +1,4 @@
-"""第八章 · 同路人 —— 分镜实现（竖屏 1080×1920）。每个函数 fn(c, t)，t 为镜头内本地时间。
+"""番外 · 同路人 —— 分镜实现（竖屏 1080×1920）。每个函数 fn(c, t)，t 为镜头内本地时间。
 
 一向喜新厌旧，风景一张张翻过去不回头 → 停在一座长在山上的城，去了三次 → 前两次：一大桌人、两顿火锅（偏灰）
 → 这次跟她一起去：梯坎上她回头等 → 一路讲小时候 → 小摊、小凳子 → 能吃辣，肠子不服气 → 夜里挤在一张床上，
@@ -42,7 +42,7 @@ def slippers_illus(c, cx, cy):
 
 
 def intro(c, t):
-    book_intro(c, t, "第八章", "同路人", slippers_illus)
+    book_intro(c, t, "番外", "同路人", slippers_illus)
 
 
 # ================================================================ 山城
@@ -640,12 +640,44 @@ def m09(c, t):
         veil(c, (0.02, 0.02, 0.06), 0.3)
         return
     u = t - 3.4
-    z = lerp(1.6, 1.0, ease_io(prog(u, 0.0, 4.0)))
-    with cam(c, 540, 1000, z):
-        city(c, t, night=1.0, lit=-0.62)
-        with keep():                                               # 那一扇亮着的小窗
-            glow(c, 560, 1010, 160, WARM, 0.8)
-            shape(c, rect(530, 980, 60, 64), hexc("ffd98a"), "ourwin", lw=2)
+    z = lerp(2.2, 1.0, ease_io(prog(u, 0.0, 5.0)))
+    with cam(c, OURWIN[0], OURWIN[1], z):
+        night_facade(c, t)
+
+
+OURWIN = (542, 1185)                      # 她们那扇窗的中心
+
+
+def night_facade(c, t):
+    """夜里，从窗外看：一栋老楼的一整面墙，窗都黑了，只有她们那一扇还亮着暖暖的光。"""
+    vgrad(c, -400, 900, [(0, hexc("0e1228")), (1, hexc("232a4a"))], -600, W + 600)
+    r = random.Random(9)
+    with keep():
+        for k in range(40):
+            star(c, r.uniform(-300, W + 300), r.uniform(-300, 420), r.uniform(1.4, 2.4), 0.5)
+    shape(c, hill_pts(560, 50, 0.004, 1.3, x0=-500, x1=W + 500, bottom=2600), hexc("1a2038"), "nfh", lw=2)
+    with keep():                                                   # 远处零星几点灯
+        for k in range(10):
+            circle(c, r.uniform(-200, W + 200), r.uniform(560, 640), 2.4, hexc("ffd98a"), a=0.5)
+    fx0, fx1, ftop = 30, 1050, 560
+    shape(c, rect(fx0, ftop, fx1 - fx0, 2200), hexc("3e4260"), "fac", lw=3)        # 老楼的一整面墙
+    shape(c, rect(fx0 - 20, ftop - 30, fx1 - fx0 + 40, 34), hexc("2e3250"), "facr", lw=2.4)
+    for row in range(8):
+        for col in range(5):
+            x = fx0 + 60 + col * 196
+            y = ftop + 90 + row * 230
+            ours = (col, row) == (2, 2)
+            if ours:
+                with keep():
+                    glow(c, x + 60, y + 75, 260, WARM, 0.55 + 0.05 * math.sin(t * 1.5))
+                shape(c, rect(x, y, 120, 150), hexc("ffd98a"), "ourwin", lw=2.4)
+                line(c, [(x + 60, y), (x + 60, y + 150)], "ourwinm", 3, hexc("8a6a4a"))
+            else:
+                shape(c, rect(x, y, 120, 150), hexc("1c2038"), f"fw{row}{col}", lw=2, amp=0.6)
+            shape(c, rect(x - 14, y + 150, 148, 14), hexc("4e5272"), f"fs{row}{col}", lw=1.6)   # 窗台
+            if (row * 3 + col) % 4 == 1:                           # 窗台上的小花盆
+                shape(c, [(x + 10, y + 150), (x + 34, y + 150), (x + 30, y + 132), (x + 14, y + 132)],
+                      hexc("2a2e48"), f"fp{row}{col}", lw=1.2)
 
 
 # ================================================================ 10–11 玩累了，在长椅上睡着
@@ -741,4 +773,4 @@ def end_still():
 
 
 def outro(c, t):
-    book_outro(c, t, end_still(), "© 2026 藤原樹\n未经授权请勿转载", end_mark="第八章 · 完")
+    book_outro(c, t, end_still(), "© 2026 藤原樹\n未经授权请勿转载", end_mark="番外 · 完")

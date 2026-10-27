@@ -1,4 +1,4 @@
-"""第八章渲染入口。
+"""第八章渲染入口（番外 · 同路人）。
 
   python render.py keyframes 8 30 66 92 125   # 关键帧
   python render.py video                        # 完整视频（无声）
