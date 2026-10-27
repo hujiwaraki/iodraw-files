@@ -739,9 +739,71 @@ def m11(c, t):
         girl(c, 540 + 70 * s, y, s, hat=True, pack=True, look=-0.4, mouth="smile", walk=u * 6, key="me11b")
         return
     u = t - 10.0
-    z = lerp(1.0, 0.86, ease_io(prog(u, 0.0, 18.9)))
-    with cam(c, 540, 960, z):
-        city(c, t, rail=prog(u, 0.4, 5.0), warm=0.6)
+    busy_street(c, t, u)
+    if t > 26.0:                                                   # 画面变成书里的一页，翻过去，露出新的一页
+        new_page(c, prog(t, 26.0, 1.4), t)
+
+
+# 街上来来往往的路人：(车道 y, 缩放, 方向, 速度, 起点)
+WALKERS = [(1230, 0.75, 1, 50, 80), (1230, 0.75, -1, 45, 520), (1230, 0.75, 1, 55, 900),
+           (1300, 0.85, -1, 60, 250), (1300, 0.85, 1, 50, 700), (1300, 0.85, -1, 55, 1100),
+           (1640, 1.2, 1, 70, 150), (1640, 1.2, -1, 65, 980), (1840, 1.45, -1, 80, 420), (1840, 1.45, 1, 75, 1150)]
+
+
+def busy_street(c, t, u):
+    """梯坎下面一条热闹的街，来来往往的灰色路人；看人多看优点——路人身上一个接一个亮起一点暖光；街口迎面是清晨的太阳。"""
+    sun = ease_io(prog(u, 13.0, 4.0))
+    vgrad(c, -200, 1200, [(0, mix(hexc("c8d4e0"), hexc("f6d8b0"), sun)), (1, mix(hexc("efe6d8"), hexc("fbe8cc"), sun))],
+          -300, W + 300)
+    with keep():
+        sy = lerp(760, 520, sun)
+        if sun > 0:                                                # 街口的太阳，慢慢升起来
+            glow(c, 760, sy, 520 * sun + 100, hexc("ffe0a0"), 0.6 * sun)
+            circle(c, 760, sy, 70, hexc("fff0c8"), a=sun)
+    for k, (x0, w_, h_, col) in enumerate(((680, 200, 420, "c8bca8"), (900, 220, 520, "bcb09c"))):
+        shape(c, rect(x0, 1180 - h_, w_, h_ + 20), hexc(col), f"bsr{k}", lw=3)          # 街对面远一点的房子
+        for j in range(2):
+            shape(c, rect(x0 + 30, 1180 - h_ + 70 + j * 180, w_ - 60, 90), hexc("8a6a4a"), f"bsrw{k}{j}", lw=2)
+    for k, (x0, w_, h_, col) in enumerate(((-40, 260, 760, "d8c4a8"), (210, 230, 880, "cbb89c"), (430, 250, 800, "dcc8ac"))):
+        shape(c, rect(x0, 1180 - h_, w_, h_ + 20), hexc(col), f"bsh{k}", lw=3)          # 街边的老房子
+        for j in range(3):
+            shape(c, rect(x0 + 30, 1180 - h_ + 80 + j * 230, w_ - 60, 120), hexc("8a6a4a"), f"bshw{k}{j}", lw=2)
+        shape(c, rect(x0 + 10, 1060, w_ - 20, 40), hexc(["c8584a", "6a9a8a", "d89a4a"][k]), f"bsa{k}", lw=2)  # 雨棚
+    shape(c, rect(-20, 1180, W + 40, 900), hexc("c8b8a0"), "bsg", lw=3)
+    order = sorted(range(len(WALKERS)), key=lambda i: WALKERS[i][0])
+    me_drawn = False
+    for i in order:
+        y, s_, d, v, x0 = WALKERS[i]
+        if y > 1380 and not me_drawn:                              # 她们俩走在人群中间
+            me_drawn = True
+            go = ease_io(prog(u, 0.0, 16.0))
+            mx = lerp(120, 560, go)
+            friend(c, mx, 1380, 1.2, key="fr11c", look=0.4, mouth="smile", walk=u * 5)
+            girl(c, mx + 160, 1380, 1.2, hat=True, pack=True, look=-0.2, mouth="smile", walk=u * 5, key="me11c")
+        x = (x0 + d * v * u) % (W + 300) - 150
+        silhouette(c, x, y, s_, f"bw{i}", walk=u * 4 + i, a=0.75)
+        lit = ease_out(prog(u, 3.4 + 0.4 * i, 0.8))               # 看人，多看优点：一个接一个亮起一点暖光
+        if lit > 0:
+            with keep():
+                glow(c, x, y - 100 * s_, 70 * s_, WARM, 0.55 * lit)
+                circle(c, x, y - 100 * s_, 9 * s_, hexc("ffe6b0"), a=lit)
+
+
+def new_page(c, p, t):
+    """新的一页从右边翻过来：空白的纸，只有一点暖光，没有字。"""
+    edge = lerp(W + 60, -60, ease_io(p))
+    c.save()
+    c.rectangle(edge, -200, W + 400, H + 400)
+    c.clip()
+    fill_all(c, hexc("f4ecdc"))
+    with keep():
+        glow(c, 540, 900, 520, hexc("ffe0a8"), 0.45)
+    c.restore()
+    if p < 1:
+        with keep():
+            line(c, [(edge, -100), (edge, H + 100)], "npedge", 5, hexc("c8bca8"), alpha=0.8)
+            shape(c, rect(edge - 70, -100, 70, H + 200), hexc("8a8070"), "npsh", lw=0, edge=False,
+                  alpha=0.15 * math.sin(math.pi * p))
 
 
 # ================================================================ 片尾
