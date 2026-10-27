@@ -631,53 +631,40 @@ def m08(c, t):
 
 
 def m09(c, t):
-    """两人都睡着了，脸朝着对方；镜头退到窗外，一大片暗下来的山城里，只有这一扇小窗还亮着。"""
-    if t < 3.4:
-        bedroom(c, t, 1.0, off=0.85)
-        friend(c, 380, 1180, 1.3, key="fr9", look=0.8, eyes_closed=True, mouth="smile", tilt=0.12)
-        girl(c, 700, 1180, 1.3, hat=False, pack=False, look=-0.8, eyes_closed=True, mouth="smile", tilt=-0.12, key="me9")
-        quilt(c, 1.0)
-        veil(c, (0.02, 0.02, 0.06), 0.3)
-        return
-    u = t - 3.4
-    z = lerp(2.2, 1.0, ease_io(prog(u, 0.0, 5.0)))
-    with cam(c, OURWIN[0], OURWIN[1], z):
-        night_facade(c, t)
-
-
-OURWIN = (542, 1185)                      # 她们那扇窗的中心
-
-
-def night_facade(c, t):
-    """夜里，从窗外看：一栋老楼的一整面墙，窗都黑了，只有她们那一扇还亮着暖暖的光。"""
-    vgrad(c, -400, 900, [(0, hexc("0e1228")), (1, hexc("232a4a"))], -600, W + 600)
-    r = random.Random(9)
+    """两人都睡着了，脸朝着对方。两人身边各飘起一小团光，一点点靠近，合成一团暖暖的光，照亮两张脸；窗外的天从深蓝慢慢变成清晨的浅蓝。"""
+    bedroom(c, t, 1.0, off=0.85)
+    dawn = ease_io(prog(t, 2.0, 7.0))
+    if dawn > 0:                                                   # 窗外的天慢慢亮起来
+        c.save()
+        c.rectangle(254, 224, 572, 412)
+        c.clip()
+        with group_alpha(c, dawn):
+            vgrad(c, 224, 636, [(0, hexc("7a9ccc")), (0.7, hexc("c8d4e4")), (1, hexc("f2d0b0"))], 250, 830)
+        c.restore()
+        line(c, [(540, 220), (540, 640)], "win9m", 4, hexc("6a5a50"))
+    friend(c, 380, 1180, 1.3, key="fr9", look=0.8, eyes_closed=True, mouth="smile", tilt=0.12)
+    girl(c, 700, 1180, 1.3, hat=False, pack=False, look=-0.8, eyes_closed=True, mouth="smile", tilt=-0.12, key="me9")
+    quilt(c, 1.0)
+    veil(c, (0.02, 0.02, 0.06), 0.3 * (1 - 0.5 * dawn))
+    rise = ease_io(prog(t, 0.6, 1.4))                              # 两人身边各飘起一小团光
+    meet = ease_io(prog(t, 2.0, 4.2))                              # 一点点靠近
+    merged = ease_io(prog(t, 5.6, 1.2))                            # 合成一团
     with keep():
-        for k in range(40):
-            star(c, r.uniform(-300, W + 300), r.uniform(-300, 420), r.uniform(1.4, 2.4), 0.5)
-    shape(c, hill_pts(560, 50, 0.004, 1.3, x0=-500, x1=W + 500, bottom=2600), hexc("1a2038"), "nfh", lw=2)
-    with keep():                                                   # 远处零星几点灯
-        for k in range(10):
-            circle(c, r.uniform(-200, W + 200), r.uniform(560, 640), 2.4, hexc("ffd98a"), a=0.5)
-    fx0, fx1, ftop = 30, 1050, 560
-    shape(c, rect(fx0, ftop, fx1 - fx0, 2200), hexc("3e4260"), "fac", lw=3)        # 老楼的一整面墙
-    shape(c, rect(fx0 - 20, ftop - 30, fx1 - fx0 + 40, 34), hexc("2e3250"), "facr", lw=2.4)
-    for row in range(8):
-        for col in range(5):
-            x = fx0 + 60 + col * 196
-            y = ftop + 90 + row * 230
-            ours = (col, row) == (2, 2)
-            if ours:
-                with keep():
-                    glow(c, x + 60, y + 75, 260, WARM, 0.55 + 0.05 * math.sin(t * 1.5))
-                shape(c, rect(x, y, 120, 150), hexc("ffd98a"), "ourwin", lw=2.4)
-                line(c, [(x + 60, y), (x + 60, y + 150)], "ourwinm", 3, hexc("8a6a4a"))
-            else:
-                shape(c, rect(x, y, 120, 150), hexc("1c2038"), f"fw{row}{col}", lw=2, amp=0.6)
-            shape(c, rect(x - 14, y + 150, 148, 14), hexc("4e5272"), f"fs{row}{col}", lw=1.6)   # 窗台
-            if (row * 3 + col) % 4 == 1:                           # 窗台上的小花盆
-                shape(c, [(x + 10, y + 150), (x + 34, y + 150), (x + 30, y + 132), (x + 14, y + 132)],
-                      hexc("2a2e48"), f"fp{row}{col}", lw=1.2)
+        for x0, k in ((380, "a"), (700, "b")):
+            x = lerp(x0, 540, meet)
+            y = lerp(lerp(940, 860, rise), 880, meet)
+            r = 14 + 6 * math.sin(t * 2 + (0 if k == "a" else 1.5))
+            a = rise * (1 - merged)
+            if a > 0:
+                glow(c, x, y, 90, WARM, 0.45 * a)
+                circle(c, x, y, r, hexc("ffe6b0"), a=a)
+        if merged > 0:
+            pulse = 1 + 0.06 * math.sin(t * 1.6)
+            glow(c, 540, 900, 380 * pulse, WARM, 0.4 * merged)     # 一团暖暖的光，照亮两张脸
+            for fx in (380, 700):
+                glow(c, fx, 960, 120, hexc("ffe0a8"), 0.3 * merged)
+            glow(c, 540, 880, 130 * pulse, hexc("fff0c8"), 0.6 * merged)
+            circle(c, 540, 880, 22 * pulse, hexc("fff2d0"), a=merged)
 
 
 # ================================================================ 10–11 玩累了，在长椅上睡着
