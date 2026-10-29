@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "series"))
 from synth import (SR, Mix, cello, heartbeat, knock, music_box, pad, piano, pluck, rumble, scratch, snap, swell,  # noqa: E402
                    swish, thump, tick, _t)
 
-DUR = 174.0
+DUR = 192.6
 M = Mix(DUR)
 B = 0.75
 BAR = 3.0
@@ -194,20 +194,32 @@ P(knock(), 166.8, 0.1)                                               # 关上窗
 for i, m in enumerate((65, 69, 72, 77)):
     P(music_box(m, 3.0), 166.5 + i * 0.07, 0.2, -0.3 + i * 0.2)
 
-# ================================================================ 片尾 168–174
-P(swish(), 169.6, 0.4)
-melody(168.4, THEME_MAJ, 0.6, "box", 0.24, pan=0.1)
-P(pad(CH["F"], 4.0, att=1.0, rel=2.0), 168.4, 0.35)
+# ================================================================ 后来：ta 回来了 168–186.6（平平静静，很少的音）
+P(pad(CH["F"], 3.2, att=1.2, rel=1.6, bright=0.8), 168.2, 0.1)
+for i, ch in enumerate(["F", "C"]):
+    P(piano(ROOT[ch] + 12, 2.8), 168.4 + i * BAR, 0.08, -0.2)
+P(music_box(81, 2.4), 171.6, 0.1, 0.3)                               # 远处那扇窗又亮了
+P(pad(CH["Dm"], 3.0, att=1.0, rel=1.4, bright=0.8), 174.5, 0.1)
+P(piano(ROOT["Bb"] + 12, 2.8), 174.5, 0.07, -0.2)
+P(pad(CH["F"] + [72], 9.0, att=2.5, rel=3.0, bright=1.1), 177.4, 0.14)   # 回头再看：镜头升高，一个长长的和弦
+melody(178.0, THEME_MAJ, B * 1.25, "piano", 0.18, shift=-12)
+for i, m_ in enumerate((65, 69, 72, 77)):
+    P(music_box(m_, 3.0), 184.0 + i * 0.12, 0.1, -0.3 + i * 0.2)
+
+# ================================================================ 片尾 186.6–192.6
+P(swish(), 188.2, 0.4)
+melody(187.0, THEME_MAJ, 0.6, "box", 0.24, pan=0.1)
+P(pad(CH["F"], 4.0, att=1.0, rel=2.0), 187.0, 0.35)
 for i, m in enumerate((65, 69, 72, 77)):
-    P(music_box(m, 3.5), 171.8 + i * 0.07, 0.24, pan=-0.3 + i * 0.2)
+    P(music_box(m, 3.5), 190.4 + i * 0.07, 0.24, pan=-0.3 + i * 0.2)
 
 # ---------------------------------------------------------------- 混音
 M.gain([(0, 0.9), (6, 1.2), (39, 1.2), (44, 1.5), (52, 1.6), (56, 1.3), (75, 1.2), (84, 1.3), (99.5, 1.5), (123.5, 1.4), (126.2, 1.4), (126.5, 0.0),
-        (127.0, 0.0), (127.4, 1.4), (137.5, 1.4), (147, 1.2), (168, 0.75), (DUR + 1, 0.75)])
+        (127.0, 0.0), (127.4, 1.4), (137.5, 1.4), (147, 1.2), (168, 1.2), (186.6, 0.75), (DUR + 1, 0.75)])
 duck = [(0, 1), (DUR + 1, 1)]
 
 if __name__ == "__main__":
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     out = M.render(os.path.join(HERE, "out", "music.wav"), duck=duck)
     print(" ".join(f"{int(t)}:{20 * np.log10(np.sqrt((out[int(t * SR):int((t + 4) * SR)] ** 2).mean()) + 1e-9):.0f}"
-                   for t in range(0, 174, 4)))
+                   for t in range(0, 190, 4)))

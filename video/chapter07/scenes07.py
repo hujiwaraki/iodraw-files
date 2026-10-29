@@ -1104,6 +1104,50 @@ def h22(c, t):
         pplane(c, x, y, lerp(0.75, 0.12, throw), "pl1", rot=-0.4 + throw * 0.3)
 
 
+def h23(c, t):
+    """后来：远处那扇灭了很久的窗，又亮了起来（ta 自己回来了）。她转头看了一眼，没什么波澜，又转回来。
+    回头再看：镜头慢慢升高，两扇小小的窗都缩成夜色里的两个光点，最后只剩星空。"""
+    if t < 9.4:
+        on = ease_io(prog(t, 3.4, 1.0))
+        look = ease_io(prog(t, 5.2, 0.8)) * (1 - ease_io(prog(t, 7.6, 0.8)))
+
+        def her():
+            girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=True, look=0.6 * look, key="hb")
+        window_scene(c, t, mode="night", girl=her, far_on=on, far_ghost=0.7 * on)
+        if t > 8.4:
+            veil(c, (0.04, 0.05, 0.1), ease_io(prog(t, 8.4, 1.0)))
+        return
+    u = t - 9.4
+    rise = ease_io(prog(u, 0.0, 9.2))
+    with cam(c, 540, 960, lerp(1.25, 0.95, rise), ty=lerp(-260, 300, rise)):
+        night_town(c, t)
+    veil(c, (0.04, 0.05, 0.1), 1 - ease_io(prog(u, 0.0, 1.0)))
+
+
+def night_town(c, t):
+    """夜里的一片屋顶：她的窗和远处 ta 的窗，各亮着一点；上面是很大很大的星空。"""
+    vgrad(c, -1600, 2200, [(0, hexc("080a1c")), (0.6, NIGHT_A), (1, NIGHT_B)], -800, W + 800)
+    r = random.Random(23)
+    with keep():
+        for k in range(160):
+            star(c, r.uniform(-700, W + 700), r.uniform(-1500, 1300), r.uniform(1.4, 3.0),
+                 0.45 + 0.35 * math.sin(t * 1.6 + k))
+    for row, (base, col) in enumerate(((1520, hexc("232a44")), (1680, hexc("1c2236")))):
+        x = -800
+        k = 0
+        while x < W + 800:
+            w_ = r.uniform(120, 220)
+            h_ = r.uniform(80, 220)
+            shape(c, [(x, 2600), (x, base - h_), (x + w_ / 2, base - h_ - 50), (x + w_, base - h_), (x + w_, 2600)], col,
+                  f"nt{row}_{k}", lw=1.4, amp=0.3)
+            x += w_ + 4
+            k += 1
+    with keep():                                                   # 她的窗、ta 的窗
+        for x, y, key in ((300, 1600, "nme"), (820, 1440, "nta")):
+            glow(c, x, y, 70, WARM, 0.5)
+            shape(c, rect(x - 16, y - 20, 32, 40), WARM, key, lw=0.8, amp=0.12)
+
+
 # ================================================================ 片尾
 _STILL = {}
 
