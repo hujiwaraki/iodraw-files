@@ -1105,47 +1105,41 @@ def h22(c, t):
 
 
 def h23(c, t):
-    """后来：远处那扇灭了很久的窗，又亮了起来（ta 自己回来了）。她转头看了一眼，没什么波澜，又转回来。
-    回头再看：镜头慢慢升高，两扇小小的窗都缩成夜色里的两个光点，最后只剩星空。"""
-    if t < 9.4:
-        on = ease_io(prog(t, 3.4, 1.0))
-        look = ease_io(prog(t, 5.2, 0.8)) * (1 - ease_io(prog(t, 7.6, 0.8)))
+    """后来：初夏的夜里窗开着，一只纸飞机从夜色里飞回来，落在窗台上（ta 自己回来了）。
+    她低头看了一眼，拿起来，没有打开，顺手放在花盆旁边，又抬头看天。
+    回头再看：镜头慢慢往后退，纸飞机越来越小，最后只是窗台上一个小小的白点。"""
+    z = lerp(1.0, 0.55, ease_io(prog(t, 9.4, 9.0)))
+    with cam(c, 540, 820, z):
+        with keep():
+            shape(c, rect(-1400, -1400, W + 2800, H + 2800), hexc("3a3040"), "bigwall", lw=0, edge=False)
+        pick = ease_io(prog(t, 6.2, 0.8))                         # 拿起来
+        put = ease_io(prog(t, 7.4, 0.9))                          # 放到花盆旁边
+        holding = 6.6 < t < 7.8
+        look = ease_io(prog(t, 4.2, 0.8)) * (1 - ease_io(prog(t, 8.6, 0.8)))
+        up = ease_io(prog(t, 8.8, 1.0))
 
         def her():
-            girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=True, look=0.6 * look, key="hb")
-        window_scene(c, t, mode="night", girl=her, far_on=on, far_ghost=0.7 * on)
-        if t > 8.4:
-            veil(c, (0.04, 0.05, 0.1), ease_io(prog(t, 8.4, 1.0)))
-        return
-    u = t - 9.4
-    rise = ease_io(prog(u, 0.0, 9.2))
-    with cam(c, 540, 960, lerp(1.25, 0.95, rise), ty=lerp(-260, 300, rise)):
-        night_town(c, t)
-    veil(c, (0.04, 0.05, 0.1), 1 - ease_io(prog(u, 0.0, 1.0)))
-
-
-def night_town(c, t):
-    """夜里的一片屋顶：她的窗和远处 ta 的窗，各亮着一点；上面是很大很大的星空。"""
-    vgrad(c, -1600, 2200, [(0, hexc("080a1c")), (0.6, NIGHT_A), (1, NIGHT_B)], -800, W + 800)
-    r = random.Random(23)
-    with keep():
-        for k in range(160):
-            star(c, r.uniform(-700, W + 700), r.uniform(-1500, 1300), r.uniform(1.4, 3.0),
-                 0.45 + 0.35 * math.sin(t * 1.6 + k))
-    for row, (base, col) in enumerate(((1520, hexc("232a44")), (1680, hexc("1c2236")))):
-        x = -800
-        k = 0
-        while x < W + 800:
-            w_ = r.uniform(120, 220)
-            h_ = r.uniform(80, 220)
-            shape(c, [(x, 2600), (x, base - h_), (x + w_ / 2, base - h_ - 50), (x + w_, base - h_), (x + w_, 2600)], col,
-                  f"nt{row}_{k}", lw=1.4, amp=0.3)
-            x += w_ + 4
-            k += 1
-    with keep():                                                   # 她的窗、ta 的窗
-        for x, y, key in ((300, 1600, "nme"), (820, 1440, "nta")):
-            glow(c, x, y, 70, WARM, 0.5)
-            shape(c, rect(x - 16, y - 20, 32, 40), WARM, key, lw=0.8, amp=0.12)
+            if holding:
+                _her_back(c, plane=True, hat=True)
+            else:
+                girl(c, 430, 1240, 1.7, view="back", sit=True, legs=False, hat=True, look=0.5 * look, look_up=0.5 * up,
+                     key="hb")
+        window_scene(c, t, mode="night", panes=1.0, girl=her, far_on=0.0)
+        spring_branch(c, t)
+        with keep():                                               # 窗台上的小花盆
+            shape(c, [(840, 1206), (900, 1206), (892, 1240), (848, 1240)], hexc("c8784a"), "spot", lw=1.8)
+            for j in range(4):
+                shape(c, ell(852 + j * 12, 1192 - (j % 2) * 8, 10, 16, 10), hexc("6fa860"), f"spl{j}", lw=1.2)
+        fu = ease_out(prog(t, 0.8, 3.0))                           # 纸飞机从夜色里飞回来，落在窗台上
+        if t < 3.8:
+            if fu > 0:
+                x, y, sc, rot = fly_pt(1 - fu, lift=140)
+                pplane(c, x, y + 20 * fu, sc, "back", rot=rot + math.pi)
+        elif t < 6.6:
+            pplane(c, 700, 1220, 0.85, "back")
+        elif t >= 7.8:
+            pplane(c, lerp(700, 790, put), 1222, 0.8, "back", rot=-0.05)
+    veil(c, (0.03, 0.03, 0.06), 0.25 * ease_io(prog(t, 12.0, 6.0)))
 
 
 # ================================================================ 片尾
