@@ -36,6 +36,7 @@ python eval.py sample       # 抽 12 条导出 results/human_review.csv（不显
 python eval.py agree        # 计算人工与裁判的一致率、±1 分一致率、Spearman 相关
 python eval.py report       # 生成 results/report.md：分维度得分、好/坏例子、结论
 python eval.py view         # 生成 results/view.html：v1/v2 完整多轮对话并排对比
+python eval.py chat         # 自己和小暖聊天（默认 v2；--version v1 对比；--scene "深夜，下雪" 指定场景）
 ```
 
 不配 API key、先试流程：`LLM_MOCK=1 python eval.py run`

@@ -7,6 +7,7 @@
   python eval.py agree               # 人工打完后，计算与模型裁判的一致性
   python eval.py report              # 生成 results/report.md
   python eval.py view                # 生成 results/view.html：v1/v2 完整对话并排对比，浏览器打开
+  python eval.py chat                # 自己在终端里和小暖聊天（默认 v2，可 --version v1）
 
 环境变量（任意 OpenAI 兼容接口：DeepSeek / 通义 / Kimi ...）：
   LLM_BASE_URL   如 https://api.deepseek.com/v1
@@ -326,6 +327,84 @@ def cmd_view(_args):
     print(f"已生成 {path}\nMac 上运行 open {path} 用浏览器打开")
 
 
+WEEKDAYS = "一二三四五六日"
+
+
+def auto_scene():
+    """根据电脑当前时间生成场景描述（天气未知，可用 /scene 手动补充）。"""
+    t = time.localtime()
+    season = {12: "冬天", 1: "冬天", 2: "冬天", 3: "春天", 4: "春天", 5: "春天",
+              6: "夏天", 7: "夏天", 8: "夏天"}.get(t.tm_mon, "秋天")
+    h = t.tm_hour
+    part = ("凌晨" if h < 5 else "早上" if h < 9 else "上午" if h < 12 else "中午" if h < 14
+            else "下午" if h < 18 else "晚上" if h < 23 else "深夜")
+    return f"现在是{t.tm_mon}月{t.tm_mday}日 星期{WEEKDAYS[t.tm_wday]} {part}{h}点{t.tm_min:02d}分，{season}"
+
+
+CHAT_HELP = """命令：/mem 看记忆  /scene 文字 改场景（只输 /scene 就清空）  /reset 重新开始  /quit 退出并保存"""
+
+
+def cmd_chat(args):
+    try:
+        import readline  # noqa: F401  让中文输入时退格、方向键更正常
+    except ImportError:
+        pass
+    v = args.version
+    scene = args.scene if args.scene is not None else auto_scene()
+    history, memory, log = [], "", []
+    print(f"\n和小暖聊天（{v}，携带最近 {CONTEXT_TURNS} 轮）")
+    if v == "v2":
+        print(f"当前场景：{scene or '（无）'}")
+    print(CHAT_HELP + "\n")
+    while True:
+        try:
+            user = input("你：").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not user:
+            continue
+        if user in ("/quit", "/exit", "/q"):
+            break
+        if user == "/mem":
+            print("── 小暖记得的事 ──\n" + (memory or "（还没有）") + "\n")
+            continue
+        if user.startswith("/scene"):
+            scene = user[len("/scene"):].strip()
+            print(f"场景已改为：{scene or '（无）'}\n")
+            continue
+        if user == "/reset":
+            history, memory = [], ""
+            print("已清空对话和记忆\n")
+            continue
+        system = V1_SYSTEM if v == "v1" else v2_system(scene, memory)
+        window = history[-CONTEXT_TURNS * 2:] if CONTEXT_TURNS > 0 else history
+        try:
+            reply = chat([{"role": "system", "content": system}] + window +
+                         [{"role": "user", "content": user}])
+        except Exception as e:  # noqa: BLE001
+            print(f"（请求失败：{e}）\n")
+            continue
+        print(f"小暖：{reply}\n")
+        history += [{"role": "user", "content": user}, {"role": "assistant", "content": reply}]
+        log.append({"user": user, "assistant": reply, "scene": scene})
+        if v == "v2":
+            old = set(memory.splitlines())
+            memory = chat([{"role": "user", "content": MEMORY_EXTRACT_PROMPT.format(
+                memory=memory or "（空）", user=user, assistant=reply)}],
+                role="memory", temperature=0)
+            new = [m for m in memory.splitlines() if m.strip() and m not in old]
+            if new and args.show_memory:
+                print("  \033[2m[记住了] " + "；".join(new) + "\033[0m\n")
+    if log:
+        d = OUT / "chats"
+        d.mkdir(parents=True, exist_ok=True)
+        path = d / time.strftime(f"chat-{v}-%Y%m%d-%H%M%S.json")
+        path.write_text(json.dumps({"version": v, "memory": memory, "turns": log},
+                                   ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"对话已保存到 {path}")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -339,9 +418,14 @@ def main():
     sub.add_parser("agree")
     sub.add_parser("report")
     sub.add_parser("view")
+    c = sub.add_parser("chat")
+    c.add_argument("--version", choices=["v1", "v2"], default="v2")
+    c.add_argument("--scene", help="手动指定场景，如 \"深夜，冬天，下雪\"；默认用电脑当前时间")
+    c.add_argument("--hide-memory", dest="show_memory", action="store_false",
+                   help="不显示每轮新记住的内容")
     a = p.parse_args()
     {"run": cmd_run, "sample": cmd_sample, "agree": cmd_agree,
-     "report": cmd_report, "view": cmd_view}[a.cmd](a)
+     "report": cmd_report, "view": cmd_view, "chat": cmd_chat}[a.cmd](a)
 
 
 if __name__ == "__main__":
