@@ -8,6 +8,7 @@
   python eval.py report              # 生成 results/report.md
   python eval.py view                # 生成 results/view.html：v1/v2 完整对话并排对比，浏览器打开
   python eval.py chat                # 自己在终端里和小暖聊天（默认 v2，可 --version v1）
+  python eval.py web                 # 在浏览器里和小暖聊天，可 v1/v2 同时对比
 
 环境变量（任意 OpenAI 兼容接口：DeepSeek / 通义 / Kimi ...）：
   LLM_BASE_URL   如 https://api.deepseek.com/v1
@@ -405,6 +406,76 @@ def cmd_chat(args):
         print(f"对话已保存到 {path}")
 
 
+def chat_turn(version, scene, history, memory, user):
+    """一轮对话：与评测完全相同的 v1/v2 逻辑。返回 (回复, 更新后的记忆)。"""
+    system = V1_SYSTEM if version == "v1" else v2_system(scene, memory)
+    window = history[-CONTEXT_TURNS * 2:] if CONTEXT_TURNS > 0 else history
+    reply = chat([{"role": "system", "content": system}] + window +
+                 [{"role": "user", "content": user}])
+    if version == "v2":
+        memory = chat([{"role": "user", "content": MEMORY_EXTRACT_PROMPT.format(
+            memory=memory or "（空）", user=user, assistant=reply)}],
+            role="memory", temperature=0)
+    return reply, memory
+
+
+def cmd_web(args):
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    import webbrowser
+
+    page = (ROOT / "chat.html").read_bytes()
+
+    class H(BaseHTTPRequestHandler):
+        def _send(self, code, body, ctype="application/json; charset=utf-8"):
+            if isinstance(body, (dict, list)):
+                body = json.dumps(body, ensure_ascii=False).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            if self.path in ("/", "/index.html"):
+                self._send(200, page, "text/html; charset=utf-8")
+            elif self.path == "/api/config":
+                self._send(200, {"context_turns": CONTEXT_TURNS, "scene": auto_scene(),
+                                 "model": os.getenv("LLM_MODEL", "mock"),
+                                 "mock": bool(os.getenv("LLM_MOCK"))})
+            else:
+                self._send(404, {"error": "not found"})
+
+        def do_POST(self):
+            if self.path != "/api/turn":
+                return self._send(404, {"error": "not found"})
+            try:
+                d = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+                v = d.get("version") if d.get("version") in ("v1", "v2") else "v2"
+                reply, memory = chat_turn(v, d.get("scene", ""), d.get("history", []),
+                                          d.get("memory", ""), d["user"])
+                self._send(200, {"reply": reply, "memory": memory})
+            except KeyError as e:
+                self._send(500, {"error": f"缺少环境变量 {e}，先 export LLM_BASE_URL / LLM_API_KEY / LLM_MODEL"})
+            except Exception as e:  # noqa: BLE001
+                print(f"  ! {e}", file=sys.stderr)
+                self._send(500, {"error": str(e)})
+
+        def log_message(self, *a):
+            pass
+
+    if not os.getenv("LLM_MOCK") and not os.getenv("LLM_API_KEY"):
+        print("提示：还没设置 LLM_API_KEY，网页能打开但发消息会失败。")
+    srv = ThreadingHTTPServer(("127.0.0.1", args.port), H)
+    url = f"http://127.0.0.1:{args.port}/"
+    print(f"小暖已上线：{url}\n（浏览器没自动打开就手动访问这个地址；按 Control+C 停止）")
+    if not args.no_open:
+        webbrowser.open(url)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        print("\n已停止")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -418,6 +489,9 @@ def main():
     sub.add_parser("agree")
     sub.add_parser("report")
     sub.add_parser("view")
+    w = sub.add_parser("web")
+    w.add_argument("--port", type=int, default=8765)
+    w.add_argument("--no-open", action="store_true", help="不自动打开浏览器")
     c = sub.add_parser("chat")
     c.add_argument("--version", choices=["v1", "v2"], default="v2")
     c.add_argument("--scene", help="手动指定场景，如 \"深夜，冬天，下雪\"；默认用电脑当前时间")
@@ -425,7 +499,7 @@ def main():
                    help="不显示每轮新记住的内容")
     a = p.parse_args()
     {"run": cmd_run, "sample": cmd_sample, "agree": cmd_agree,
-     "report": cmd_report, "view": cmd_view, "chat": cmd_chat}[a.cmd](a)
+     "report": cmd_report, "view": cmd_view, "chat": cmd_chat, "web": cmd_web}[a.cmd](a)
 
 
 if __name__ == "__main__":

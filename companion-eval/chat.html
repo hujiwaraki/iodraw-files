@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>和小暖聊天</title>
+<style>
+/* Layout: chat column(s) on the left, a side panel with scene + live memory on the right; stacks on phones */
+:root{
+  --bg:#f3f4f7; --surface:#ffffff; --sunk:#eceef3; --line:#d9dce4;
+  --ink:#1c2130; --muted:#646c7f;
+  --accent:#d0702a; --accent-soft:#fbe9db; --user:#2f5d8a; --user-ink:#ffffff;
+  --new:#2f8a5b; --new-soft:#dcf1e5; --warn:#b7791f;
+  --f-body:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14171e; --surface:#1d212b; --sunk:#262b37; --line:#333948;
+  --ink:#e6e8ee; --muted:#9aa2b4;
+  --accent:#ee9555; --accent-soft:#3a2a1e; --user:#3d6f9f; --user-ink:#f3f6fa;
+  --new:#5cc08b; --new-soft:#1b3428; --warn:#e0a84a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14171e; --surface:#1d212b; --sunk:#262b37; --line:#333948;
+  --ink:#e6e8ee; --muted:#9aa2b4;
+  --accent:#ee9555; --accent-soft:#3a2a1e; --user:#3d6f9f; --user-ink:#f3f6fa;
+  --new:#5cc08b; --new-soft:#1b3428; --warn:#e0a84a; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:12px}
+.app{height:100%;max-width:1280px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;
+  grid-template-areas:"top top" "chat side" "input side"}
+/* top bar */
+.top{grid-area:top;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{font-size:1.25rem;margin:0}
+.brand small{color:var(--muted)}
+.seg{display:inline-flex;background:var(--sunk);border-radius:9px;padding:3px;gap:2px}
+.seg button{border:0;background:none;color:var(--muted);font:inherit;font-size:.88rem;padding:5px 12px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.actions{display:flex;gap:6px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.85rem;padding:5px 11px;border-radius:7px;cursor:pointer}
+.btn:hover{background:var(--sunk)}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* chat */
+.chats{grid-area:chat;display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:12px;min-height:0}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:0;min-width:0}
+.pane-head{padding:8px 14px;border-bottom:1px solid var(--line);font-size:.85rem;display:flex;justify-content:space-between;gap:8px}
+.pane-head b{font-weight:600}
+.pane-head span{color:var(--muted)}
+.log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.empty{margin:auto;text-align:center;color:var(--muted);font-size:.9rem;max-width:30em;display:flex;flex-direction:column;gap:8px;align-items:center}
+.sugs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.sug{border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:.82rem;padding:4px 10px;border-radius:999px;cursor:pointer}
+.sug:hover{border-color:var(--accent)}
+.msg{display:flex;flex-direction:column;max-width:82%;gap:2px}
+.msg .bubble{padding:8px 13px;border-radius:15px;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.user .bubble{background:var(--user);color:var(--user-ink);border-bottom-right-radius:4px}
+.msg.ai .bubble{background:var(--sunk);border-bottom-left-radius:4px}
+.msg.out{opacity:.5}
+.msg.err .bubble{background:none;border:1px dashed var(--warn);color:var(--warn);font-size:.88rem}
+.sync{grid-column:1/-1;font-size:.82rem;color:var(--warn);background:var(--surface);border:1px dashed var(--warn);border-radius:8px;padding:6px 10px}
+.cut{font-size:.75rem;color:var(--muted);text-align:center;border-bottom:1px dashed var(--line);padding-bottom:4px}
+.typing .bubble{color:var(--muted)}
+.typing .bubble::after{content:"…";animation:blink 1s steps(3) infinite}
+@keyframes blink{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.typing .bubble::after{animation:none}}
+/* input */
+.input{grid-area:input;display:flex;gap:8px;align-items:flex-end}
+.input textarea{flex:1;min-width:0;resize:none;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);max-height:140px}
+.send{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;padding:10px 18px;border-radius:12px;cursor:pointer}
+.send:disabled{opacity:.5;cursor:default}
+/* side */
+.side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.card h2{font-size:.75rem;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:600}
+.card p{margin:0;font-size:.85rem;color:var(--muted)}
+.scene-row{display:flex;gap:6px}
+.scene-row input{flex:1;min-width:0;font:inherit;font-size:.88rem;padding:6px 9px;border-radius:7px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.presets{display:flex;flex-wrap:wrap;gap:5px}
+.presets button{border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:.78rem;padding:2px 8px;border-radius:6px;cursor:pointer}
+.mem{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:.88rem}
+.mem li{padding:5px 9px;border-radius:7px;background:var(--sunk)}
+.mem li.new{background:var(--new-soft);color:var(--new)}
+.mem li.new::before{content:"新 ";font-size:.72rem;font-weight:700}
+.stat{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"top" "side" "chat" "input"}
+  .side{overflow:visible}
+  .side .card.mem-card{max-height:22vh;overflow-y:auto}
+  .ctx-card,.presets{display:none}
+  .chats{--cols:1 !important}
+  .chats.compare .pane{min-height:40vh}
+  .chats.compare{overflow-y:auto}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>和小暖聊天</h1><small id="model"></small></div>
+    <div class="seg" role="group" aria-label="版本">
+      <button data-mode="v2" aria-pressed="true">v2 场景 + 记忆</button>
+      <button data-mode="v1" aria-pressed="false">v1 基线</button>
+      <button data-mode="both" aria-pressed="false">同时对比</button>
+    </div>
+    <div class="actions">
+      <button class="btn" id="save">保存对话</button>
+      <button class="btn" id="reset">重新开始</button>
+    </div>
+  </header>
+
+  <main class="chats" id="chats"></main>
+
+  <div class="input">
+    <label for="box" hidden>输入消息</label>
+    <textarea id="box" rows="1" placeholder="说点什么…"></textarea>
+    <button class="send" id="send">发送</button>
+  </div>
+
+  <aside class="side">
+    <section class="card">
+      <h2>当前场景（只有 v2 知道）</h2>
+      <div class="scene-row"><label for="scene" hidden>场景</label><input id="scene" placeholder="例如：深夜，冬天，下雪"><button class="btn" id="now">现在</button></div>
+      <div class="presets">
+        <button data-s="现在是深夜凌晨1点，冬天，窗外在下雪">冬夜下雪</button>
+        <button data-s="现在是周一早上8点，通勤高峰，下着小雨">周一早高峰</button>
+        <button data-s="现在是盛夏的下午3点，气温37度">37度午后</button>
+        <button data-s="现在是大年三十晚上，春晚正在播">除夕</button>
+      </div>
+    </section>
+    <section class="card mem-card">
+      <h2>小暖记得的事（v2）</h2>
+      <ul class="mem" id="mem"></ul>
+      <p id="mem-empty">还没有。聊几句关于你自己的事，这里会实时出现。</p>
+    </section>
+    <section class="card ctx-card">
+      <h2>上下文窗口</h2>
+      <p>每次只把最近 <b id="w">5</b> 轮对话发给模型。更早的消息会变成半透明：v1 从此看不到它们，v2 只能靠左边的记忆。</p>
+      <div class="stat" id="stat"></div>
+    </section>
+  </aside>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let W = 5, mode = "v2", busy = false;
+const fresh = () => ({v1: {history: [], memory: ""}, v2: {history: [], memory: "", fresh: []}});
+let S = fresh();
+try { const saved = JSON.parse(localStorage.getItem("xiaonuan-chat") || "null"); if (saved && saved.v1 && saved.v2) S = saved; } catch (e) {}
+const persist = () => { try { localStorage.setItem("xiaonuan-chat", JSON.stringify(S)); } catch (e) {} };
+
+const SUGS = ["我养了只猫叫豆豆", "今天被老板骂了", "嗯", "你是AI吗？", "活着好累"];
+
+function render() {
+  const versions = mode === "both" ? ["v1", "v2"] : [mode];
+  const box = $("#chats");
+  box.classList.toggle("compare", mode === "both");
+  box.style.setProperty("--cols", versions.length);
+  const n = v => S[v].history.length;
+  const warn = mode === "both" && n("v1") !== n("v2")
+    ? `<div class="sync">两边的聊天记录不一样长，对比不公平。点右上角「重新开始」，再从头同时发。</div>` : "";
+  box.innerHTML = warn + versions.map(v => {
+    const h = S[v].history, cutAt = Math.max(0, h.length - W * 2);
+    let body = "";
+    if (!h.length) body = `<div class="empty">${v === "v1" ? "v1 只有人设，没有场景和记忆。" : "v2 知道当前场景，并且会把你说过的事记下来。"}
+      <span>试试这些：</span><div class="sugs">${SUGS.map(s => `<button class="sug">${s}</button>`).join("")}</div></div>`;
+    h.forEach((m, i) => {
+      if (i === cutAt && i > 0) body += `<div class="cut">↑ 以上已超出 ${W} 轮窗口，小暖下一轮看不到</div>`;
+      body += `<div class="msg ${m.role === "user" ? "user" : "ai"} ${i < cutAt ? "out" : ""} ${m.error ? "err" : ""}"><div class="bubble">${esc(m.content)}</div></div>`;
+    });
+    if (busy) body += `<div class="msg ai typing"><div class="bubble">小暖正在输入</div></div>`;
+    const turns = h.filter(m => m.role === "user").length;
+    return `<section class="pane"><div class="pane-head"><b>${v === "v1" ? "v1 基线" : "v2 场景 + 记忆"}</b><span>${turns} 轮</span></div><div class="log" data-v="${v}">${body}</div></section>`;
+  }).join("");
+  box.querySelectorAll(".log").forEach(l => l.scrollTop = l.scrollHeight);
+  box.querySelectorAll(".sug").forEach(b => b.onclick = () => { $("#box").value = b.textContent; send(); });
+  // memory
+  const mem = S.v2.memory.split("\n").map(x => x.trim()).filter(Boolean);
+  $("#mem").innerHTML = mem.map(m => `<li class="${(S.v2.fresh || []).includes(m) ? "new" : ""}">${esc(m)}</li>`).join("");
+  $("#mem-empty").hidden = mem.length > 0;
+  const t = S.v2.history.filter(m => m.role === "user").length;
+  $("#stat").textContent = `v2 已聊 ${t} 轮 · 记忆 ${mem.length} 条`;
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode));
+  $("#send").disabled = busy;
+}
+
+async function turn(v, user) {
+  const st = S[v];
+  const history = st.history.filter(m => !m.error);
+  const r = await fetch("/api/turn", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({version: v, scene: $("#scene").value.trim(), history, memory: st.memory, user})});
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || r.statusText);
+  st.history.push({role: "user", content: user}, {role: "assistant", content: d.reply});
+  if (v === "v2") {
+    const old = new Set(st.memory.split("\n"));
+    st.memory = d.memory || "";
+    st.fresh = st.memory.split("\n").map(x => x.trim()).filter(x => x && !old.has(x));
+  }
+}
+
+async function send() {
+  const user = $("#box").value.trim();
+  if (!user || busy) return;
+  $("#box").value = ""; autosize();
+  busy = true; render();
+  const versions = mode === "both" ? ["v1", "v2"] : [mode];
+  await Promise.all(versions.map(v => turn(v, user).catch(e => {
+    S[v].history.push({role: "user", content: user}, {role: "assistant", content: "请求失败：" + e.message + "\n看一下终端里的报错，确认 key 已经 export。", error: true});
+  })));
+  busy = false; persist(); render(); $("#box").focus();
+}
+
+function autosize() { const b = $("#box"); b.style.height = "auto"; b.style.height = Math.min(b.scrollHeight, 140) + "px"; }
+$("#box").addEventListener("input", autosize);
+$("#box").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); send(); }
+});
+$("#send").onclick = send;
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => { mode = b.dataset.mode; render(); });
+$("#reset").onclick = () => {
+  if ($("#reset").dataset.armed) { S = fresh(); persist(); render(); delete $("#reset").dataset.armed; $("#reset").textContent = "重新开始"; return; }
+  $("#reset").dataset.armed = 1; $("#reset").textContent = "再点一次确认清空";
+  setTimeout(() => { delete $("#reset").dataset.armed; $("#reset").textContent = "重新开始"; }, 3000);
+};
+$("#save").onclick = () => {
+  const blob = new Blob([JSON.stringify({scene: $("#scene").value, ...S}, null, 1)], {type: "application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = "xiaonuan-chat-" + new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-") + ".json"; a.click();
+};
+document.querySelectorAll(".presets button").forEach(b => b.onclick = () => { $("#scene").value = b.dataset.s; });
+let autoScene = "";
+$("#now").onclick = () => { $("#scene").value = autoScene; };
+
+fetch("/api/config").then(r => r.json()).then(c => {
+  W = c.context_turns || W; $("#w").textContent = W;
+  $("#model").textContent = c.model + (c.mock ? "（演示模式，回复是假的）" : "");
+  autoScene = c.scene; if (!$("#scene").value) $("#scene").value = c.scene;
+  render();
+}).catch(() => { $("#model").textContent = "没连上本地服务，请用 python3 eval.py web 启动"; render(); });
+render();
+</script>
+</body>
+</html>
