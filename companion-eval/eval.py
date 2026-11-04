@@ -6,6 +6,7 @@
   python eval.py sample --n 12       # 抽样导出 results/human_review.csv 供人工打分
   python eval.py agree               # 人工打完后，计算与模型裁判的一致性
   python eval.py report              # 生成 results/report.md
+  python eval.py view                # 生成 results/view.html：v1/v2 完整对话并排对比，浏览器打开
 
 环境变量（任意 OpenAI 兼容接口：DeepSeek / 通义 / Kimi ...）：
   LLM_BASE_URL   如 https://api.deepseek.com/v1
@@ -298,6 +299,33 @@ def cmd_report(_args):
     print(f"报告已生成：{path}")
 
 
+def build_viewer(runs, notes=None, caveats=None, standalone=True):
+    """把运行结果嵌入查看页模板，返回 HTML 字符串。"""
+    cases = {c["id"]: c for c in json.loads((ROOT / "cases.json").read_text(encoding="utf-8"))}
+    data = {"runs": runs, "cases": cases, "dims": DIMENSIONS,
+            "notes": notes or {}, "caveats": caveats or [],
+            "meta": {"model": os.getenv("LLM_MODEL", "?"),
+                     "judge": os.getenv("JUDGE_MODEL") or os.getenv("LLM_MODEL", "?"),
+                     "context_turns": CONTEXT_TURNS}}
+    blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    html = (ROOT / "viewer_template.html").read_text(encoding="utf-8")
+    html = html.replace("/*__DATA__*/null", blob)
+    if standalone:
+        html = ('<!doctype html>\n<html lang="zh-CN"><head><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+                '</head><body>\n' + html + "\n</body></html>")
+    return html
+
+
+def cmd_view(_args):
+    runs = load_runs()
+    notes_path = OUT / "notes.json"   # 可选：人工批注 {"memory-3/v1": "...", "plot-2": "..."}
+    notes = json.loads(notes_path.read_text(encoding="utf-8")) if notes_path.exists() else {}
+    path = OUT / "view.html"
+    path.write_text(build_viewer(runs, notes), encoding="utf-8")
+    print(f"已生成 {path}\nMac 上运行 open {path} 用浏览器打开")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -310,9 +338,10 @@ def main():
     s.add_argument("--seed", type=int, default=42)
     sub.add_parser("agree")
     sub.add_parser("report")
+    sub.add_parser("view")
     a = p.parse_args()
     {"run": cmd_run, "sample": cmd_sample, "agree": cmd_agree,
-     "report": cmd_report}[a.cmd](a)
+     "report": cmd_report, "view": cmd_view}[a.cmd](a)
 
 
 if __name__ == "__main__":

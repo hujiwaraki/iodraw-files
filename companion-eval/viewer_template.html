@@ -1,0 +1,236 @@
+<title>小暖对话评测</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: case index on the left, two chat transcripts (v1 | v2) side by side on the right, judge verdict under each */
+:root{
+  --bg:#f3f4f7; --surface:#ffffff; --sunk:#e9ebf0; --line:#d9dce4;
+  --ink:#1c2130; --muted:#626a7d;
+  --accent:#d0702a; --accent-soft:#fbe9db; --user:#2f5d8a; --user-ink:#ffffff;
+  --good:#2f8a5b; --good-soft:#dcf1e5; --mid:#b7791f; --mid-soft:#f8ecd2; --bad:#c2413b; --bad-soft:#f8dedc;
+  --note:#6b4fa3; --note-soft:#ece6f7;
+  --f-display:"Noto Serif SC","Songti SC",serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14171e; --surface:#1d212b; --sunk:#252a36; --line:#323847;
+  --ink:#e6e8ee; --muted:#9aa2b4;
+  --accent:#ee9555; --accent-soft:#3a2a1e; --user:#3d6f9f; --user-ink:#f3f6fa;
+  --good:#5cc08b; --good-soft:#1b3428; --mid:#e0a84a; --mid-soft:#3a2f1a; --bad:#ec7a73; --bad-soft:#3d2120;
+  --note:#b39ae6; --note-soft:#2b2440; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14171e; --surface:#1d212b; --sunk:#252a36; --line:#323847;
+  --ink:#e6e8ee; --muted:#9aa2b4;
+  --accent:#ee9555; --accent-soft:#3a2a1e; --user:#3d6f9f; --user-ink:#f3f6fa;
+  --good:#5cc08b; --good-soft:#1b3428; --mid:#e0a84a; --mid-soft:#3a2f1a; --bad:#ec7a73; --bad-soft:#3d2120;
+  --note:#b39ae6; --note-soft:#2b2440; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-family:var(--f-display);font-size:1.7rem;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+/* summary */
+.summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.panel h2{font-size:.78rem;letter-spacing:.08em;color:var(--muted);margin:0 0 10px;font-weight:600}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);font-size:.9rem}
+th{color:var(--muted);font-weight:500;font-size:.8rem}
+td.n{font-family:var(--f-mono);text-align:right}
+th.n{text-align:right}
+.up{color:var(--good)} .down{color:var(--bad)}
+tr.total td{font-weight:700;border-bottom:none}
+.caveats{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+/* main */
+.main{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px;align-items:start}
+nav{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 40px);overflow:auto}
+.dimgroup{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.dimgroup h3{font-size:.75rem;letter-spacing:.06em;color:var(--muted);margin:8px 8px 2px;font-weight:600}
+.case-btn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:0;background:none;color:var(--ink);
+  font:inherit;font-size:.88rem;padding:5px 8px;border-radius:6px;cursor:pointer;text-align:left}
+.case-btn:hover{background:var(--sunk)}
+.case-btn[aria-current="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.case-btn:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.pair{display:flex;gap:3px;align-items:center}
+.flag{width:7px;height:7px;border-radius:50%;background:var(--note);display:inline-block}
+.chip{font-family:var(--f-mono);font-size:.72rem;min-width:1.5em;text-align:center;padding:0 5px;border-radius:4px;font-weight:500}
+.s1,.s2{background:var(--bad-soft);color:var(--bad)} .s3{background:var(--mid-soft);color:var(--mid)} .s4,.s5{background:var(--good-soft);color:var(--good)} .sx{background:var(--sunk);color:var(--muted)}
+.mobile-pick{display:none}
+select{width:100%;font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+/* case view */
+.case{display:flex;flex-direction:column;gap:14px;min-width:0}
+.case-head{display:flex;flex-direction:column;gap:6px}
+.case-head .eyebrow{font-size:.78rem;letter-spacing:.08em;color:var(--accent);font-weight:600}
+.case-head h2{font-family:var(--f-display);font-size:1.35rem;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px;font-size:.88rem}
+.meta span{background:var(--sunk);border-radius:6px;padding:3px 8px;color:var(--muted)}
+.meta span b{color:var(--ink);font-weight:500}
+.note{background:var(--note-soft);border-radius:8px;padding:10px 14px;font-size:.92rem;display:flex;flex-direction:column;gap:4px}
+.note strong{color:var(--note);font-size:.78rem;letter-spacing:.06em}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.col{background:var(--surface);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-width:0}
+.col-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.col-head b{font-size:.95rem}
+.col-head small{color:var(--muted);font-size:.78rem;display:block;font-weight:400}
+.big{font-family:var(--f-mono);font-size:1.25rem;padding:2px 10px;border-radius:6px}
+.chat{display:flex;flex-direction:column;gap:8px;padding:14px;flex:1}
+.msg{display:flex;flex-direction:column;max-width:86%;gap:2px}
+.msg .who{font-size:.72rem;color:var(--muted)}
+.msg .bubble{padding:7px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.user .bubble{background:var(--user);color:var(--user-ink);border-bottom-right-radius:4px}
+.msg.ai .bubble{background:var(--sunk);border-bottom-left-radius:4px}
+.msg.last .bubble{box-shadow:0 0 0 2px var(--accent)}
+.msg.dim{opacity:.55}
+.cut{align-self:center;font-size:.75rem;color:var(--muted);border-top:1px dashed var(--line);width:100%;text-align:center;padding-top:4px}
+.verdict{border-top:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:.9rem}
+.verdict .lab{font-size:.75rem;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.hit{font-size:.8rem}
+details{font-size:.85rem}
+details summary{cursor:pointer;color:var(--muted)}
+details pre{white-space:pre-wrap;margin:6px 0 0;font-family:var(--f-body);background:var(--sunk);padding:8px 10px;border-radius:6px}
+.legend{font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:4px}
+@media (max-width:900px){
+  .summary{grid-template-columns:minmax(0,1fr)}
+  .main{grid-template-columns:minmax(0,1fr)}
+  nav{display:none}
+  .mobile-pick{display:block}
+}
+@media (max-width:700px){ .cols{grid-template-columns:minmax(0,1fr)} .msg{max-width:92%} }
+@media (prefers-reduced-motion:no-preference){ .case-btn{transition:background .12s} }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>小暖对话评测</h1>
+    <p id="sub"></p>
+  </header>
+
+  <section class="summary">
+    <div class="panel">
+      <h2>各维度均分（1–5，模型裁判）</h2>
+      <div style="overflow-x:auto"><table id="scores"></table></div>
+    </div>
+    <div class="panel" id="caveat-panel">
+      <h2>看结果前先知道</h2>
+      <ul class="caveats" id="caveats"></ul>
+    </div>
+  </section>
+
+  <div class="legend">
+    <span><i style="background:var(--user)"></i>用户</span>
+    <span><i style="background:var(--sunk)"></i>小暖</span>
+    <span><i style="background:none;box-shadow:0 0 0 2px var(--accent) inset"></i>被考察的最后一句</span>
+    <span>半透明的消息 = 已超出上下文窗口，模型这一轮看不到</span>
+    <span id="legend-note"><span class="flag"></span> 有人工复核批注</span>
+  </div>
+
+  <div class="main">
+    <nav id="nav" aria-label="用例列表"></nav>
+    <div class="case">
+      <div class="mobile-pick"><label for="pick" class="mono" style="font-size:.78rem;color:var(--muted)">选择用例</label><select id="pick"></select></div>
+      <div id="case"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const chip = (s, cls="chip") => `<span class="${cls} ${s ? "s"+s : "sx"}">${s ?? "–"}</span>`;
+const {runs, cases, dims, notes = {}, caveats = [], meta = {}} = DATA;
+const byKey = {}; runs.forEach(r => byKey[r.id + "/" + r.version] = r);
+const ids = [...new Set(runs.map(r => r.id))];
+const W = meta.context_turns || 0;
+
+$("#sub").textContent = `被测：${meta.model || "?"} · 裁判：${meta.judge || "?"} · ${ids.length} 条用例 × 2 版 · 两版都只带最近 ${W || "全部"} 轮对话`;
+
+// score table
+(function(){
+  let h = `<tr><th>维度</th><th class="n">v1</th><th class="n">v2</th><th class="n">差</th></tr>`;
+  const all = {v1:[], v2:[]};
+  for (const [k, name] of Object.entries(dims)) {
+    const avg = v => { const xs = runs.filter(r => r.dimension === k && r.version === v && r.judge_score).map(r => r.judge_score); all[v].push(...xs); return xs.length ? xs.reduce((a,b)=>a+b,0)/xs.length : null; };
+    const a = avg("v1"), b = avg("v2"), d = (a!=null && b!=null) ? b - a : null;
+    h += `<tr><td>${name}</td><td class="n">${a?.toFixed(2) ?? "–"}</td><td class="n">${b?.toFixed(2) ?? "–"}</td><td class="n ${d>0?"up":d<0?"down":""}">${d==null?"–":(d>0?"+":"")+d.toFixed(2)}</td></tr>`;
+  }
+  const m = v => all[v].reduce((a,b)=>a+b,0)/(all[v].length||1);
+  const d = m("v2") - m("v1");
+  h += `<tr class="total"><td>总分</td><td class="n">${m("v1").toFixed(2)}</td><td class="n">${m("v2").toFixed(2)}</td><td class="n ${d>0?"up":"down"}">${(d>0?"+":"")+d.toFixed(2)}</td></tr>`;
+  $("#scores").innerHTML = h;
+  if (caveats.length) $("#caveats").innerHTML = caveats.map(c => `<li>${c}</li>`).join("");
+  else $("#caveat-panel").hidden = true;
+  if (!Object.keys(notes).length) $("#legend-note").hidden = true;
+})();
+
+// nav
+(function(){
+  let h = "", o = "";
+  for (const [k, name] of Object.entries(dims)) {
+    const list = ids.filter(id => (cases[id]?.dimension || byKey[id+"/v1"]?.dimension) === k);
+    if (!list.length) continue;
+    h += `<div class="dimgroup"><h3>${name}</h3>`;
+    o += `<optgroup label="${name}">`;
+    for (const id of list) {
+      const a = byKey[id+"/v1"]?.judge_score, b = byKey[id+"/v2"]?.judge_score;
+      const flagged = notes[id] || notes[id+"/v1"] || notes[id+"/v2"];
+      h += `<button class="case-btn" data-id="${id}"><span>${id}${flagged ? ' <span class="flag" title="有批注"></span>' : ""}</span><span class="pair">${chip(a)}${chip(b)}</span></button>`;
+      o += `<option value="${id}">${id}　v1 ${a ?? "–"} / v2 ${b ?? "–"}${flagged ? "　●" : ""}</option>`;
+    }
+    h += `</div>`; o += `</optgroup>`;
+  }
+  $("#nav").innerHTML = h; $("#pick").innerHTML = o;
+  $("#nav").addEventListener("click", e => { const b = e.target.closest(".case-btn"); if (b) location.hash = b.dataset.id; });
+  $("#pick").addEventListener("change", e => location.hash = e.target.value);
+})();
+
+function column(r, v) {
+  if (!r) return `<div class="col"><div class="col-head"><b>${v}</b></div><div class="chat">未运行</div></div>`;
+  const h = r.history, n = h.length;
+  // messages the model could see when producing the final reply: last W turns before it + final user msg
+  const visibleFrom = W ? Math.max(0, n - 1 - W*2 - 1) : 0;
+  let msgs = "";
+  h.forEach((m, i) => {
+    if (W && i === visibleFrom && i > 0) msgs += `<div class="cut">↑ 以上内容在最后一轮时已超出 ${W} 轮窗口</div>`;
+    const cls = [m.role === "user" ? "user" : "ai", i === n-1 ? "last" : "", (W && i < visibleFrom) ? "dim" : ""].join(" ");
+    msgs += `<div class="msg ${cls}"><span class="who">${m.role === "user" ? "用户" : "小暖"}</span><div class="bubble">${esc(m.content)}</div></div>`;
+  });
+  const label = v === "v1" ? "v1 基线" : "v2 场景 + 记忆注入";
+  const sub = v === "v1" ? "只有人设" : "人设 + 当前场景 + 滚动记忆";
+  const note = notes[r.id + "/" + v];
+  const hit = r.keyword_hit == null ? "" : `<div class="hit">关键词硬指标：${r.keyword_hit ? '<span class="up">✓ 命中</span>' : '<span class="down">✗ 未命中</span>'}</div>`;
+  const mem = v === "v2" && r.memory ? `<details><summary>v2 当时注入的记忆（${r.memory.split("\n").filter(Boolean).length} 条）</summary><pre>${esc(r.memory)}</pre></details>` : "";
+  return `<div class="col">
+    <div class="col-head"><div><b>${label}</b><small>${sub}</small></div>${chip(r.judge_score, "big")}</div>
+    <div class="chat">${msgs}</div>
+    <div class="verdict"><div><div class="lab">裁判理由</div>${esc(r.judge_reason)}</div>${hit}${mem}
+    ${note ? `<div class="note"><strong>人工复核</strong>${note}</div>` : ""}</div>
+  </div>`;
+}
+
+function show(id) {
+  if (!ids.includes(id)) id = ids[0];
+  const c = cases[id] || {}, r1 = byKey[id+"/v1"], r2 = byKey[id+"/v2"];
+  const dim = dims[c.dimension || r1?.dimension] || "";
+  const scene = c.scene || r1?.scene;
+  $("#case").innerHTML = `
+    <div class="case-head">
+      <span class="eyebrow">${dim}</span>
+      <h2 class="mono">${id}</h2>
+      <div class="meta">${scene ? `<span>场景 <b>${esc(scene)}</b></span>` : ""}${c.focus ? `<span>考察 <b>${esc(c.focus)}</b></span>` : ""}</div>
+      ${notes[id] ? `<div class="note"><strong>人工复核</strong>${notes[id]}</div>` : ""}
+    </div>
+    <div class="cols">${column(r1, "v1")}${column(r2, "v2")}</div>`;
+  document.querySelectorAll(".case-btn").forEach(b => b.setAttribute("aria-current", b.dataset.id === id));
+  $("#pick").value = id;
+}
+const route = () => show(decodeURIComponent(location.hash.slice(1)));
+window.addEventListener("hashchange", route);
+route();
+</script>

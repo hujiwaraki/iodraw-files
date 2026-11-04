@@ -35,6 +35,7 @@ python eval.py sample       # 抽 12 条导出 results/human_review.csv（不显
 # 用 Excel 打开 CSV，填写 human_score 列
 python eval.py agree        # 计算人工与裁判的一致率、±1 分一致率、Spearman 相关
 python eval.py report       # 生成 results/report.md：分维度得分、好/坏例子、结论
+python eval.py view         # 生成 results/view.html：v1/v2 完整多轮对话并排对比
 ```
 
 不配 API key、先试流程：`LLM_MOCK=1 python eval.py run`
@@ -43,7 +44,8 @@ python eval.py report       # 生成 results/report.md：分维度得分、好/�
 - `personas.py`：角色设定、v1/v2 的 system prompt、记忆抽取 prompt
 - `cases.json`：30 条用例；`@filler:N` 会展开成 N 轮闲聊干扰；`expect` 是记忆题的关键词硬指标
 - `rubric.py`：各维度 1–5 分评分标准与裁判 prompt
-- `eval.py`：运行、抽样、一致性、报告。两版都只携带最近 5 轮对话（`CONTEXT_TURNS` 可调），否则记忆题测不出差别
+- `viewer_template.html`：`eval.py view` 用的对话对比页模板；可在 `results/notes.json` 里写人工批注，会显示在页面上
+- `eval.py`：运行、抽样、一致性、报告、对话查看页。两版都只携带最近 5 轮对话（`CONTEXT_TURNS` 可调），否则记忆题测不出差别
 
 ## 成本估算
 30 条 × 2 版，加上 v2 的记忆抽取和裁判，大约 400 次调用；用 deepseek-chat 一次跑完通常只要几毛钱到一两元人民币。
