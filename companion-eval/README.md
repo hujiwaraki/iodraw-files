@@ -43,7 +43,7 @@ python eval.py report       # 生成 results/report.md：分维度得分、好/�
 - `personas.py`：角色设定、v1/v2 的 system prompt、记忆抽取 prompt
 - `cases.json`：30 条用例；`@filler:N` 会展开成 N 轮闲聊干扰；`expect` 是记忆题的关键词硬指标
 - `rubric.py`：各维度 1–5 分评分标准与裁判 prompt
-- `eval.py`：运行、抽样、一致性、报告
+- `eval.py`：运行、抽样、一致性、报告。两版都只携带最近 5 轮对话（`CONTEXT_TURNS` 可调），否则记忆题测不出差别
 
 ## 成本估算
 30 条 × 2 版，加上 v2 的记忆抽取和裁判，大约 400 次调用；用 deepseek-chat 一次跑完通常只要几毛钱到一两元人民币。

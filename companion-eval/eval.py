@@ -12,6 +12,7 @@
   LLM_API_KEY
   LLM_MODEL      被测模型，如 deepseek-chat
   JUDGE_BASE_URL / JUDGE_API_KEY / JUDGE_MODEL  裁判模型（可选，默认同上；建议用另一家）
+  CONTEXT_TURNS  每次请求携带的最近对话轮数，默认 5（0 = 全部携带）
   LLM_MOCK=1     不调API，用假回复跑通流程
 只用 Python 标准库，无需安装依赖。
 """
@@ -84,11 +85,17 @@ def expand_turns(turns):
     return out
 
 
+CONTEXT_TURNS = int(os.getenv("CONTEXT_TURNS", "5"))
+
+
 def run_case(case, version):
+    """两个版本都只把最近 CONTEXT_TURNS 轮对话发给模型（模拟真实产品的上下文截断），
+    更早的信息 v1 只能遗忘，v2 依靠记忆注入找回。"""
     history, memory = [], ""
     for user in expand_turns(case["turns"]):
         system = V1_SYSTEM if version == "v1" else v2_system(case["scene"], memory)
-        msgs = [{"role": "system", "content": system}] + history + \
+        window = history[-CONTEXT_TURNS * 2:] if CONTEXT_TURNS > 0 else history
+        msgs = [{"role": "system", "content": system}] + window + \
                [{"role": "user", "content": user}]
         reply = chat(msgs)
         history += [{"role": "user", "content": user},
@@ -235,7 +242,8 @@ def cmd_report(_args):
     model = os.getenv("LLM_MODEL", "?")
     judge_m = os.getenv("JUDGE_MODEL", model)
     lines += [f"- 被测模型：`{model}`　裁判模型：`{judge_m}`",
-              f"- 用例数：{len({r['id'] for r in runs})}，六个维度各 5 条，每条两版各跑一次", ""]
+              f"- 用例数：{len({r['id'] for r in runs})}，六个维度各 5 条，每条两版各跑一次",
+              f"- 上下文窗口：两版均只携带最近 {CONTEXT_TURNS} 轮对话（模拟真实产品截断）", ""]
     lines += ["## 各维度得分（1-5，模型裁判均分）", "",
               "| 维度 | v1 | v2 | 差值 |", "|---|---|---|---|"]
     tot = {"v1": [], "v2": []}
