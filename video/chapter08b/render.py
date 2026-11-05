@@ -1,8 +1,8 @@
-"""第八章渲染入口（番外 · 同路人）。
+"""第八章渲染入口（番外 · 例外）。
 
   python render.py keyframes 8 30 66 92 125   # 关键帧
   python render.py video                        # 完整视频（无声）
-  python render.py mux                          # 合成音乐 → out/chapter08_同路人.mp4
+  python render.py mux                          # 合成音乐 → out/番外_例外.mp4
 """
 import os
 import subprocess
