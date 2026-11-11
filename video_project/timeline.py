@@ -4,7 +4,7 @@ from script_lines import LINES
 HERE = os.path.dirname(os.path.abspath(__file__))
 FPS = 30
 SR = 24000
-COLD_CLIP = (0.0, 1.42)      # "Hey! Stop!" taken from L10
+COLD_FILE = "COLD.wav"       # "Hey! Stop!" generated as its own line (am_michael)
 COLD_AT = 0.45
 TITLE_S, TITLE_E = 2.6, 5.6
 EXTRA_GAP = {"L9": 0.6, "L14": 0.3, "L21": 0.2, "L22": 0.6, "L24": 0.2}

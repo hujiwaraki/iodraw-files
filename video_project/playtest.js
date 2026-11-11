@@ -6,10 +6,11 @@ const path = require('path');
   const file = path.resolve(process.argv[2]); const out = process.argv[3];
   const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   const p = await b.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
-  await p.setContent(`<html><body style="margin:0;background:#000"><video id=v src="file://${file}" style="width:1280px;height:720px" preload=auto></video></body></html>`);
+  await p.goto(process.argv[4] || `file://${file}`);
   const info = await p.evaluate(() => new Promise((res, rej) => {
     const v = document.getElementById('v');
-    v.onloadedmetadata = () => res({ duration: v.duration, w: v.videoWidth, h: v.videoHeight });
+    const ok = () => res({ duration: v.duration, w: v.videoWidth, h: v.videoHeight, readyState: v.readyState });
+    if (v.readyState >= 1) return ok(); v.onloadedmetadata = ok;
     v.onerror = () => rej('media error ' + (v.error && v.error.code));
     setTimeout(() => rej('timeout'), 20000);
   }));

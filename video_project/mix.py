@@ -1,7 +1,7 @@
 """Build the final soundtrack: narration + light synthesized score (ducked under speech) + SFX. Writes mix.wav (48 kHz stereo)."""
 import numpy as np, soundfile as sf
 from scipy.signal import resample_poly, butter, sosfilt
-from timeline import T, AUD, END, COLD_CLIP, COLD_AT, TITLE_S, SR
+from timeline import T, AUD, END, COLD_FILE, COLD_AT, TITLE_S, SR
 SRO = 48000
 N = int(END * SRO) + SRO
 rng = np.random.default_rng(1)
@@ -19,8 +19,7 @@ def note_hz(n): return 440.0 * 2 ** ((n - 69) / 12)
 
 # ---------------- narration
 voice = np.zeros(N)
-a = AUD["L10"][int(COLD_CLIP[0] * SR): int(COLD_CLIP[1] * SR)].copy()
-fade = int(0.02 * SR); a[-fade:] *= np.linspace(1, 0, fade)
+a, _ = sf.read("tts/" + COLD_FILE, dtype="float32")
 place(voice, up(a), COLD_AT)
 for lid, (s, e) in T.items():
     place(voice, up(AUD[lid]), s)
