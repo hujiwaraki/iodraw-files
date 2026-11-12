@@ -1,3 +1,4 @@
 build/
 mix.wav
 __pycache__/
+node_modules/
